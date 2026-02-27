@@ -19,9 +19,40 @@ export const ReservationsList: React.FC = () => {
     loadReservations();
   }, []);
 
+  const toNumber = (value: unknown): number => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[^0-9.,-]/g, '').replace(/\./g, '').replace(',', '.');
+      const parsed = parseFloat(cleaned);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const normalizeReservation = (reservation: any) => {
+    return {
+      ...reservation,
+      voyageDestination: reservation?.voyageDestination || reservation?.destination || 'Voyage non renseigné',
+      type: reservation?.type || 'reservation',
+      nombrePersonnes: toNumber(reservation?.nombrePersonnes || reservation?.personnes || 0),
+      montantTotal: toNumber(
+        reservation?.montantTotal ??
+        reservation?.montant ??
+        reservation?.total
+      ),
+      acompte: toNumber(
+        reservation?.acompte ??
+        reservation?.montantAcompte ??
+        reservation?.avance
+      ),
+      date: reservation?.date || '-',
+      statut: reservation?.statut || 'en-attente',
+    };
+  };
+
   const loadReservations = () => {
     const data = StorageService.getReservations();
-    setReservations(data);
+    setReservations((data || []).map(normalizeReservation));
   };
 
   const confirmDelete = () => {
@@ -39,7 +70,10 @@ export const ReservationsList: React.FC = () => {
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const displayed = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
+  const fmtPrice = (value: unknown) => {
+    const amount = toNumber(value);
+    return amount.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
+  };
 
   const typeBadge = (type: string) => {
     if (type === 'reservation') return <span className="px-3 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-600 border-green-200">Réservation</span>;
@@ -71,8 +105,8 @@ export const ReservationsList: React.FC = () => {
       r.voyageDestination,
       r.type === 'reservation' ? 'Réservation' : 'Épargne',
       r.nombrePersonnes,
-      r.montantTotal,
-      r.acompte,
+      fmtPrice(r.montantTotal),
+      fmtPrice(r.acompte),
       r.date,
       statutLabels[r.statut] || r.statut
     ]);
@@ -151,8 +185,8 @@ export const ReservationsList: React.FC = () => {
                     Aucune réservation
                   </td>
                 </tr>
-              ) : displayed.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+              ) : displayed.map((r, index) => (
+                <tr key={r.id || `${r.voyageId || 'reservation'}-${index}`} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-semibold text-gray-900">{r.voyageDestination}</td>
                   <td className="px-6 py-4">{typeBadge(r.type)}</td>
                   <td className="px-6 py-4 text-gray-700">{r.nombrePersonnes}</td>
@@ -162,7 +196,8 @@ export const ReservationsList: React.FC = () => {
                   <td className="px-6 py-4">{statutBadge(r.statut)}</td>
                   <td className="px-6 py-4">
                     <button
-                      onClick={() => setDeleteTarget(r.id)}
+                      onClick={() => r.id && setDeleteTarget(r.id)}
+                      disabled={!r.id}
                       className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4 text-red-600" />
