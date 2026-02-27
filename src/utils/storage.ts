@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   VOYAGEURS: 'touriste_voyageurs',
   USERS: 'touriste_users',
   STATS: 'touriste_stats',
+  DOCUMENT_REQUESTS: 'touriste_document_requests',
 };
 
 // Initialize default data
@@ -401,6 +402,9 @@ export class StorageService {
       };
       localStorage.setItem(STORAGE_KEYS.VOYAGEURS, JSON.stringify(defaultVoyageurs));
     }
+    if (!localStorage.getItem(STORAGE_KEYS.DOCUMENT_REQUESTS)) {
+      localStorage.setItem(STORAGE_KEYS.DOCUMENT_REQUESTS, JSON.stringify([]));
+    }
   }
 
   // Voyages
@@ -504,6 +508,55 @@ export class StorageService {
       all[voyageId] = all[voyageId].filter((v: any) => v.id !== voyageurId);
       localStorage.setItem(STORAGE_KEYS.VOYAGEURS, JSON.stringify(all));
     }
+  }
+
+  static requestVoyageurDocuments(
+    voyageId: string,
+    voyageurId: string,
+    documents: Array<'copie-identite' | 'passeport' | 'photo-identite'>
+  ) {
+    if (documents.length === 0) return null;
+
+    const data = localStorage.getItem(STORAGE_KEYS.VOYAGEURS);
+    const all = data ? JSON.parse(data) : {};
+    if (!all[voyageId]) return null;
+
+    const voyageurIndex = all[voyageId].findIndex((v: any) => v.id === voyageurId);
+    if (voyageurIndex < 0) return null;
+
+    const nowIso = new Date().toISOString();
+    const existing = all[voyageId][voyageurIndex];
+    const currentDocuments = existing.documents || {};
+
+    const updatedDocuments = { ...currentDocuments };
+    documents.forEach((documentType) => {
+      updatedDocuments[documentType] = {
+        status: 'demande',
+        requestedAt: nowIso,
+        updatedAt: nowIso,
+      };
+    });
+
+    const updatedVoyageur = {
+      ...existing,
+      documents: updatedDocuments,
+    };
+    all[voyageId][voyageurIndex] = updatedVoyageur;
+    localStorage.setItem(STORAGE_KEYS.VOYAGEURS, JSON.stringify(all));
+
+    const requestsData = localStorage.getItem(STORAGE_KEYS.DOCUMENT_REQUESTS);
+    const requests = requestsData ? JSON.parse(requestsData) : [];
+    requests.push({
+      id: Date.now().toString(),
+      voyageId,
+      voyageurId,
+      documents,
+      requestedAt: nowIso,
+      status: 'pending',
+    });
+    localStorage.setItem(STORAGE_KEYS.DOCUMENT_REQUESTS, JSON.stringify(requests));
+
+    return updatedVoyageur;
   }
 
   // Computed Stats (from real data)

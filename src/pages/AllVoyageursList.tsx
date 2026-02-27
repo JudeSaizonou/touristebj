@@ -2,26 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { StorageService } from '../utils/storage';
 import { ExportModal } from '../components/ExportModal';
+import { VoyageurDetailsModal } from '../components/VoyageurDetailsModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
+import { Voyageur, VoyageurDocumentType } from '../types';
 
 interface VoyageurRow {
-  voyageur: any;
+  voyageur: Voyageur;
   voyageId: string;
   voyageDestination: string;
 }
 
 export const AllVoyageursList: React.FC = () => {
   const [allData, setAllData] = useState<VoyageurRow[]>([]);
+  const [activeRow, setActiveRow] = useState<VoyageurRow | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showExportModal, setShowExportModal] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 12;
 
-  useEffect(() => {
-    const data = StorageService.getAllVoyageurs();
+  const loadAllVoyageurs = () => {
+    const data = StorageService.getAllVoyageurs() as VoyageurRow[];
     setAllData(data);
+  };
+
+  useEffect(() => {
+    loadAllVoyageurs();
   }, []);
 
   const filtered = allData.filter(d =>
@@ -66,6 +73,18 @@ export const AllVoyageursList: React.FC = () => {
     addToast('success', `Export ${format.toUpperCase()} téléchargé`);
   };
 
+  const handleRequestDocuments = (documents: VoyageurDocumentType[]) => {
+    if (!activeRow) return;
+    const updated = StorageService.requestVoyageurDocuments(activeRow.voyageId, activeRow.voyageur.id, documents);
+    if (!updated) {
+      addToast('error', 'Impossible d\'envoyer la demande de documents');
+      return;
+    }
+    setActiveRow({ ...activeRow, voyageur: updated });
+    loadAllVoyageurs();
+    addToast('success', 'Demande de documents envoyée au voyageur');
+  };
+
   return (
     <div className="p-4 md:p-8">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
@@ -86,6 +105,14 @@ export const AllVoyageursList: React.FC = () => {
         onClose={() => setShowExportModal(false)}
         onExport={handleExportFormat}
         title="Exporter les voyageurs"
+      />
+
+      <VoyageurDetailsModal
+        isOpen={!!activeRow}
+        voyageur={activeRow?.voyageur || null}
+        voyageDestination={activeRow?.voyageDestination}
+        onClose={() => setActiveRow(null)}
+        onRequestDocuments={handleRequestDocuments}
       />
 
       {/* Search */}
@@ -115,18 +142,26 @@ export const AllVoyageursList: React.FC = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Téléphone</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Acomptes reçus</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Montants restants</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {displayed.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
                     Aucun voyageur trouvé
                   </td>
                 </tr>
               ) : displayed.map((d, i) => (
                 <tr key={`${d.voyageId}-${d.voyageur.id}-${i}`} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 font-semibold text-gray-900">{d.voyageur.nom}</td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => setActiveRow(d)}
+                      className="font-semibold text-gray-900 hover:text-primary-600 transition-colors"
+                    >
+                      {d.voyageur.nom}
+                    </button>
+                  </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 bg-primary-50 text-primary-700 rounded text-xs font-medium">{d.voyageDestination}</span>
                   </td>
@@ -139,6 +174,14 @@ export const AllVoyageursList: React.FC = () => {
                   <td className="px-6 py-4 text-gray-700">{d.voyageur.telephone}</td>
                   <td className="px-6 py-4 font-medium text-gray-900">{d.voyageur.acomptesRecus}</td>
                   <td className="px-6 py-4 font-medium text-gray-900">{d.voyageur.montantsRestants}</td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => setActiveRow(d)}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Documents
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

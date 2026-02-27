@@ -1,5 +1,21 @@
 export type VoyageStatus = 'pause' | 'en-cours' | 'complet';
 
+export type VoyageurDocumentType =
+  | 'copie-identite'
+  | 'passeport'
+  | 'photo-identite';
+
+export type VoyageurDocumentStatus =
+  | 'non-fourni'
+  | 'demande'
+  | 'recu';
+
+export interface VoyageurDocumentInfo {
+  status: VoyageurDocumentStatus;
+  requestedAt?: string;
+  updatedAt?: string;
+}
+
 export interface Voyage {
   id: string;
   destination: string;
@@ -34,6 +50,7 @@ export interface Voyageur {
   telephone: string;
   acomptesRecus: string;
   montantsRestants: string;
+  documents?: Partial<Record<VoyageurDocumentType, VoyageurDocumentInfo>>;
 }
 
 export interface Reservation {

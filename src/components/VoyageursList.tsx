@@ -1,21 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Calendar, Upload, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Calendar, Upload, Plus, Eye, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X } from 'lucide-react';
 import { StorageService } from '../utils/storage';
 import { ConfirmModal } from './ConfirmModal';
 import { ExportModal } from './ExportModal';
+import { VoyageurDetailsModal } from './VoyageurDetailsModal';
 import { ToastContainer, useToast } from './Toast';
 import { handleExport } from '../utils/export';
-
-interface Voyageur {
-  id: string;
-  nom: string;
-  date: string;
-  statutPaiement: 'acompte-paye' | 'epargne-en-cours' | 'solde' | 'financement-accorde' | 'reservation-annulee';
-  moyenUtilise: 'epargne' | 'financement' | 'une-fois' | 'annule';
-  telephone: string;
-  acomptesRecus: string;
-  montantsRestants: string;
-}
+import { Voyageur, VoyageurDocumentType } from '../types';
 
 const StatutPaiementBadge: React.FC<{ statut: Voyageur['statutPaiement'] }> = ({ statut }) => {
   const styles = {
@@ -66,12 +57,11 @@ const MoyenBadge: React.FC<{ moyen: Voyageur['moyenUtilise'] }> = ({ moyen }) =>
 // Voyageur Form Modal
 interface VoyageurFormModalProps {
   isOpen: boolean;
-  voyageur?: Voyageur | null;
-  onSave: (data: Omit<Voyageur, 'id'> & { id?: string }) => void;
+  onSave: (data: Omit<Voyageur, 'id'>) => void;
   onClose: () => void;
 }
 
-const VoyageurFormModal: React.FC<VoyageurFormModalProps> = ({ isOpen, voyageur, onSave, onClose }) => {
+const VoyageurFormModal: React.FC<VoyageurFormModalProps> = ({ isOpen, onSave, onClose }) => {
   const [form, setForm] = useState({
     nom: '',
     telephone: '',
@@ -82,16 +72,7 @@ const VoyageurFormModal: React.FC<VoyageurFormModalProps> = ({ isOpen, voyageur,
   });
 
   useEffect(() => {
-    if (voyageur) {
-      setForm({
-        nom: voyageur.nom,
-        telephone: voyageur.telephone,
-        statutPaiement: voyageur.statutPaiement,
-        moyenUtilise: voyageur.moyenUtilise,
-        acomptesRecus: voyageur.acomptesRecus,
-        montantsRestants: voyageur.montantsRestants,
-      });
-    } else {
+    if (isOpen) {
       setForm({
         nom: '',
         telephone: '',
@@ -101,7 +82,7 @@ const VoyageurFormModal: React.FC<VoyageurFormModalProps> = ({ isOpen, voyageur,
         montantsRestants: '',
       });
     }
-  }, [voyageur, isOpen]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -109,9 +90,8 @@ const VoyageurFormModal: React.FC<VoyageurFormModalProps> = ({ isOpen, voyageur,
     e.preventDefault();
     if (!form.nom.trim() || !form.telephone.trim()) return;
     onSave({
-      ...(voyageur ? { id: voyageur.id } : {}),
       nom: form.nom,
-      date: voyageur?.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       telephone: form.telephone,
       statutPaiement: form.statutPaiement,
       moyenUtilise: form.moyenUtilise,
@@ -125,9 +105,7 @@ const VoyageurFormModal: React.FC<VoyageurFormModalProps> = ({ isOpen, voyageur,
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full mx-4 animate-scale-in">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
-            {voyageur ? 'Modifier le voyageur' : 'Ajouter un voyageur'}
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900">Ajouter un voyageur</h3>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-lg">
             <X className="w-5 h-5 text-gray-500" />
           </button>
@@ -224,7 +202,7 @@ const VoyageurFormModal: React.FC<VoyageurFormModalProps> = ({ isOpen, voyageur,
               type="submit"
               className="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors"
             >
-              {voyageur ? 'Modifier' : 'Ajouter'}
+              Ajouter
             </button>
           </div>
         </form>
@@ -247,7 +225,7 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [showFormModal, setShowFormModal] = useState(false);
-  const [editingVoyageur, setEditingVoyageur] = useState<Voyageur | null>(null);
+  const [activeVoyageur, setActiveVoyageur] = useState<Voyageur | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -257,6 +235,8 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
+  const voyage = StorageService.getVoyageById(voyageId);
+  const voyageDestination = voyage ? (voyage.destination || voyage.titre || 'N/A') : 'N/A';
 
   useEffect(() => {
     loadVoyageurs();
@@ -281,17 +261,27 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
     }
   };
 
-  const handleSaveVoyageur = (data: any) => {
+  const handleSaveVoyageur = (data: Omit<Voyageur, 'id'>) => {
     StorageService.saveVoyageur(voyageId, data);
     loadVoyageurs();
     setShowFormModal(false);
-    setEditingVoyageur(null);
-    addToast('success', data.id ? 'Voyageur modifié avec succès' : 'Voyageur ajouté avec succès');
+    addToast('success', 'Voyageur ajouté avec succès');
   };
 
-  const handleEdit = (voyageur: Voyageur) => {
-    setEditingVoyageur(voyageur);
-    setShowFormModal(true);
+  const handleOpenDetails = (voyageur: Voyageur) => {
+    setActiveVoyageur(voyageur);
+  };
+
+  const handleRequestDocuments = (documents: VoyageurDocumentType[]) => {
+    if (!activeVoyageur) return;
+    const updated = StorageService.requestVoyageurDocuments(voyageId, activeVoyageur.id, documents);
+    if (!updated) {
+      addToast('error', 'Impossible d\'envoyer la demande de documents');
+      return;
+    }
+    setActiveVoyageur(updated);
+    loadVoyageurs();
+    addToast('success', 'Demande de documents envoyée au voyageur');
   };
 
   const handleExportFormat = (format: 'csv' | 'pdf' | 'xlsx') => {
@@ -423,9 +413,16 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
 
       <VoyageurFormModal
         isOpen={showFormModal}
-        voyageur={editingVoyageur}
         onSave={handleSaveVoyageur}
-        onClose={() => { setShowFormModal(false); setEditingVoyageur(null); }}
+        onClose={() => setShowFormModal(false)}
+      />
+
+      <VoyageurDetailsModal
+        isOpen={!!activeVoyageur}
+        voyageur={activeVoyageur}
+        voyageDestination={voyageDestination}
+        onClose={() => setActiveVoyageur(null)}
+        onRequestDocuments={handleRequestDocuments}
       />
 
       <ExportModal
@@ -527,7 +524,7 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
             <span className="text-sm font-medium text-gray-700">Exporter</span>
           </button>
           <button
-            onClick={() => { setEditingVoyageur(null); setShowFormModal(true); }}
+            onClick={() => setShowFormModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-md"
           >
             <Plus className="w-5 h-5" />
@@ -592,7 +589,12 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
                     />
                   </td>
                   <td className="px-6 py-4">
-                    <span className="font-semibold text-gray-900">{voyageur.nom}</span>
+                    <button
+                      onClick={() => handleOpenDetails(voyageur)}
+                      className="font-semibold text-gray-900 hover:text-primary-600 transition-colors"
+                    >
+                      {voyageur.nom}
+                    </button>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-gray-700">{voyageur.date}</span>
@@ -615,10 +617,11 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleEdit(voyageur)}
+                        onClick={() => handleOpenDetails(voyageur)}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Voir détails et documents"
                       >
-                        <Pencil className="w-4 h-4 text-gray-600" />
+                        <Eye className="w-4 h-4 text-gray-600" />
                       </button>
                       <button
                         onClick={() => handleDelete(voyageur.id)}
