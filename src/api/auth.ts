@@ -198,6 +198,23 @@ export async function resetPassword(
   });
 }
 
+/** Récupère le profil complet de l'utilisateur connecté (avec role). */
+export async function getMe(): Promise<AuthUser> {
+  const body = await apiRequest<any>(`${AUTH_PREFIX}/user`);
+  const u = body?.user ?? body?.data ?? body;
+  return {
+    id: u?.id ?? u?._id ?? '',
+    phoneNumber: u?.phoneNumber ?? '',
+    role: u?.role ?? 'USER_X',
+    username: u?.username ?? u?.prenom ?? u?.nom ?? undefined,
+    phoneNumberVerified: u?.phoneNumberVerified,
+    emailVerified: u?.emailVerified,
+    countryCode: u?.countryCode ?? undefined,
+    twoFactorEnabled: u?.twoFactorEnabled,
+    kycStatus: u?.kycStatus ?? undefined,
+  };
+}
+
 /** Login : envoie le numéro national uniquement (sans indicatif), comme attendu par la plupart des APIs. */
 export async function login(
   nationalPhoneNumber: string,

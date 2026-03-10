@@ -63,7 +63,7 @@ export const ReservationsList: React.FC = () => {
   const displayed = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const fmtPrice = (value: unknown) => {
-    const amount = toNumber(value);
+    const amount = Number(value) || 0;
     return amount.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
   };
 

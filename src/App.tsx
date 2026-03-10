@@ -61,8 +61,17 @@ function App() {
     setSidebarOpen(false);
   };
 
-  const handleAuthSuccess = (isAdminUser: boolean) => {
-    setCurrentView(isAdminUser ? 'dashboard' : 'catalog');
+  const handleAuthSuccess = (_isAdminUser: boolean) => {
+    // setAuth écrit en localStorage de façon synchrone → source de vérité fiable
+    // même si la réponse API n'incluait pas le champ role
+    try {
+      const raw = localStorage.getItem('touriste_user');
+      const savedUser = raw ? JSON.parse(raw) : null;
+      const adminFromStorage = savedUser?.role === 'ADMIN' || savedUser?.role === 'PARTNER';
+      setCurrentView(adminFromStorage ? 'dashboard' : 'catalog');
+    } catch {
+      setCurrentView(_isAdminUser ? 'dashboard' : 'catalog');
+    }
     setAuthRedirect('catalog');
   };
 

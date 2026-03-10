@@ -230,41 +230,14 @@ export const Auth: React.FC<AuthProps> = ({
   };
 
   // ——— Connexion ———
-  const handleConnexionContinue = async () => {
+  const handleConnexionContinue = () => {
     const national = connexionPhone.replace(/\D/g, '');
     if (national.length < 6) {
       addToast('error', 'Numéro de téléphone invalide');
       return;
     }
-    setConnexionLoading(true);
-    try {
-      await authApi.sendCode(connexionCountry, connexionPhone);
-      setConnexionOtpSent(true);
-      setConnexionStep('otp');
-      startTimer(setConnexionOtpTimer, connexionTimerRef, 60);
-      addToast('success', 'Code envoyé sur votre téléphone');
-    } catch (err) {
-      const msg = getApiMessage(err);
-      const lower = msg.toLowerCase();
-      // USER_X, ADMIN, PARTNER : pas d'OTP, afficher directement le mot de passe
-      const usePasswordDirectly =
-        lower.includes('déjà vérifié') ||
-        lower.includes('already verified') ||
-        lower.includes('déjà utilisé') ||
-        lower.includes('already used') ||
-        lower.includes('password') ||
-        lower.includes('mot de passe') ||
-        lower.includes('connecter');
-      if (usePasswordDirectly) {
-        setConnexionRole('user_x');
-        setConnexionStep('password-only');
-        addToast('info', 'Entrez votre mot de passe pour vous connecter.');
-      } else {
-        addToast('error', msg);
-      }
-    } finally {
-      setConnexionLoading(false);
-    }
+    // Pas d'appel API ici — on va directement au mot de passe
+    setConnexionStep('password-only');
   };
 
   const handleConnexionVerifyOtp = async () => {
@@ -277,10 +250,20 @@ export const Auth: React.FC<AuthProps> = ({
     try {
       const res = await authApi.verifyCode(connexionCountry, connexionPhone, code);
       if ('token' in res && res.token && res.user) {
+        // Stocker d'abord avec les données de base
         setAuth(res.token, res.user);
-        addToast('success', 'Connexion réussie !');
-        const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'PARTNER';
-        onSuccess?.(isAdmin);
+        // Enrichir avec le profil complet (inclut role, username, etc.)
+        try {
+          const me = await authApi.getMe();
+          setAuth(res.token, { ...res.user, ...me });
+          addToast('success', 'Connexion réussie !');
+          const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        } catch {
+          addToast('success', 'Connexion réussie !');
+          const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        }
       } else if ('isNewUser' in res && res.isNewUser) {
         addToast('info', 'Ce numéro n\'est pas encore inscrit. Créez un compte.');
         setMode('inscription');
@@ -313,12 +296,41 @@ export const Auth: React.FC<AuthProps> = ({
         addToast('error', 'Réponse serveur invalide : token manquant.');
         return;
       }
+      // Login direct (USER_X / ADMIN / PARTNER)
       setAuth(res.token, res.user);
-      addToast('success', 'Connexion réussie !');
-      const isAdmin = res.user?.role === 'ADMIN' || res.user?.role === 'PARTNER';
-      onSuccess?.(isAdmin);
+      try {
+        const me = await authApi.getMe();
+        setAuth(res.token, { ...res.user, ...me });
+        addToast('success', 'Connexion réussie !');
+        const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
+        onSuccess?.(isAdmin);
+      } catch {
+        addToast('success', 'Connexion réussie !');
+        const isAdmin = res.user?.role === 'ADMIN' || res.user?.role === 'PARTNER';
+        onSuccess?.(isAdmin);
+      }
     } catch (err) {
-      addToast('error', getApiMessage(err));
+      const msg = getApiMessage(err);
+      const lower = msg.toLowerCase();
+      // Le backend demande une vérification OTP → utilisateur de type USER
+      const needsOtp =
+        lower.includes('otp') ||
+        lower.includes('code') ||
+        lower.includes('verif') ||
+        lower.includes('sms');
+      if (needsOtp) {
+        try {
+          await authApi.sendCode(connexionCountry, connexionPhone);
+          setConnexionOtpSent(true);
+          setConnexionStep('otp');
+          startTimer(setConnexionOtpTimer, connexionTimerRef, 60);
+          addToast('info', 'Un code de vérification vous a été envoyé.');
+        } catch {
+          addToast('error', msg);
+        }
+      } else {
+        addToast('error', msg);
+      }
     } finally {
       setConnexionLoading(false);
     }
@@ -734,13 +746,8 @@ export const Auth: React.FC<AuthProps> = ({
                     <Button
                       className="w-full rounded-xl py-3 bg-orange-500 hover:bg-orange-600"
                       onClick={handleConnexionContinue}
-                      disabled={connexionLoading}
                     >
-                      {connexionLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        'Continuer'
-                      )}
+                      Continuer
                     </Button>
                   </div>
                 )}
@@ -806,9 +813,10 @@ export const Auth: React.FC<AuthProps> = ({
                   <form onSubmit={handleConnexionSubmit} className="space-y-4">
                     <h2 className="text-xl font-bold text-gray-900">Mot de passe</h2>
                     <p className="text-sm text-gray-600">
-                      {connexionRole === 'user_x'
-                        ? 'Entrez votre mot de passe pour vous connecter.'
-                        : 'Entrez votre mot de passe pour finaliser la connexion.'}
+                      Entrez votre mot de passe pour vous connecter au{' '}
+                      <span className="font-medium text-gray-800">
+                        {formatFullPhone(connexionCountry, connexionPhone)}
+                      </span>.
                     </p>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
