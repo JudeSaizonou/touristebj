@@ -58,7 +58,7 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
 
   const loadVoyages = async () => {
     try {
-      const { voyages: list } = await tripsApi.getVoyages();
+      const { voyages: list } = await tripsApi.getPartnerVoyages();
       const mappedData = list.map((v: any) => ({
         id: v.id,
         destination: v.destination || v.titre,

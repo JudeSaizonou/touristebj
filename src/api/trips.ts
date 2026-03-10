@@ -172,6 +172,29 @@ export function mapTripToVoyage(t: TripBackend): any {
 }
 
 export async function getVoyages(params?: {
+  destination?: string;
+  tripType?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ voyages: any[]; pagination?: TripListResponse['pagination'] }> {
+  const q = new URLSearchParams();
+  if (params?.destination) q.set('destination', params.destination);
+  if (params?.tripType) q.set('tripType', params.tripType);
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  const query = q.toString();
+  const url = `${TRIPS_PREFIX}/trips/available${query ? `?${query}` : ''}`;
+  const res = await apiRequest<TripListResponse>(url);
+  const voyages = (res.trips || []).map(mapTripToVoyage);
+  return { voyages, pagination: res.pagination };
+}
+
+export async function getVoyageById(voyageId: string): Promise<any> {
+  const res = await apiRequest<TripDetailResponse>(`${TRIPS_PREFIX}/trips/${voyageId}`);
+  return mapTripToVoyage(res.trip);
+}
+
+export async function getPartnerVoyages(params?: {
   status?: string;
   page?: number;
   limit?: number;
@@ -181,15 +204,8 @@ export async function getVoyages(params?: {
   if (params?.page) q.set('page', String(params.page));
   if (params?.limit) q.set('limit', String(params.limit));
   const query = q.toString();
-  const url = `${TRIPS_PREFIX}/voyages${query ? `?${query}` : ''}`;
-  const res = await apiRequest<TripListResponse>(url);
-  const voyages = (res.trips || []).map(mapTripToVoyage);
-  return { voyages, pagination: res.pagination };
-}
-
-export async function getVoyageById(voyageId: string): Promise<any> {
-  const res = await apiRequest<TripDetailResponse>(`${TRIPS_PREFIX}/voyages/${voyageId}`);
-  return mapTripToVoyage(res.trip);
+  const res = await apiRequest<TripListResponse>(`${TRIPS_PREFIX}/partner/trips${query ? `?${query}` : ''}`);
+  return { voyages: (res.trips || []).map(mapTripToVoyage), pagination: res.pagination };
 }
 
 export async function createVoyage(body: {
@@ -206,13 +222,12 @@ export async function createVoyage(body: {
   minInstallmentAmount?: number;
   maxParticipants?: number;
   images?: string[];
-  itinerary?: Array<{ day?: number; title?: string; description?: string; city?: string }>;
+  itinerary?: Array<{ day?: number; title?: string; description?: string; activities?: string[] }>;
   included?: string[];
   excluded?: string[];
-  metadata?: Record<string, unknown>;
 }): Promise<any> {
   const res = await apiRequest<{ success: boolean; trip: TripBackend }>(
-    `${TRIPS_PREFIX}/voyages`,
+    `${TRIPS_PREFIX}/partner/trips`,
     { method: 'POST', body: JSON.stringify(body) }
   );
   return mapTripToVoyage(res.trip);
@@ -220,14 +235,30 @@ export async function createVoyage(body: {
 
 export async function updateVoyage(voyageId: string, body: Partial<Parameters<typeof createVoyage>[0]>): Promise<any> {
   const res = await apiRequest<{ success: boolean; trip: TripBackend }>(
-    `${TRIPS_PREFIX}/voyages/${voyageId}`,
+    `${TRIPS_PREFIX}/partner/trips/${voyageId}`,
     { method: 'PUT', body: JSON.stringify(body) }
   );
   return mapTripToVoyage(res.trip);
 }
 
+export async function activateVoyage(voyageId: string): Promise<any> {
+  const res = await apiRequest<{ success: boolean; trip: TripBackend }>(
+    `${TRIPS_PREFIX}/partner/trips/${voyageId}/activate`,
+    { method: 'POST' }
+  );
+  return mapTripToVoyage(res.trip);
+}
+
+export async function cancelVoyage(voyageId: string, reason?: string): Promise<any> {
+  const res = await apiRequest<{ success: boolean; trip: TripBackend }>(
+    `${TRIPS_PREFIX}/partner/trips/${voyageId}/cancel`,
+    { method: 'POST', body: JSON.stringify({ reason }) }
+  );
+  return mapTripToVoyage(res.trip);
+}
+
 export async function deleteVoyage(voyageId: string): Promise<void> {
-  await apiRequest<{ success: boolean }>(`${TRIPS_PREFIX}/voyages/${voyageId}`, { method: 'DELETE' });
+  await apiRequest<{ success: boolean }>(`${TRIPS_PREFIX}/partner/trips/${voyageId}`, { method: 'DELETE' });
 }
 
 export async function getVoyageStats(voyageId: string): Promise<{
@@ -238,7 +269,7 @@ export async function getVoyageStats(voyageId: string): Promise<{
   montantAttente: string;
   totalPaiements: string;
 }> {
-  const res = await apiRequest<TripStatsResponse>(`${TRIPS_PREFIX}/voyages/${voyageId}/stats`);
+  const res = await apiRequest<TripStatsResponse>(`${TRIPS_PREFIX}/trips/${voyageId}/stats`);
   const d = res.data;
   const totalReservations = d.bookings?.total ?? d.voyageurs ?? 0;
   const totalAcomptes = (d.revenue?.total ?? 0) >= 1000000 ? (d.revenue!.total! / 1e6).toFixed(1) + 'M' : String(d.revenue?.total ?? 0);
@@ -255,7 +286,7 @@ export async function getVoyageStats(voyageId: string): Promise<{
 
 export async function getVoyageursByVoyage(voyageId: string): Promise<any[]> {
   const res = await apiRequest<{ success: boolean; data?: VoyageurBackend[] }>(
-    `${TRIPS_PREFIX}/voyages/${voyageId}/voyageurs`
+    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs`
   );
   const list = res.data || [];
   return list.map((v) => ({
@@ -284,7 +315,7 @@ export async function createVoyageur(
   }
 ): Promise<any> {
   const res = await apiRequest<{ success: boolean; data?: VoyageurBackend }>(
-    `${TRIPS_PREFIX}/voyages/${voyageId}/voyageurs`,
+    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs`,
     { method: 'POST', body: JSON.stringify(body) }
   );
   const v = res.data;
@@ -307,7 +338,7 @@ export async function updateVoyageur(
   body: Partial<Parameters<typeof createVoyageur>[1]>
 ): Promise<any> {
   const res = await apiRequest<{ success: boolean; data?: VoyageurBackend }>(
-    `${TRIPS_PREFIX}/voyages/${voyageId}/voyageurs/${voyageurId}`,
+    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs/${voyageurId}`,
     { method: 'PUT', body: JSON.stringify(body) }
   );
   const v = res.data;
@@ -325,7 +356,7 @@ export async function updateVoyageur(
 }
 
 export async function deleteVoyageur(voyageId: string, voyageurId: string): Promise<void> {
-  await apiRequest(`${TRIPS_PREFIX}/voyages/${voyageId}/voyageurs/${voyageurId}`, { method: 'DELETE' });
+  await apiRequest(`${TRIPS_PREFIX}/trips/${voyageId}/voyageurs/${voyageurId}`, { method: 'DELETE' });
 }
 
 export async function requestVoyageurDocuments(
@@ -335,7 +366,7 @@ export async function requestVoyageurDocuments(
   notes?: string
 ): Promise<any> {
   const res = await apiRequest<{ success: boolean; data?: VoyageurBackend }>(
-    `${TRIPS_PREFIX}/voyages/${voyageId}/voyageurs/${voyageurId}/documents/request`,
+    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs/${voyageurId}/documents/request`,
     { method: 'POST', body: JSON.stringify({ documentTypes, notes }) }
   );
   return res.data;
@@ -364,30 +395,32 @@ export async function getAllVoyageurs(): Promise<{ voyageur: any; voyageId: stri
 export async function getReservations(params?: {
   tripId?: string;
   status?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }): Promise<{ data: any[] }> {
   const q = new URLSearchParams();
   if (params?.tripId) q.set('tripId', params.tripId);
   if (params?.status) q.set('status', params.status);
+  if (params?.search) q.set('search', params.search);
   if (params?.page) q.set('page', String(params.page));
   if (params?.limit) q.set('limit', String(params.limit));
   const query = q.toString();
   const res = await apiRequest<{ success: boolean; data?: any[]; bookings?: any[] }>(
-    `${TRIPS_PREFIX}/reservations${query ? `?${query}` : ''}`
+    `${TRIPS_PREFIX}/partner/dashboard/bookings${query ? `?${query}` : ''}`
   );
   const list = res.data || res.bookings || [];
   return {
     data: list.map((r: any) => ({
       id: r._id || r.id,
-      voyageId: r.tripId || r.voyageId,
-      voyageDestination: r.voyageDestination || r.trip?.destination || '',
+      voyageId: typeof r.tripId === 'string' ? r.tripId : r.tripId?._id || '',
+      voyageDestination: r.tripId?.destination || r.tripId?.title || '',
       type: 'reservation',
-      nombrePersonnes: r.nombrePersonnes ?? r.participants ?? 1,
-      montantTotal: r.montantTotal ?? r.totalAmount ?? 0,
-      acompte: r.acompte ?? r.depositAmount ?? 0,
-      date: r.date || (r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : ''),
-      statut: r.statut || r.status || 'confirmee',
+      nombrePersonnes: r.numberOfParticipants ?? r.nombrePersonnes ?? 1,
+      montantTotal: r.totalAmount ?? 0,
+      acompte: r.depositAmount ?? 0,
+      date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '',
+      statut: r.status || 'PENDING_DEPOSIT',
     })),
   };
 }
@@ -401,7 +434,7 @@ export async function getDashboardStats(): Promise<{
   montantAttente: string;
   totalPaiements: string;
 }> {
-  const res = await apiRequest<DashboardStatsResponse>(`${TRIPS_PREFIX}/stats/dashboard`);
+  const res = await apiRequest<DashboardStatsResponse>(`${TRIPS_PREFIX}/partner/dashboard/stats`);
   const s = res.stats || {};
   const fmt = (n: number) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n));
   return {
@@ -500,10 +533,18 @@ function mapPayment(p: PaymentBackend): MappedPayment {
   };
 }
 
-export async function createBooking(tripId: string, nombrePersonnes: number): Promise<MappedBooking> {
+export async function createBooking(tripId: string, numberOfParticipants: number): Promise<MappedBooking> {
   const res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
     `${TRIPS_PREFIX}/bookings`,
-    { method: 'POST', body: JSON.stringify({ tripId, nombrePersonnes }) }
+    { method: 'POST', body: JSON.stringify({ tripId, numberOfParticipants }) }
+  );
+  return mapBooking(res.booking);
+}
+
+export async function cancelBooking(bookingId: string, reason?: string): Promise<MappedBooking> {
+  const res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/cancel`,
+    { method: 'POST', body: JSON.stringify({ reason }) }
   );
   return mapBooking(res.booking);
 }

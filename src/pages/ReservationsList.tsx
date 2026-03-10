@@ -74,23 +74,32 @@ export const ReservationsList: React.FC = () => {
 
   const statutBadge = (statut: string) => {
     const styles: Record<string, string> = {
-      'confirmee': 'bg-green-100 text-green-600 border-green-200',
-      'en-attente': 'bg-amber-100 text-amber-600 border-amber-200',
-      'annulee': 'bg-red-100 text-red-600 border-red-200',
+      'COMPLETED': 'bg-green-100 text-green-600 border-green-200',
+      'DEPOSIT_PAID': 'bg-blue-100 text-blue-600 border-blue-200',
+      'IN_PROGRESS': 'bg-purple-100 text-purple-600 border-purple-200',
+      'PENDING_DEPOSIT': 'bg-amber-100 text-amber-600 border-amber-200',
+      'CANCELLED': 'bg-red-100 text-red-600 border-red-200',
+      'REFUNDED': 'bg-gray-100 text-gray-600 border-gray-200',
     };
     const labels: Record<string, string> = {
-      'confirmee': 'Confirmée',
-      'en-attente': 'En attente',
-      'annulee': 'Annulée',
+      'COMPLETED': 'Complété',
+      'DEPOSIT_PAID': 'Acompte payé',
+      'IN_PROGRESS': 'En cours',
+      'PENDING_DEPOSIT': 'En attente',
+      'CANCELLED': 'Annulée',
+      'REFUNDED': 'Remboursée',
     };
-    return <span className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[statut] || styles['en-attente']}`}>{labels[statut] || statut}</span>;
+    return <span className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[statut] || styles['PENDING_DEPOSIT']}`}>{labels[statut] || statut}</span>;
   };
 
   const handleExportFormat = (format: 'csv' | 'pdf' | 'xlsx') => {
     const statutLabels: Record<string, string> = {
-      'confirmee': 'Confirmée',
-      'en-attente': 'En attente',
-      'annulee': 'Annulée',
+      'COMPLETED': 'Complété',
+      'DEPOSIT_PAID': 'Acompte payé',
+      'IN_PROGRESS': 'En cours',
+      'PENDING_DEPOSIT': 'En attente',
+      'CANCELLED': 'Annulée',
+      'REFUNDED': 'Remboursée',
     };
     const headers = ['Voyage', 'Type', 'Personnes', 'Montant total', 'Acompte', 'Date', 'Statut'];
     const rows = filtered.map(r => [

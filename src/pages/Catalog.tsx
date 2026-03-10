@@ -34,7 +34,7 @@ export const Catalog: React.FC<CatalogProps> = ({
     setLoading(true);
     setError('');
     try {
-      const { voyages: data } = await getVoyages({ status: 'ACTIVE' });
+      const { voyages: data } = await getVoyages();
       setVoyages(data);
       setFilteredVoyages(data);
     } catch (err: any) {
