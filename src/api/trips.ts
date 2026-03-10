@@ -80,6 +80,7 @@ export interface DashboardStatsResponse {
     };
     pending?: { amount?: number; count?: number };
     overdue?: { amount?: number; bookings?: number };
+    clients?: { total?: number };
   };
 }
 
@@ -425,26 +426,171 @@ export async function getReservations(params?: {
   };
 }
 
-export async function getDashboardStats(): Promise<{
-  totalVoyages: number;
-  totalReservations: number;
-  totalAcomptes: string;
-  utilisateursEpargne: number;
-  utilisateursFinances: number;
-  montantAttente: string;
-  totalPaiements: string;
-}> {
+export interface DashboardStats {
+  trips: { total: number; active: number; draft: number; cancelled: number };
+  bookings: { total: number; pendingDeposit: number; depositPaid: number; inProgress: number; completed: number; cancelled: number };
+  revenue: { total: number; deposits: number; installments: number; transactions: number };
+  pending: { amount: number; count: number };
+  overdue: { amount: number; bookings: number };
+  clients: { total: number };
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
   const res = await apiRequest<DashboardStatsResponse>(`${TRIPS_PREFIX}/partner/dashboard/stats`);
   const s = res.stats || {};
-  const fmt = (n: number) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n));
   return {
-    totalVoyages: s.trips?.total ?? 0,
-    totalReservations: s.bookings?.total ?? 0,
-    totalAcomptes: fmt(s.revenue?.total ?? 0),
-    utilisateursEpargne: 0,
-    utilisateursFinances: 0,
-    montantAttente: fmt(s.pending?.amount ?? 0),
-    totalPaiements: fmt(s.revenue?.totalTransactions ?? s.revenue?.total ?? 0),
+    trips: {
+      total: s.trips?.total ?? 0,
+      active: s.trips?.active ?? 0,
+      draft: s.trips?.draft ?? 0,
+      cancelled: s.trips?.cancelled ?? 0,
+    },
+    bookings: {
+      total: s.bookings?.total ?? 0,
+      pendingDeposit: s.bookings?.pendingDeposit ?? 0,
+      depositPaid: s.bookings?.depositPaid ?? 0,
+      inProgress: s.bookings?.inProgress ?? 0,
+      completed: s.bookings?.completed ?? 0,
+      cancelled: s.bookings?.cancelled ?? 0,
+    },
+    revenue: {
+      total: s.revenue?.total ?? 0,
+      deposits: s.revenue?.deposits ?? 0,
+      installments: s.revenue?.installments ?? 0,
+      transactions: s.revenue?.totalTransactions ?? 0,
+    },
+    pending: { amount: s.pending?.amount ?? 0, count: s.pending?.count ?? 0 },
+    overdue: { amount: s.overdue?.amount ?? 0, bookings: s.overdue?.bookings ?? 0 },
+    clients: { total: s.clients?.total ?? 0 },
+  };
+}
+
+export interface MonthlyPoint {
+  month: string; // "Avr 25", "Mai 25", etc.
+  revenue: number;
+  deposits: number;
+  installments: number;
+  bookings: number;
+  bookingsCancelled: number;
+  bookingsCompleted: number;
+}
+
+const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+function buildMonthLabel(year: number, month: number): string {
+  return `${MONTHS_FR[month - 1]} ${String(year).slice(2)}`;
+}
+
+function fillMonthlyGaps(
+  rawRevenue: Array<{ year: number; month: number; revenue?: number; deposits?: number; installments?: number; transactions?: number }>,
+  rawBookings: Array<{ year: number; month: number; total?: number; cancelled?: number; completed?: number }>,
+  totalMonths: number
+): MonthlyPoint[] {
+  // Build lookup maps
+  const revMap = new Map<string, typeof rawRevenue[0]>();
+  rawRevenue.forEach(r => revMap.set(`${r.year}-${r.month}`, r));
+  const bokMap = new Map<string, typeof rawBookings[0]>();
+  rawBookings.forEach(b => bokMap.set(`${b.year}-${b.month}`, b));
+
+  const now = new Date();
+  const points: MonthlyPoint[] = [];
+  for (let i = totalMonths - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const key = `${y}-${m}`;
+    const rev = revMap.get(key);
+    const bok = bokMap.get(key);
+    points.push({
+      month: buildMonthLabel(y, m),
+      revenue: rev?.revenue ?? 0,
+      deposits: rev?.deposits ?? 0,
+      installments: rev?.installments ?? 0,
+      bookings: bok?.total ?? 0,
+      bookingsCancelled: bok?.cancelled ?? 0,
+      bookingsCompleted: bok?.completed ?? 0,
+    });
+  }
+  return points;
+}
+
+export async function getMonthlyStats(months = 12): Promise<MonthlyPoint[]> {
+  const res = await apiRequest<{
+    success: boolean;
+    revenue?: Array<{ year: number; month: number; revenue?: number; deposits?: number; installments?: number }>;
+    bookings?: Array<{ year: number; month: number; total?: number; cancelled?: number; completed?: number }>;
+  }>(`${TRIPS_PREFIX}/partner/dashboard/monthly-stats?months=${months}`);
+  return fillMonthlyGaps(res.revenue || [], res.bookings || [], months);
+}
+
+export interface DashboardBooking {
+  id: string;
+  bookingNumber: string;
+  client: { nom: string; telephone: string; email: string };
+  voyage: { id: string; titre: string; destination: string; departureDate: string };
+  nombrePersonnes: number;
+  totalAmount: number;
+  depositAmount: number;
+  amountPaid: number;
+  remainingAmount: number;
+  depositPaid: boolean;
+  isFullyPaid: boolean;
+  isPaymentOverdue: boolean;
+  paymentDeadline: string;
+  status: string;
+  createdAt: string;
+}
+
+export async function getDashboardBookings(params?: {
+  tripId?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ bookings: DashboardBooking[]; pagination?: any }> {
+  const q = new URLSearchParams();
+  if (params?.tripId) q.set('tripId', params.tripId);
+  if (params?.status) q.set('status', params.status);
+  if (params?.search) q.set('search', params.search);
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  const query = q.toString();
+  const res = await apiRequest<{ success: boolean; bookings?: any[]; data?: any[]; pagination?: any }>(
+    `${TRIPS_PREFIX}/partner/dashboard/bookings${query ? `?${query}` : ''}`
+  );
+  const list = res.bookings || res.data || [];
+  return {
+    bookings: list.map((r: any) => {
+      const trip = typeof r.tripId === 'object' ? r.tripId : null;
+      const user = typeof r.userId === 'object' ? r.userId : null;
+      return {
+        id: r._id || r.id || '',
+        bookingNumber: r.bookingNumber || '',
+        client: {
+          nom: user ? [user.prenom, user.nom].filter(Boolean).join(' ') || user.username || user.phoneNumber || 'Client' : 'Client',
+          telephone: user?.phoneNumber || '',
+          email: user?.email || '',
+        },
+        voyage: {
+          id: trip?._id || (typeof r.tripId === 'string' ? r.tripId : ''),
+          titre: trip?.title || '',
+          destination: trip?.destination || trip?.title || '',
+          departureDate: trip?.departureDate ? new Date(trip.departureDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+        },
+        nombrePersonnes: r.numberOfParticipants ?? r.nombrePersonnes ?? 1,
+        totalAmount: r.totalAmount ?? 0,
+        depositAmount: r.depositAmount ?? 0,
+        amountPaid: r.amountPaid ?? 0,
+        remainingAmount: r.remainingAmount ?? 0,
+        depositPaid: r.depositPaid ?? false,
+        isFullyPaid: r.isFullyPaid ?? false,
+        isPaymentOverdue: r.isPaymentOverdue ?? false,
+        paymentDeadline: r.paymentDeadline ? new Date(r.paymentDeadline).toLocaleDateString('fr-FR') : '',
+        status: r.status || 'PENDING_DEPOSIT',
+        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '',
+      };
+    }),
+    pagination: res.pagination,
   };
 }
 
