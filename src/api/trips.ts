@@ -679,10 +679,22 @@ function mapPayment(p: PaymentBackend): MappedPayment {
   };
 }
 
-export async function createBooking(tripId: string, numberOfParticipants: number): Promise<MappedBooking> {
+export async function createBooking(
+  tripId: string,
+  numberOfParticipants: number,
+  contactInfo?: {
+    email?: string;
+    phoneNumber?: string;
+    emergencyContact?: { name: string; phoneNumber: string; relationship: string };
+  },
+  specialRequests?: string
+): Promise<MappedBooking> {
+  const body: Record<string, unknown> = { tripId, numberOfParticipants };
+  if (contactInfo && Object.values(contactInfo).some(Boolean)) body.contactInfo = contactInfo;
+  if (specialRequests?.trim()) body.specialRequests = specialRequests.trim();
   const res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
     `${TRIPS_PREFIX}/bookings`,
-    { method: 'POST', body: JSON.stringify({ tripId, numberOfParticipants }) }
+    { method: 'POST', body: JSON.stringify(body) }
   );
   return mapBooking(res.booking);
 }
