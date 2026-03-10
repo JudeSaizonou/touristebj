@@ -200,7 +200,7 @@ export async function resetPassword(
 
 /** Récupère le profil complet de l'utilisateur connecté (avec role). */
 export async function getMe(): Promise<AuthUser> {
-  const body = await apiRequest<any>(`${AUTH_PREFIX}/me`);
+  const body = await apiRequest<any>(`${AUTH_PREFIX}/user`);
   const u = body?.user ?? body?.data ?? body;
   return {
     id: u?.id ?? u?._id ?? '',
