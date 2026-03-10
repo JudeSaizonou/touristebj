@@ -72,20 +72,42 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
     }));
   };
 
+  const compressImage = (file: File, maxWidth = 1024, quality = 0.72): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = ev.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
+    Array.from(files).forEach(async (file) => {
       if (photos.length >= 8) return;
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotos(prev => {
-          if (prev.length >= 8) return prev;
-          return [...prev, reader.result as string];
-        });
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImage(file);
+        setPhotos(prev => prev.length >= 8 ? prev : [...prev, compressed]);
+      } catch {
+        // ignore fichier invalide
+      }
     });
 
     if (fileInputRef.current) fileInputRef.current.value = '';
