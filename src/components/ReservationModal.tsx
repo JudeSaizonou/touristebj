@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle } from 'lucide-react';
+import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle, Mail, UserCircle, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createBooking } from '../api/trips';
 import { payBookingMtn, payDepositKkiapay, getTransactionStatus } from '../api/payments';
@@ -14,6 +14,7 @@ interface ReservationModalProps {
 
 type Step =
   | 'summary'
+  | 'contact-form'
   | 'creating'
   | 'payment-form'
   | 'paying'
@@ -46,6 +47,14 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [mtnStatus, setMtnStatus] = useState<'failed' | 'expired' | 'timeout' | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Contact info fields
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [emergencyName, setEmergencyName] = useState('');
+  const [emergencyPhone, setEmergencyPhone] = useState('');
+  const [emergencyRelation, setEmergencyRelation] = useState('');
+  const [specialRequests, setSpecialRequests] = useState('');
 
   useEffect(() => {
     if (isOpen && user?.phoneNumber) {
@@ -84,7 +93,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     setStep('creating');
     setErrorMsg('');
     try {
-      const booking = await createBooking(voyage._id || voyage.id, nombrePersonnes);
+      const contactInfo = {
+        email: contactEmail.trim() || undefined,
+        phoneNumber: contactPhone.trim() || undefined,
+        emergencyContact: emergencyName.trim() ? {
+          name: emergencyName.trim(),
+          phoneNumber: emergencyPhone.trim(),
+          relationship: emergencyRelation.trim() || 'Proche',
+        } : undefined,
+      };
+      const booking = await createBooking(
+        voyage._id || voyage.id,
+        nombrePersonnes,
+        contactInfo,
+        specialRequests || undefined
+      );
       setBookingId(booking.id);
       setStep('payment-form');
     } catch (err: any) {
@@ -191,6 +214,12 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     setErrorMsg('');
     setMtnStatus(null);
     setCountdown(120);
+    setContactEmail('');
+    setContactPhone('');
+    setEmergencyName('');
+    setEmergencyPhone('');
+    setEmergencyRelation('');
+    setSpecialRequests('');
     onClose();
   };
 
@@ -272,11 +301,102 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               </div>
 
               <button
-                onClick={handleConfirmReservation}
-                className="w-full py-3.5 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors"
+                onClick={() => setStep('contact-form')}
+                className="w-full py-3.5 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors flex items-center justify-center gap-2"
               >
-                Réserver et payer l'acompte
+                Continuer <ChevronRight className="w-4 h-4" />
               </button>
+            </div>
+          )}
+
+          {/* STEP: contact form */}
+          {step === 'contact-form' && (
+            <div className="space-y-5">
+              <p className="text-sm text-[#17233E]/60">Informations de contact <span className="text-xs">(optionnel)</span></p>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#17233E]/70 mb-1 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5" /> Email
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="votre@email.com"
+                    value={contactEmail}
+                    onChange={e => setContactEmail(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#17233E]/70 mb-1 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5" /> Téléphone de contact
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="0197000000"
+                    value={contactPhone}
+                    onChange={e => setContactPhone(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <p className="text-xs font-semibold text-[#17233E]/70 mb-3 flex items-center gap-1.5">
+                  <UserCircle className="w-3.5 h-3.5" /> Contact d'urgence
+                </p>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Nom complet"
+                    value={emergencyName}
+                    onChange={e => setEmergencyName(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="tel"
+                      placeholder="Téléphone"
+                      value={emergencyPhone}
+                      onChange={e => setEmergencyPhone(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Relation (ex: Épouse)"
+                      value={emergencyRelation}
+                      onChange={e => setEmergencyRelation(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-[#17233E]/70 mb-1">Demandes particulières</label>
+                <textarea
+                  rows={2}
+                  placeholder="Chambre non-fumeur, régime alimentaire..."
+                  value={specialRequests}
+                  onChange={e => setSpecialRequests(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E] resize-none"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('summary')}
+                  className="flex-1 py-3 border border-gray-200 text-[#17233E] rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Retour
+                </button>
+                <button
+                  onClick={handleConfirmReservation}
+                  className="flex-1 py-3.5 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors text-sm"
+                >
+                  Réserver
+                </button>
+              </div>
             </div>
           )}
 

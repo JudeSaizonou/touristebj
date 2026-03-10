@@ -1,5 +1,5 @@
 import { TRIPS_PREFIX } from './config';
-import { apiRequest } from './client';
+import { apiRequest, apiRequestMultipart } from './client';
 
 // Backend response types (simplified)
 export interface TripBackend {
@@ -260,6 +260,24 @@ export async function cancelVoyage(voyageId: string, reason?: string): Promise<a
 
 export async function deleteVoyage(voyageId: string): Promise<void> {
   await apiRequest<{ success: boolean }>(`${TRIPS_PREFIX}/partner/trips/${voyageId}`, { method: 'DELETE' });
+}
+
+export async function uploadTripImages(tripId: string, files: File[]): Promise<string[]> {
+  const formData = new FormData();
+  files.forEach(f => formData.append('images', f));
+  const res = await apiRequestMultipart<{ success: boolean; images: string[]; uploaded: string[] }>(
+    `${TRIPS_PREFIX}/partner/trips/${tripId}/images`,
+    formData
+  );
+  return res.images || res.uploaded || [];
+}
+
+export async function deleteTripImage(tripId: string, imageUrl: string): Promise<string[]> {
+  const res = await apiRequest<{ success: boolean; images: string[] }>(
+    `${TRIPS_PREFIX}/partner/trips/${tripId}/images`,
+    { method: 'DELETE', body: JSON.stringify({ imageUrl }) }
+  );
+  return res.images || [];
 }
 
 export async function getVoyageStats(voyageId: string): Promise<{
@@ -679,10 +697,22 @@ function mapPayment(p: PaymentBackend): MappedPayment {
   };
 }
 
-export async function createBooking(tripId: string, numberOfParticipants: number): Promise<MappedBooking> {
+export async function createBooking(
+  tripId: string,
+  numberOfParticipants: number,
+  contactInfo?: {
+    email?: string;
+    phoneNumber?: string;
+    emergencyContact?: { name: string; phoneNumber: string; relationship: string };
+  },
+  specialRequests?: string
+): Promise<MappedBooking> {
+  const body: Record<string, unknown> = { tripId, numberOfParticipants };
+  if (contactInfo && Object.values(contactInfo).some(Boolean)) body.contactInfo = contactInfo;
+  if (specialRequests?.trim()) body.specialRequests = specialRequests.trim();
   const res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
     `${TRIPS_PREFIX}/bookings`,
-    { method: 'POST', body: JSON.stringify({ tripId, numberOfParticipants }) }
+    { method: 'POST', body: JSON.stringify(body) }
   );
   return mapBooking(res.booking);
 }

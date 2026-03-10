@@ -54,6 +54,29 @@ export async function apiRequest<T>(
   return body as T;
 }
 
+/** Appel multipart/form-data — ne pas définir Content-Type (le browser l'ajoute avec le boundary). */
+export async function apiRequestMultipart<T>(
+  path: string,
+  formData: FormData
+): Promise<T> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(path, { method: 'POST', headers, body: formData });
+  let body: any;
+  const ct = res.headers.get('content-type');
+  if (ct && ct.includes('application/json')) {
+    body = await res.json().catch(() => ({}));
+  } else {
+    body = {};
+  }
+  if (!res.ok) {
+    throw { success: false, message: body?.message || body?.msg || `Erreur ${res.status}` };
+  }
+  return body as T;
+}
+
 /** Appel fetch sans throw sur certains status (ex: 409). Retourne { res, body }. */
 export async function apiRequestRaw(
   path: string,

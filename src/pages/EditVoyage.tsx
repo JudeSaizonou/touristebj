@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { VoyageForm, VoyageFormRef } from '../components/VoyageForm';
+import type { VoyageFormData } from '../components/VoyageForm';
 import { VoyageursList } from '../components/VoyageursList';
 import { StatsCard } from '../components/StatsCard';
 import * as tripsApi from '../api/trips';
+import { uploadTripImages, deleteTripImage } from '../api/trips';
 import { ToastContainer, useToast } from '../components/Toast';
 
 interface EditVoyageProps {
@@ -39,21 +41,34 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
     return () => { cancelled = true; };
   }, [voyageId]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: VoyageFormData) => {
     if (!voyage) return;
-    const totalPrice = parseInt(String(data.prix || data.montant || voyage.prix || '0').replace(/\D/g, ''), 10) || 0;
-    const depositAmount = Math.round(totalPrice * 0.5);
     try {
+      // 1. Supprimer les images retirées
+      for (const url of data.removedPhotos) {
+        await deleteTripImage(voyageId, url);
+      }
+      // 2. Uploader les nouvelles images
+      if (data.newPhotoFiles.length > 0) {
+        await uploadTripImages(voyageId, data.newPhotoFiles);
+      }
+      // 3. Mettre à jour les autres champs
       const updated = await tripsApi.updateVoyage(voyageId, {
-        title: data.titre || voyage.titre,
-        description: data.description ?? voyage.description,
-        destination: data.destination || data.titre || voyage.destination,
-        totalPrice,
-        depositAmount,
-        maxParticipants: parseInt(data.nombrePersonnes, 10) || voyage.maxPeople,
-        images: data.photos ?? voyage.photos,
-        included: data.ceQuiEstInclus ?? voyage.ceQuiEstInclus,
-        excluded: data.ceQuiNestPasInclus ?? voyage.ceQuiNestPasInclus,
+        title: data.title,
+        destination: data.destination,
+        description: data.description,
+        tripType: data.tripType,
+        departureDate: data.departureDate,
+        returnDate: data.returnDate,
+        totalPrice: data.totalPrice,
+        depositAmount: data.depositAmount,
+        paymentDeadlineDays: data.paymentDeadlineDays,
+        allowInstallments: data.allowInstallments,
+        minInstallmentAmount: data.minInstallmentAmount,
+        maxParticipants: data.maxParticipants,
+        included: data.included,
+        excluded: data.excluded,
+        itinerary: data.itinerary,
       });
       setVoyage(updated);
       onUpdate(updated);
@@ -71,17 +86,27 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
     );
   }
 
-  // Map voyage data to form format
-  const formData = {
-    titre: voyage.titre || voyage.destination || '',
-    montant: voyage.prix || '',
+  const formData: Partial<VoyageFormData> = {
+    title: voyage.titre || '',
+    destination: voyage.destination || '',
     description: voyage.description || '',
-    nombreJours: voyage.nombreJours || '1',
-    nombrePersonnes: voyage.nombrePersonnes || '5',
-    politiqueRemboursement: voyage.politiqueRemboursement || '',
-    ceQuiEstInclus: voyage.ceQuiEstInclus || [],
-    ceQuiNestPasInclus: voyage.ceQuiNestPasInclus || [],
-    photos: voyage.photos || [],
+    tripType: voyage.tripType || 'voyage',
+    departureDate: voyage.rawDepartureDate || '',
+    returnDate: voyage.returnDate || '',
+    totalPrice: voyage.totalPrice || 0,
+    depositAmount: voyage.depositAmount || 0,
+    paymentDeadlineDays: voyage.paymentDeadlineDays || 14,
+    allowInstallments: voyage.allowInstallments ?? true,
+    minInstallmentAmount: voyage.minInstallmentAmount || 5000,
+    maxParticipants: Number(voyage.nombrePersonnes) || 20,
+    existingPhotos: voyage.photos || [],
+    included: voyage.ceQuiEstInclus || [],
+    excluded: voyage.ceQuiNestPasInclus || [],
+    itinerary: voyage.itineraire?.map((d: any) => ({
+      day: d.jour || d.day || 1,
+      description: d.titre || d.description || '',
+      activities: d.activities || [],
+    })) || [],
   };
 
   const tabs = [
