@@ -15,10 +15,31 @@ export const ReservationsList: React.FC = () => {
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 10;
 
+  const toNumber = (value: unknown): number => {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string') {
+      const cleaned = value.replace(/[^0-9.,-]/g, '').replace(/\./g, '').replace(',', '.');
+      const parsed = parseFloat(cleaned);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+    return 0;
+  };
+
+  const normalizeReservation = (reservation: any) => ({
+    ...reservation,
+    voyageDestination: reservation?.voyageDestination || reservation?.destination || 'Voyage non renseigné',
+    type: reservation?.type || 'reservation',
+    nombrePersonnes: toNumber(reservation?.nombrePersonnes ?? reservation?.participants ?? 0),
+    montantTotal: toNumber(reservation?.montantTotal ?? reservation?.totalAmount ?? reservation?.montant),
+    acompte: toNumber(reservation?.acompte ?? reservation?.depositAmount ?? reservation?.avance),
+    date: reservation?.date || '-',
+    statut: reservation?.statut || reservation?.status || 'en-attente',
+  });
+
   const loadReservations = async () => {
     try {
       const { data } = await getReservations();
-      setReservations(data || []);
+      setReservations((data || []).map(normalizeReservation));
     } catch (e) {
       addToast('error', (e as { message?: string })?.message || 'Erreur chargement des réservations');
     }
