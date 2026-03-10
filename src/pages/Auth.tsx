@@ -277,10 +277,20 @@ export const Auth: React.FC<AuthProps> = ({
     try {
       const res = await authApi.verifyCode(connexionCountry, connexionPhone, code);
       if ('token' in res && res.token && res.user) {
+        // Stocker d'abord avec les données de base
         setAuth(res.token, res.user);
-        addToast('success', 'Connexion réussie !');
-        const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'PARTNER';
-        onSuccess?.(isAdmin);
+        // Enrichir avec le profil complet (inclut role, username, etc.)
+        try {
+          const me = await authApi.getMe();
+          setAuth(res.token, { ...res.user, ...me });
+          addToast('success', 'Connexion réussie !');
+          const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        } catch {
+          addToast('success', 'Connexion réussie !');
+          const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        }
       } else if ('isNewUser' in res && res.isNewUser) {
         addToast('info', 'Ce numéro n\'est pas encore inscrit. Créez un compte.');
         setMode('inscription');
@@ -314,9 +324,18 @@ export const Auth: React.FC<AuthProps> = ({
         return;
       }
       setAuth(res.token, res.user);
-      addToast('success', 'Connexion réussie !');
-      const isAdmin = res.user?.role === 'ADMIN' || res.user?.role === 'PARTNER';
-      onSuccess?.(isAdmin);
+      // Enrichir avec le profil complet pour avoir le vrai role
+      try {
+        const me = await authApi.getMe();
+        setAuth(res.token, { ...res.user, ...me });
+        addToast('success', 'Connexion réussie !');
+        const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
+        onSuccess?.(isAdmin);
+      } catch {
+        addToast('success', 'Connexion réussie !');
+        const isAdmin = res.user?.role === 'ADMIN' || res.user?.role === 'PARTNER';
+        onSuccess?.(isAdmin);
+      }
     } catch (err) {
       addToast('error', getApiMessage(err));
     } finally {
