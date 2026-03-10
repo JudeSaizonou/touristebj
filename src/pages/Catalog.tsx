@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, LayoutGrid, List, Search, Loader2 } from 'lucide-react';
+import { MapPin, Star, LayoutGrid, List, Search, Loader2, LogIn } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
+import { useAuth } from '../context/AuthContext';
 
 import type { AuthMode } from './Auth';
 
@@ -20,10 +21,12 @@ export const Catalog: React.FC<CatalogProps> = ({
   onMesVoyages,
   onLogout,
 }) => {
+  const { user } = useAuth();
   const [voyages, setVoyages] = useState<any[]>([]);
   const [filteredVoyages, setFilteredVoyages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [authRequired, setAuthRequired] = useState(false);
   const [sortBy, setSortBy] = useState('default');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -33,12 +36,19 @@ export const Catalog: React.FC<CatalogProps> = ({
   const loadVoyages = async () => {
     setLoading(true);
     setError('');
+    setAuthRequired(false);
     try {
       const { voyages: data } = await getVoyages();
       setVoyages(data);
       setFilteredVoyages(data);
     } catch (err: any) {
-      setError(err?.message || 'Impossible de charger les voyages.');
+      const msg: string = err?.message || '';
+      const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
+      if (is401) {
+        setAuthRequired(true);
+      } else {
+        setError(msg || 'Impossible de charger les voyages.');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +56,7 @@ export const Catalog: React.FC<CatalogProps> = ({
 
   useEffect(() => {
     loadVoyages();
-  }, []);
+  }, [user]); // re-charger quand l'utilisateur se connecte
 
   useEffect(() => {
     let result = [...voyages];
@@ -121,8 +131,8 @@ export const Catalog: React.FC<CatalogProps> = ({
           </div>
         )}
 
-        {/* Error */}
-        {!loading && error && (
+        {/* Error non-auth */}
+        {!loading && !authRequired && error && (
           <div className="flex flex-col items-center py-16 gap-4">
             <p className="text-red-500 font-medium">{error}</p>
             <button
@@ -134,8 +144,54 @@ export const Catalog: React.FC<CatalogProps> = ({
           </div>
         )}
 
+        {/* Placeholder cards when auth required */}
+        {!loading && authRequired && (
+          <div className="relative">
+            {/* Bannière discrète */}
+            <div className="flex items-center justify-between bg-[#1a4d3e] text-white rounded-xl px-5 py-3.5 mb-6 gap-4">
+              <div className="flex items-center gap-3">
+                <LogIn className="w-5 h-5 shrink-0" />
+                <p className="text-sm font-medium">Connectez-vous pour explorer nos voyages disponibles</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => onOpenAuth?.('connexion')}
+                  className="px-4 py-1.5 bg-white text-[#1a4d3e] rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
+                >
+                  Se connecter
+                </button>
+                <button
+                  onClick={() => onOpenAuth?.('inscription')}
+                  className="px-4 py-1.5 border border-white/40 text-white rounded-lg text-sm font-semibold hover:bg-white/10 transition-colors"
+                >
+                  S'inscrire
+                </button>
+              </div>
+            </div>
+            {/* Placeholder cards floues */}
+            <div className="space-y-5 select-none pointer-events-none">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 opacity-50">
+                  <div className="flex flex-col md:flex-row gap-5">
+                    <div className="md:w-64 h-52 md:h-48 bg-gray-200 rounded-xl animate-pulse shrink-0" />
+                    <div className="flex-1 py-1 space-y-3">
+                      <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse" />
+                      <div className="h-5 bg-gray-200 rounded w-1/2 animate-pulse" />
+                      <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse" />
+                      <div className="mt-auto pt-8 flex justify-between items-end">
+                        <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse" />
+                        <div className="h-9 w-32 bg-gray-200 rounded-lg animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Content */}
-        {!loading && !error && (
+        {!loading && !error && !authRequired && (
           <>
             {/* Search Bar */}
             <div className="mb-6">
