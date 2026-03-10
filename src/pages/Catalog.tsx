@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, LayoutGrid, List, Search, Loader2 } from 'lucide-react';
+import { MapPin, Star, LayoutGrid, List, Search, Loader2, LogIn } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
+import { useAuth } from '../context/AuthContext';
 
 import type { AuthMode } from './Auth';
 
@@ -20,10 +21,12 @@ export const Catalog: React.FC<CatalogProps> = ({
   onMesVoyages,
   onLogout,
 }) => {
+  const { user } = useAuth();
   const [voyages, setVoyages] = useState<any[]>([]);
   const [filteredVoyages, setFilteredVoyages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [authRequired, setAuthRequired] = useState(false);
   const [sortBy, setSortBy] = useState('default');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -33,12 +36,19 @@ export const Catalog: React.FC<CatalogProps> = ({
   const loadVoyages = async () => {
     setLoading(true);
     setError('');
+    setAuthRequired(false);
     try {
       const { voyages: data } = await getVoyages();
       setVoyages(data);
       setFilteredVoyages(data);
     } catch (err: any) {
-      setError(err?.message || 'Impossible de charger les voyages.');
+      const msg: string = err?.message || '';
+      const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
+      if (is401) {
+        setAuthRequired(true);
+      } else {
+        setError(msg || 'Impossible de charger les voyages.');
+      }
     } finally {
       setLoading(false);
     }
@@ -46,7 +56,7 @@ export const Catalog: React.FC<CatalogProps> = ({
 
   useEffect(() => {
     loadVoyages();
-  }, []);
+  }, [user]); // re-charger quand l'utilisateur se connecte
 
   useEffect(() => {
     let result = [...voyages];
@@ -121,8 +131,37 @@ export const Catalog: React.FC<CatalogProps> = ({
           </div>
         )}
 
+        {/* Auth required */}
+        {!loading && authRequired && (
+          <div className="flex flex-col items-center py-20 gap-5 text-center">
+            <div className="w-16 h-16 bg-[#1a4d3e]/10 rounded-full flex items-center justify-center">
+              <LogIn className="w-8 h-8 text-[#1a4d3e]" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-[#17233E] mb-2">Connexion requise</h3>
+              <p className="text-gray-500 text-sm max-w-sm">
+                Connectez-vous pour découvrir et réserver nos voyages.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => onOpenAuth?.('connexion')}
+                className="px-6 py-2.5 bg-[#1a4d3e] text-white rounded-lg hover:bg-[#153d31] transition-colors text-sm font-semibold"
+              >
+                Se connecter
+              </button>
+              <button
+                onClick={() => onOpenAuth?.('inscription')}
+                className="px-6 py-2.5 border border-[#1a4d3e] text-[#1a4d3e] rounded-lg hover:bg-[#1a4d3e]/5 transition-colors text-sm font-semibold"
+              >
+                Créer un compte
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Error */}
-        {!loading && error && (
+        {!loading && !authRequired && error && (
           <div className="flex flex-col items-center py-16 gap-4">
             <p className="text-red-500 font-medium">{error}</p>
             <button
@@ -135,7 +174,7 @@ export const Catalog: React.FC<CatalogProps> = ({
         )}
 
         {/* Content */}
-        {!loading && !error && (
+        {!loading && !error && !authRequired && (
           <>
             {/* Search Bar */}
             <div className="mb-6">

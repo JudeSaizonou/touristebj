@@ -45,7 +45,9 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
         const data = await getVoyageById(voyageId);
         setVoyage(data);
       } catch (err: any) {
-        setError(err?.message || 'Impossible de charger ce voyage.');
+        const msg: string = err?.message || '';
+        const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
+        setError(is401 ? 'Connectez-vous pour accéder aux détails de ce voyage.' : msg || 'Impossible de charger ce voyage.');
       } finally {
         setLoading(false);
       }
@@ -81,13 +83,26 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
   }
 
   if (error || !voyage) {
+    const isAuthError = error?.toLowerCase().includes('connectez-vous') || error?.toLowerCase().includes('token');
     return (
       <PublicLayout onAdminLogin={onAdminLogin} onOpenAuth={onOpenAuth} onMesVoyages={onMesVoyages} onLogout={onLogout}>
         <div className="max-w-7xl mx-auto px-4 py-24 text-center">
-          <p className="text-red-500 font-medium mb-4">{error || 'Voyage introuvable.'}</p>
-          <button onClick={onBack} className="px-6 py-2.5 bg-[#1a4d3e] text-white rounded-lg hover:bg-[#153d31] transition-colors text-sm font-medium">
-            Retour au catalogue
-          </button>
+          <p className={`font-medium mb-6 ${isAuthError ? 'text-[#17233E]' : 'text-red-500'}`}>
+            {error || 'Voyage introuvable.'}
+          </p>
+          <div className="flex gap-3 justify-center">
+            {isAuthError && (
+              <button
+                onClick={() => onOpenAuth?.('connexion')}
+                className="px-6 py-2.5 bg-[#FF7F2A] text-white rounded-lg hover:bg-[#e66d1e] transition-colors text-sm font-semibold"
+              >
+                Se connecter
+              </button>
+            )}
+            <button onClick={onBack} className="px-6 py-2.5 bg-[#1a4d3e] text-white rounded-lg hover:bg-[#153d31] transition-colors text-sm font-medium">
+              Retour au catalogue
+            </button>
+          </div>
         </div>
       </PublicLayout>
     );
