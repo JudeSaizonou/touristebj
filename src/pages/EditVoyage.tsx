@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { VoyageForm, VoyageFormRef } from '../components/VoyageForm';
 import { VoyageursList } from '../components/VoyageursList';
 import { StatsCard } from '../components/StatsCard';
-import { StorageService } from '../utils/storage';
+import * as tripsApi from '../api/trips';
 import { ToastContainer, useToast } from '../components/Toast';
 
 interface EditVoyageProps {
@@ -21,20 +21,46 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
   const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
-    const data = StorageService.getVoyageById(voyageId);
-    if (data) {
-      setVoyage(data);
-    }
-    setStats(StorageService.getVoyageStats(voyageId));
+    let cancelled = false;
+    (async () => {
+      try {
+        const [trip, st] = await Promise.all([
+          tripsApi.getVoyageById(voyageId),
+          tripsApi.getVoyageStats(voyageId),
+        ]);
+        if (!cancelled) {
+          setVoyage(trip);
+          setStats(st);
+        }
+      } catch {
+        if (!cancelled) setVoyage(null);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [voyageId]);
 
-  const handleSubmit = (data: any) => {
-    // Merge form data with existing voyage data to preserve fields not in the form
-    const updated = { ...voyage, ...data, id: voyageId };
-    StorageService.saveVoyage(updated);
-    setVoyage(updated);
-    onUpdate(updated);
-    addToast('success', 'Voyage modifié avec succès');
+  const handleSubmit = async (data: any) => {
+    if (!voyage) return;
+    const totalPrice = parseInt(String(data.prix || data.montant || voyage.prix || '0').replace(/\D/g, ''), 10) || 0;
+    const depositAmount = Math.round(totalPrice * 0.5);
+    try {
+      const updated = await tripsApi.updateVoyage(voyageId, {
+        title: data.titre || voyage.titre,
+        description: data.description ?? voyage.description,
+        destination: data.destination || data.titre || voyage.destination,
+        totalPrice,
+        depositAmount,
+        maxParticipants: parseInt(data.nombrePersonnes, 10) || voyage.maxPeople,
+        images: data.photos ?? voyage.photos,
+        included: data.ceQuiEstInclus ?? voyage.ceQuiEstInclus,
+        excluded: data.ceQuiNestPasInclus ?? voyage.ceQuiNestPasInclus,
+      });
+      setVoyage(updated);
+      onUpdate(updated);
+      addToast('success', 'Voyage modifié avec succès');
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur lors de la mise à jour');
+    }
   };
 
   if (!voyage) {

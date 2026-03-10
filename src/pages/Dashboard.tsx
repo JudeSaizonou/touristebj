@@ -2,29 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { StatsCard } from '../components/StatsCard';
 import { ChartCard } from '../components/ChartCard';
 import { ChartData } from '../types';
-import { StorageService } from '../utils/storage';
+import { getDashboardStats, getChartsData } from '../api/trips';
 
 export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Compute stats from real data
-    const computed = StorageService.getComputedStats();
-    setStats(computed);
-
-    // Generate chart data from voyages per month
-    const voyages = StorageService.getVoyages();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const data: ChartData[] = months.map((month) => {
-      const count = voyages.filter((v: any) => {
-        const dateStr = v.dateDebut || '';
-        return dateStr.toLowerCase().includes(month.toLowerCase());
-      }).length;
-      return { month, value: count > 0 ? count * 30 + 20 : 0 };
-    });
-    setChartData(data);
+    let cancelled = false;
+    (async () => {
+      try {
+        const [computed, charts] = await Promise.all([getDashboardStats(), getChartsData()]);
+        if (!cancelled) {
+          setStats(computed);
+          setChartData(charts);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError((e as { message?: string })?.message || 'Erreur chargement');
+        }
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
 
   if (!stats) {
     return (

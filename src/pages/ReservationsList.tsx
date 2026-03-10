@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
-import { StorageService } from '../utils/storage';
+import { getReservations } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -15,20 +15,22 @@ export const ReservationsList: React.FC = () => {
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 10;
 
+  const loadReservations = async () => {
+    try {
+      const { data } = await getReservations();
+      setReservations(data || []);
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur chargement des réservations');
+    }
+  };
+
   useEffect(() => {
     loadReservations();
   }, []);
 
-  const loadReservations = () => {
-    const data = StorageService.getReservations();
-    setReservations(data);
-  };
-
   const confirmDelete = () => {
     if (deleteTarget) {
-      StorageService.deleteReservation(deleteTarget);
-      loadReservations();
-      addToast('success', 'Réservation supprimée');
+      addToast('info', 'Suppression de réservation non disponible via l’API.');
       setDeleteTarget(null);
     }
   };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Calendar, Upload, Plus, Eye, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X } from 'lucide-react';
-import { StorageService } from '../utils/storage';
+import * as tripsApi from '../api/trips';
 import { ConfirmModal } from './ConfirmModal';
 import { ExportModal } from './ExportModal';
 import { VoyageurDetailsModal } from './VoyageurDetailsModal';
@@ -235,53 +235,88 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
-  const voyage = StorageService.getVoyageById(voyageId);
-  const voyageDestination = voyage ? (voyage.destination || voyage.titre || 'N/A') : 'N/A';
+  const [voyageDestination, setVoyageDestination] = useState('N/A');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const v = await tripsApi.getVoyageById(voyageId);
+        setVoyageDestination(v?.destination || v?.titre || 'N/A');
+      } catch {
+        setVoyageDestination('N/A');
+      }
+    })();
+  }, [voyageId]);
 
   useEffect(() => {
     loadVoyageurs();
   }, [voyageId]);
 
-  const loadVoyageurs = () => {
-    const data = StorageService.getVoyageursByVoyage(voyageId);
-    setVoyageurs(data);
+  const loadVoyageurs = async () => {
+    try {
+      const data = await tripsApi.getVoyageursByVoyage(voyageId);
+      setVoyageurs(data);
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur chargement des voyageurs');
+    }
   };
 
   const handleDelete = (voyageurId: string) => {
     setDeleteTarget(voyageurId);
   };
 
-  const confirmDelete = () => {
-    if (deleteTarget) {
-      StorageService.deleteVoyageur(voyageId, deleteTarget);
-      loadVoyageurs();
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await tripsApi.deleteVoyageur(voyageId, deleteTarget);
+      await loadVoyageurs();
       setSelectedVoyageurs(prev => prev.filter(id => id !== deleteTarget));
       addToast('success', 'Voyageur supprimé avec succès');
       setDeleteTarget(null);
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur suppression');
     }
   };
 
-  const handleSaveVoyageur = (data: Omit<Voyageur, 'id'>) => {
-    StorageService.saveVoyageur(voyageId, data);
-    loadVoyageurs();
-    setShowFormModal(false);
-    addToast('success', 'Voyageur ajouté avec succès');
+  const handleSaveVoyageur = async (data: Omit<Voyageur, 'id'>) => {
+    const parts = (data.nom || '').trim().split(/\s+/);
+    const firstName = parts[0] || '';
+    const lastName = parts.slice(1).join(' ') || '';
+    try {
+      await tripsApi.createVoyageur(voyageId, {
+        firstName,
+        lastName,
+        phoneNumber: data.telephone,
+        dateOfBirth: data.date ? new Date(data.date).toISOString().slice(0, 10) : undefined,
+      });
+      await loadVoyageurs();
+      setShowFormModal(false);
+      addToast('success', 'Voyageur ajouté avec succès');
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur ajout voyageur');
+    }
   };
 
   const handleOpenDetails = (voyageur: Voyageur) => {
     setActiveVoyageur(voyageur);
   };
 
-  const handleRequestDocuments = (documents: VoyageurDocumentType[]) => {
+  const DOCUMENT_TYPE_MAP: Record<VoyageurDocumentType, string> = {
+    'copie-identite': 'ID_CARD',
+    'passeport': 'PASSPORT',
+    'photo-identite': 'PHOTO',
+  };
+
+  const handleRequestDocuments = async (documents: VoyageurDocumentType[]) => {
     if (!activeVoyageur) return;
-    const updated = StorageService.requestVoyageurDocuments(voyageId, activeVoyageur.id, documents);
-    if (!updated) {
-      addToast('error', 'Impossible d\'envoyer la demande de documents');
-      return;
+    const documentTypes = documents.map((d) => DOCUMENT_TYPE_MAP[d] || d);
+    try {
+      await tripsApi.requestVoyageurDocuments(voyageId, activeVoyageur.id, documentTypes);
+      await loadVoyageurs();
+      addToast('success', 'Demande de documents envoyée au voyageur');
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Impossible d\'envoyer la demande');
     }
-    setActiveVoyageur(updated);
-    loadVoyageurs();
-    addToast('success', 'Demande de documents envoyée au voyageur');
   };
 
   const handleExportFormat = (format: 'csv' | 'pdf' | 'xlsx') => {

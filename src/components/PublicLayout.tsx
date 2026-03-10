@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Facebook, Instagram, Linkedin, Calendar, MapPin, Clock, CreditCard, Smartphone, Menu, X } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Calendar, MapPin, Clock, CreditCard, Smartphone, Menu, X, PiggyBank, LogOut, ChevronDown } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -7,10 +8,14 @@ const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
+import type { AuthMode } from '../pages/Auth';
 
 interface PublicLayoutProps {
   children: React.ReactNode;
   onAdminLogin?: () => void;
+  onOpenAuth?: (mode: AuthMode) => void;
+  onMesVoyages?: () => void;
+  onLogout?: () => void;
 }
 
 const getFormattedDate = (): string => {
@@ -20,8 +25,17 @@ const getFormattedDate = (): string => {
   return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
 };
 
-export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLogin }) => {
+export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLogin, onOpenAuth, onMesVoyages, onLogout }) => {
+  const { user, isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    onLogout?.();
+    setMobileMenuOpen(false);
+    setUserMenuOpen(false);
+  };
 
   const scrollToSection = (sectionId: string) => {
     setMobileMenuOpen(false);
@@ -123,14 +137,92 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               </button>
             </nav>
 
-            {/* Right: CTA + Hamburger */}
+            {/* Right: CTA + user + Hamburger */}
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
-              <button
-                onClick={onAdminLogin}
-                className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
-              >
-                SE CONNECTER
-              </button>
+              {user ? (
+                /* Utilisateur connecté */
+                <>
+                  {!isAdmin && onMesVoyages && (
+                    <button
+                      onClick={onMesVoyages}
+                      className="hidden sm:flex items-center gap-1.5 px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                    >
+                      <PiggyBank className="w-4 h-4" />
+                      MES VOYAGES
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={onAdminLogin}
+                      className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                    >
+                      ADMINISTRATION
+                    </button>
+                  )}
+                  <div className="relative hidden sm:block">
+                    <button
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
+                    >
+                      <div className="w-6 h-6 bg-[#1a4d3e] rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        {(user.username || user.phoneNumber || 'U')[0].toUpperCase()}
+                      </div>
+                      <span className="max-w-[100px] truncate">{user.username || user.phoneNumber}</span>
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                    {userMenuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
+                        <div className="absolute right-0 top-full mt-1.5 bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[180px] py-1.5 overflow-hidden">
+                          {!isAdmin && onMesVoyages && (
+                            <button
+                              onClick={() => { setUserMenuOpen(false); onMesVoyages(); }}
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              <PiggyBank className="w-4 h-4 text-[#1a4d3e]" />
+                              Mes voyages
+                            </button>
+                          )}
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Se déconnecter
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* Non connecté */
+                <>
+                  {onOpenAuth ? (
+                    <>
+                      <button
+                        onClick={() => onOpenAuth('inscription')}
+                        className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                      >
+                        S'INSCRIRE
+                      </button>
+                      <button
+                        onClick={() => onOpenAuth('connexion')}
+                        className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                      >
+                        SE CONNECTER
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={onAdminLogin}
+                      className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                    >
+                      SE CONNECTER
+                    </button>
+                  )}
+                </>
+              )}
               <button
                 onClick={() => {
                   const voyagesSection = document.getElementById('voyages-section');
@@ -203,22 +295,67 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
 
               {/* Actions */}
               <div className="p-4 space-y-3">
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    if (onAdminLogin) onAdminLogin();
-                  }}
-                  className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
-                >
-                  SE CONNECTER
-                </button>
+                {user ? (
+                  <>
+                    <div className="px-4 py-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500">Connecté en tant que</p>
+                      <p className="font-medium text-[#17233E] text-sm truncate">{user.username || user.phoneNumber}</p>
+                    </div>
+                    {!isAdmin && onMesVoyages && (
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onMesVoyages(); }}
+                        className="w-full flex items-center gap-2 px-4 py-3 text-[#1a4d3e] hover:bg-[#1a4d3e]/5 rounded-lg font-medium text-sm transition-colors text-left"
+                      >
+                        <PiggyBank className="w-4 h-4" /> MES VOYAGES
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
+                        className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                      >
+                        ADMINISTRATION
+                      </button>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium text-sm transition-colors text-left"
+                    >
+                      <LogOut className="w-4 h-4" /> Se déconnecter
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {onOpenAuth ? (
+                      <>
+                        <button
+                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('inscription'); }}
+                          className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                        >
+                          S'INSCRIRE
+                        </button>
+                        <button
+                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('connexion'); }}
+                          className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                        >
+                          SE CONNECTER
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
+                        className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                      >
+                        SE CONNECTER
+                      </button>
+                    )}
+                  </>
+                )}
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
                     const voyagesSection = document.getElementById('voyages-section');
-                    if (voyagesSection) {
-                      voyagesSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    if (voyagesSection) voyagesSection.scrollIntoView({ behavior: 'smooth' });
                   }}
                   className="w-full px-4 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
                 >
