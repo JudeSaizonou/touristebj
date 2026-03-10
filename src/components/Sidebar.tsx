@@ -1,10 +1,10 @@
 import React from 'react';
-import { LayoutDashboard, Plane, ChevronRight, CalendarCheck, Users, Settings, LogOut, ArrowRightLeft } from 'lucide-react';
+import { LayoutDashboard, Plane, ChevronRight, CalendarCheck, Users, Settings, LogOut, ArrowRightLeft, Wallet } from 'lucide-react';
 import { PageView } from '../types';
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
 
 interface SidebarProps {
-  currentPage: 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'parametres';
+  currentPage: 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
   onNavigate: (page: PageView) => void;
   onLogout?: () => void;
   onRequestRefund?: () => void;
@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLog
     { id: 'voyages' as const, label: 'Voyages', icon: Plane },
     { id: 'reservations' as const, label: 'Réservations', icon: CalendarCheck },
     { id: 'all-voyageurs' as const, label: 'Voyageurs', icon: Users },
+    { id: 'reversements' as const, label: 'Reversements', icon: Wallet },
     { id: 'parametres' as const, label: 'Paramètres', icon: Settings },
   ];
 

@@ -11,6 +11,7 @@ import { Catalog } from './pages/Catalog';
 import { VoyageDetails } from './pages/VoyageDetails';
 import { ReservationsList } from './pages/ReservationsList';
 import { AllVoyageursList } from './pages/AllVoyageursList';
+import { Reversements } from './pages/Reversements';
 import { Parametres } from './pages/Parametres';
 import { Auth, AuthMode } from './pages/Auth';
 import { MesVoyages } from './pages/MesVoyages';
@@ -78,6 +79,7 @@ function App() {
       'edit-voyage': '/admin/voyages',
       reservations: '/admin/reservations',
       'all-voyageurs': '/admin/voyageurs',
+      reversements: '/admin/reversements',
       parametres: '/admin/parametres',
     };
     navigate(pageToRoute[page] || '/admin/dashboard');
@@ -160,13 +162,14 @@ function App() {
     '/admin/voyages/:id/edit': 'edit-voyage',
     '/admin/reservations': 'reservations',
     '/admin/voyageurs': 'all-voyageurs',
+    '/admin/reversements': 'reversements',
     '/admin/parametres': 'parametres',
   };
 
   const currentAdminPage = adminRouteToPage[route.path] || 'dashboard';
   const sidebarPage = (currentAdminPage === 'create-voyage' || currentAdminPage === 'edit-voyage')
     ? 'voyages'
-    : (currentAdminPage as 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'parametres');
+    : (currentAdminPage as 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres');
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -226,6 +229,7 @@ function App() {
           )}
           {currentAdminPage === 'reservations' && <ReservationsList />}
           {currentAdminPage === 'all-voyageurs' && <AllVoyageursList />}
+          {currentAdminPage === 'reversements' && <Reversements onRequestRefund={() => setShowRefundModal(true)} />}
           {currentAdminPage === 'parametres' && <Parametres />}
         </main>
       </div>

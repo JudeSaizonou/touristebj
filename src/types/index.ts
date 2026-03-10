@@ -66,7 +66,7 @@ export interface Reservation {
   statut: 'confirmee' | 'en-attente' | 'annulee';
 }
 
-export type PageView = 'dashboard' | 'voyages' | 'create-voyage' | 'edit-voyage' | 'reservations' | 'all-voyageurs' | 'parametres';
+export type PageView = 'dashboard' | 'voyages' | 'create-voyage' | 'edit-voyage' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
 
 export interface MappedBooking {
   id: string;
