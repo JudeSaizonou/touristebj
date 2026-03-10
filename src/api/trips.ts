@@ -63,23 +63,9 @@ export interface TripStatsResponse {
 export interface DashboardStatsResponse {
   success: boolean;
   stats: {
-    trips?: { total?: number; active?: number; draft?: number; cancelled?: number };
-    bookings?: {
-      total?: number;
-      pendingDeposit?: number;
-      depositPaid?: number;
-      inProgress?: number;
-      completed?: number;
-      cancelled?: number;
-    };
-    revenue?: {
-      total?: number;
-      deposits?: number;
-      installments?: number;
-      totalTransactions?: number;
-    };
-    pending?: { amount?: number; count?: number };
-    overdue?: { amount?: number; bookings?: number };
+    trips?: { total?: number; active?: number; completed?: number; cancelled?: number };
+    bookings?: { total?: number; pending?: number; confirmed?: number; cancelled?: number };
+    revenue?: { total?: number; collected?: number; pending?: number };
     clients?: { total?: number };
   };
 }
@@ -119,6 +105,7 @@ export function mapTripToVoyage(t: TripBackend): any {
     ACTIVE: 'en-cours',
     DRAFT: 'pause',
     PAUSED: 'pause',
+    FULL: 'complet',
     CANCELLED: 'complet',
     COMPLETED: 'complet',
   };
@@ -455,11 +442,9 @@ export async function getReservations(params?: {
 }
 
 export interface DashboardStats {
-  trips: { total: number; active: number; draft: number; cancelled: number };
-  bookings: { total: number; pendingDeposit: number; depositPaid: number; inProgress: number; completed: number; cancelled: number };
-  revenue: { total: number; deposits: number; installments: number; transactions: number };
-  pending: { amount: number; count: number };
-  overdue: { amount: number; bookings: number };
+  trips: { total: number; active: number; completed: number; cancelled: number };
+  bookings: { total: number; pending: number; confirmed: number; cancelled: number };
+  revenue: { total: number; collected: number; pending: number };
   clients: { total: number };
 }
 
@@ -470,25 +455,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     trips: {
       total: s.trips?.total ?? 0,
       active: s.trips?.active ?? 0,
-      draft: s.trips?.draft ?? 0,
+      completed: s.trips?.completed ?? 0,
       cancelled: s.trips?.cancelled ?? 0,
     },
     bookings: {
       total: s.bookings?.total ?? 0,
-      pendingDeposit: s.bookings?.pendingDeposit ?? 0,
-      depositPaid: s.bookings?.depositPaid ?? 0,
-      inProgress: s.bookings?.inProgress ?? 0,
-      completed: s.bookings?.completed ?? 0,
+      pending: s.bookings?.pending ?? 0,
+      confirmed: s.bookings?.confirmed ?? 0,
       cancelled: s.bookings?.cancelled ?? 0,
     },
     revenue: {
       total: s.revenue?.total ?? 0,
-      deposits: s.revenue?.deposits ?? 0,
-      installments: s.revenue?.installments ?? 0,
-      transactions: s.revenue?.totalTransactions ?? 0,
+      collected: s.revenue?.collected ?? 0,
+      pending: s.revenue?.pending ?? 0,
     },
-    pending: { amount: s.pending?.amount ?? 0, count: s.pending?.count ?? 0 },
-    overdue: { amount: s.overdue?.amount ?? 0, bookings: s.overdue?.bookings ?? 0 },
     clients: { total: s.clients?.total ?? 0 },
   };
 }
@@ -712,8 +692,7 @@ export async function createBooking(
   numberOfParticipants: number,
   contactInfo?: {
     email?: string;
-    phoneNumber?: string;
-    emergencyContact?: { name: string; phoneNumber: string; relationship: string };
+    phone?: string;
   },
   specialRequests?: string
 ): Promise<MappedBooking> {

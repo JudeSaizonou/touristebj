@@ -94,7 +94,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
   }
 
   const basePrice = voyage.totalPrice ?? 0;
-  const acompte = Math.round(basePrice * 0.5);
+  const acompte = voyage.depositAmount ?? Math.round(basePrice * 0.5);
   const solde = basePrice - acompte;
 
   return (

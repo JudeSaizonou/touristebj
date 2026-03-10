@@ -241,29 +241,29 @@ export const Dashboard: React.FC = () => {
         <StatCard
           icon={<CreditCard className="w-5 h-5" />}
           label="Acomptes collectés"
-          value={fmt(stats?.revenue.deposits ?? 0)}
-          sub={`${stats?.bookings.depositPaid ?? 0} payés`}
+          value={fmt(stats?.revenue.collected ?? 0)}
+          sub={`${stats?.bookings.confirmed ?? 0} confirmées`}
           color="green"
         />
         <StatCard
           icon={<TrendingUp className="w-5 h-5" />}
           label="Revenu total"
           value={fmt(stats?.revenue.total ?? 0)}
-          sub={`${stats?.revenue.transactions ?? 0} transactions`}
+          sub={`${stats?.bookings.total ?? 0} réservations`}
           color="purple"
         />
         <StatCard
           icon={<Clock className="w-5 h-5" />}
-          label="En attente"
-          value={fmt(stats?.pending.amount ?? 0)}
-          sub={`${stats?.pending.count ?? 0} résa.`}
+          label="Paiements en attente"
+          value={fmt(stats?.revenue.pending ?? 0)}
+          sub={`${stats?.bookings.pending ?? 0} résa.`}
           color="amber"
         />
         <StatCard
           icon={<AlertTriangle className="w-5 h-5" />}
-          label="En retard"
-          value={fmt(stats?.overdue.amount ?? 0)}
-          sub={`${stats?.overdue.bookings ?? 0} résa.`}
+          label="Réservations annulées"
+          value={stats?.bookings.cancelled ?? 0}
+          sub={`${stats?.trips.cancelled ?? 0} voyages annulés`}
           color="red"
         />
       </div>

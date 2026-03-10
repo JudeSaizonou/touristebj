@@ -26,16 +26,16 @@ export async function payBookingMtn(
     type: 'DEPOSIT' | 'INSTALLMENT';
   }
 ): Promise<MtnInitResponse> {
+  const endpoint = params.type === 'DEPOSIT' ? 'pay-deposit' : 'pay-installment';
   return apiRequest<MtnInitResponse>(
-    `${TRIPS_PREFIX}/bookings/${bookingId}/pay-mtn`,
+    `${TRIPS_PREFIX}/bookings/${bookingId}/${endpoint}`,
     {
       method: 'POST',
       body: JSON.stringify({
+        paymentMethod: 'mtn',
         amount: params.amount,
-        currency: 'XOF',
         phoneNumber: params.phoneNumber.replace(/\D/g, ''),
         countryCode: params.countryCode || '229',
-        type: params.type,
       }),
     }
   );
