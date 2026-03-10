@@ -230,27 +230,14 @@ export const Auth: React.FC<AuthProps> = ({
   };
 
   // ——— Connexion ———
-  const handleConnexionContinue = async () => {
+  const handleConnexionContinue = () => {
     const national = connexionPhone.replace(/\D/g, '');
     if (national.length < 6) {
       addToast('error', 'Numéro de téléphone invalide');
       return;
     }
-    setConnexionLoading(true);
-    try {
-      await authApi.sendCode(connexionCountry, connexionPhone);
-      // sendCode OK → utilisateur de type USER → flow OTP
-      setConnexionOtpSent(true);
-      setConnexionStep('otp');
-      startTimer(setConnexionOtpTimer, connexionTimerRef, 60);
-      addToast('success', 'Code envoyé sur votre téléphone');
-    } catch {
-      // sendCode échoue → USER_X / ADMIN / PARTNER → mot de passe directement
-      setConnexionRole('user_x');
-      setConnexionStep('password-only');
-    } finally {
-      setConnexionLoading(false);
-    }
+    // Pas d'appel API ici — on va directement au mot de passe
+    setConnexionStep('password-only');
   };
 
   const handleConnexionVerifyOtp = async () => {
@@ -309,8 +296,8 @@ export const Auth: React.FC<AuthProps> = ({
         addToast('error', 'Réponse serveur invalide : token manquant.');
         return;
       }
+      // Login direct (USER_X / ADMIN / PARTNER)
       setAuth(res.token, res.user);
-      // Enrichir avec le profil complet pour avoir le vrai role
       try {
         const me = await authApi.getMe();
         setAuth(res.token, { ...res.user, ...me });
@@ -323,7 +310,27 @@ export const Auth: React.FC<AuthProps> = ({
         onSuccess?.(isAdmin);
       }
     } catch (err) {
-      addToast('error', getApiMessage(err));
+      const msg = getApiMessage(err);
+      const lower = msg.toLowerCase();
+      // Le backend demande une vérification OTP → utilisateur de type USER
+      const needsOtp =
+        lower.includes('otp') ||
+        lower.includes('code') ||
+        lower.includes('verif') ||
+        lower.includes('sms');
+      if (needsOtp) {
+        try {
+          await authApi.sendCode(connexionCountry, connexionPhone);
+          setConnexionOtpSent(true);
+          setConnexionStep('otp');
+          startTimer(setConnexionOtpTimer, connexionTimerRef, 60);
+          addToast('info', 'Un code de vérification vous a été envoyé.');
+        } catch {
+          addToast('error', msg);
+        }
+      } else {
+        addToast('error', msg);
+      }
     } finally {
       setConnexionLoading(false);
     }
@@ -739,13 +746,8 @@ export const Auth: React.FC<AuthProps> = ({
                     <Button
                       className="w-full rounded-xl py-3 bg-orange-500 hover:bg-orange-600"
                       onClick={handleConnexionContinue}
-                      disabled={connexionLoading}
                     >
-                      {connexionLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        'Continuer'
-                      )}
+                      Continuer
                     </Button>
                   </div>
                 )}
