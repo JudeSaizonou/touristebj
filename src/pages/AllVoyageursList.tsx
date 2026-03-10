@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
-import { StorageService } from '../utils/storage';
+import { getAllVoyageurs, requestVoyageurDocuments } from '../api/trips';
 import { ExportModal } from '../components/ExportModal';
 import { VoyageurDetailsModal } from '../components/VoyageurDetailsModal';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -13,6 +13,12 @@ interface VoyageurRow {
   voyageDestination: string;
 }
 
+const DOCUMENT_TYPE_MAP: Record<VoyageurDocumentType, string> = {
+  'copie-identite': 'ID_CARD',
+  'passeport': 'PASSPORT',
+  'photo-identite': 'PHOTO',
+};
+
 export const AllVoyageursList: React.FC = () => {
   const [allData, setAllData] = useState<VoyageurRow[]>([]);
   const [activeRow, setActiveRow] = useState<VoyageurRow | null>(null);
@@ -22,9 +28,13 @@ export const AllVoyageursList: React.FC = () => {
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 12;
 
-  const loadAllVoyageurs = () => {
-    const data = StorageService.getAllVoyageurs() as VoyageurRow[];
-    setAllData(data);
+  const loadAllVoyageurs = async () => {
+    try {
+      const data = await getAllVoyageurs();
+      setAllData(data);
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur chargement des voyageurs');
+    }
   };
 
   useEffect(() => {
@@ -73,16 +83,16 @@ export const AllVoyageursList: React.FC = () => {
     addToast('success', `Export ${format.toUpperCase()} téléchargé`);
   };
 
-  const handleRequestDocuments = (documents: VoyageurDocumentType[]) => {
+  const handleRequestDocuments = async (documents: VoyageurDocumentType[]) => {
     if (!activeRow) return;
-    const updated = StorageService.requestVoyageurDocuments(activeRow.voyageId, activeRow.voyageur.id, documents);
-    if (!updated) {
-      addToast('error', 'Impossible d\'envoyer la demande de documents');
-      return;
+    const documentTypes = documents.map((d) => DOCUMENT_TYPE_MAP[d] || d);
+    try {
+      await requestVoyageurDocuments(activeRow.voyageId, activeRow.voyageur.id, documentTypes);
+      loadAllVoyageurs();
+      addToast('success', 'Demande de documents envoyée au voyageur');
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Impossible d\'envoyer la demande');
     }
-    setActiveRow({ ...activeRow, voyageur: updated });
-    loadAllVoyageurs();
-    addToast('success', 'Demande de documents envoyée au voyageur');
   };
 
   return (

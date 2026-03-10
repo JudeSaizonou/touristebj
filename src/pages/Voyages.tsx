@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Calendar, Upload, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X } from 'lucide-react';
 import { Voyage, VoyageStatus } from '../types';
-import { StorageService } from '../utils/storage';
+import * as tripsApi from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -56,32 +56,39 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
     loadVoyages();
   }, []);
 
-  const loadVoyages = () => {
-    const data = StorageService.getVoyages();
-    const mappedData = data.map((v: any) => ({
-      id: v.id,
-      destination: v.destination || v.titre,
-      date: v.dateDebut,
-      auteur: v.auteur,
-      etat: v.statut,
-      prix: `${v.prix} ${v.devise}`,
-      acomptesRecus: v.acomptesRecus,
-      placesRestantes: v.placesRestantes,
-    }));
-    setVoyages(mappedData);
+  const loadVoyages = async () => {
+    try {
+      const { voyages: list } = await tripsApi.getVoyages();
+      const mappedData = list.map((v: any) => ({
+        id: v.id,
+        destination: v.destination || v.titre,
+        date: v.dateDebut,
+        auteur: v.auteur,
+        etat: v.statut,
+        prix: v.prix ? `${v.prix} ${v.devise || ''}`.trim() : '',
+        acomptesRecus: v.acomptesRecus,
+        placesRestantes: v.placesRestantes,
+      }));
+      setVoyages(mappedData);
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur chargement des voyages');
+    }
   };
 
   const handleDelete = (id: string) => {
     setDeleteTarget(id);
   };
 
-  const confirmDelete = () => {
-    if (deleteTarget) {
-      StorageService.deleteVoyage(deleteTarget);
-      loadVoyages();
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await tripsApi.deleteVoyage(deleteTarget);
+      await loadVoyages();
       setSelectedVoyages(prev => prev.filter(vid => vid !== deleteTarget));
       addToast('success', 'Voyage supprimé avec succès');
       setDeleteTarget(null);
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur suppression');
     }
   };
 

@@ -1,0 +1,84 @@
+import { API_BASE, TRIPS_PREFIX } from './config';
+import { apiRequest } from './client';
+
+export interface MtnInitResponse {
+  success: boolean;
+  referenceId: string;
+  status: string;
+  data?: any;
+}
+
+export type MtnStatus = 'processing' | 'successful' | 'failed' | 'expired' | 'timeout';
+
+export interface TransactionStatus {
+  status: MtnStatus;
+  failed?: boolean;
+  userMessage?: string;
+}
+
+/** Initie un paiement MTN pour un booking TouristeBJ (acompte ou versement). */
+export async function payBookingMtn(
+  bookingId: string,
+  params: {
+    amount: number;
+    phoneNumber: string;
+    countryCode?: string;
+    type: 'DEPOSIT' | 'INSTALLMENT';
+  }
+): Promise<MtnInitResponse> {
+  return apiRequest<MtnInitResponse>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/pay-mtn`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        amount: params.amount,
+        currency: 'XOF',
+        phoneNumber: params.phoneNumber.replace(/\D/g, ''),
+        countryCode: params.countryCode || '229',
+        type: params.type,
+      }),
+    }
+  );
+}
+
+export interface KkiapayInitResponse {
+  success: boolean;
+  message?: string;
+  transactionId: string;
+  amount: number;
+  netAmount: number;
+  fee: number;
+  feeRate: number;
+  contributionId?: string;
+  booking?: any;
+}
+
+/** Initie un paiement Kkiapay pour l'acompte. Retourne transactionId à passer au widget. */
+export async function payDepositKkiapay(bookingId: string, amount: number): Promise<KkiapayInitResponse> {
+  return apiRequest<KkiapayInitResponse>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/pay-deposit`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ paymentMethod: 'mobile_money', amount }),
+    }
+  );
+}
+
+/** Initie un paiement Kkiapay pour un versement échelonné. Retourne transactionId à passer au widget. */
+export async function payInstallmentKkiapay(bookingId: string, amount: number): Promise<KkiapayInitResponse> {
+  return apiRequest<KkiapayInitResponse>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/pay-installment`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ paymentMethod: 'mobile_money', amount }),
+    }
+  );
+}
+
+/** Récupère le statut d'une transaction MTN. */
+export async function getTransactionStatus(referenceId: string): Promise<TransactionStatus> {
+  const res = await apiRequest<{ success: boolean; data: TransactionStatus }>(
+    `${API_BASE}/payment/transaction/status?paymentMethod=mtn&referenceId=${encodeURIComponent(referenceId)}`
+  );
+  return res.data;
+}

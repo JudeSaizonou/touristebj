@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Trash2, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
-import { StorageService } from '../utils/storage';
+import { getReservations } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -15,51 +15,22 @@ export const ReservationsList: React.FC = () => {
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 10;
 
+  const loadReservations = async () => {
+    try {
+      const { data } = await getReservations();
+      setReservations(data || []);
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur chargement des réservations');
+    }
+  };
+
   useEffect(() => {
     loadReservations();
   }, []);
 
-  const toNumber = (value: unknown): number => {
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
-    if (typeof value === 'string') {
-      const cleaned = value.replace(/[^0-9.,-]/g, '').replace(/\./g, '').replace(',', '.');
-      const parsed = parseFloat(cleaned);
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-    return 0;
-  };
-
-  const normalizeReservation = (reservation: any) => {
-    return {
-      ...reservation,
-      voyageDestination: reservation?.voyageDestination || reservation?.destination || 'Voyage non renseigné',
-      type: reservation?.type || 'reservation',
-      nombrePersonnes: toNumber(reservation?.nombrePersonnes || reservation?.personnes || 0),
-      montantTotal: toNumber(
-        reservation?.montantTotal ??
-        reservation?.montant ??
-        reservation?.total
-      ),
-      acompte: toNumber(
-        reservation?.acompte ??
-        reservation?.montantAcompte ??
-        reservation?.avance
-      ),
-      date: reservation?.date || '-',
-      statut: reservation?.statut || 'en-attente',
-    };
-  };
-
-  const loadReservations = () => {
-    const data = StorageService.getReservations();
-    setReservations((data || []).map(normalizeReservation));
-  };
-
   const confirmDelete = () => {
     if (deleteTarget) {
-      StorageService.deleteReservation(deleteTarget);
-      loadReservations();
-      addToast('success', 'Réservation supprimée');
+      addToast('info', 'Suppression de réservation non disponible via l’API.');
       setDeleteTarget(null);
     }
   };

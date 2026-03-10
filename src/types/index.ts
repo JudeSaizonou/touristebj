@@ -66,3 +66,37 @@ export interface Reservation {
 }
 
 export type PageView = 'dashboard' | 'voyages' | 'create-voyage' | 'edit-voyage' | 'reservations' | 'all-voyageurs' | 'parametres';
+
+export interface MappedBooking {
+  id: string;
+  bookingNumber?: string;
+  voyageId: string;
+  voyage?: {
+    titre: string;
+    destination: string;
+    departureDate: string;
+    rawDepartureDate?: string;
+    images: string[];
+    paymentDeadlineDays: number;
+  };
+  nombrePersonnes: number;
+  totalPrice: number;
+  depositAmount: number;
+  depositPaid?: boolean;
+  amountPaid: number;
+  remainingAmount: number;
+  isFullyPaid?: boolean;
+  isPaymentOverdue?: boolean;
+  paymentDeadline: string;
+  status: string;
+  createdAt: string;
+  payments?: MappedPayment[];
+}
+
+export interface MappedPayment {
+  id: string;
+  amount: number;
+  type: string;
+  status: string;
+  date: string;
+}
