@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Facebook, Instagram, Linkedin, Calendar, MapPin, Clock, CreditCard, Smartphone, Menu, X, PiggyBank, LogOut, ChevronDown } from 'lucide-react';
+import { Facebook, Instagram, Linkedin, Calendar, MapPin, Clock, Phone, Mail, Globe, ArrowRight, Menu, X, PiggyBank, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -425,124 +425,176 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#0a1f3d] text-white pt-12 pb-8 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 relative">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            {/* Company Info */}
-            <div className="sm:col-span-2 md:col-span-1">
-              <div className="mb-4">
-                <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-12 object-contain brightness-0 invert" />
-              </div>
-              <p className="text-gray-400 text-sm mb-4 leading-relaxed">
-                Votre partenaire voyage de confiance au Bénin. Découvrez les meilleures destinations en groupe avec des conditions de paiement flexibles.
-              </p>
-              <div className="space-y-2 text-sm">
-                <p className="text-gray-400">
-                  <span className="font-semibold text-white">Tél:</span> +229 97 00 00 00
-                </p>
-                <p className="text-gray-400">
-                  <span className="font-semibold text-white">Adresse:</span> Cotonou, Bénin
-                </p>
-                <p className="text-gray-400">
-                  <span className="font-semibold text-white">Email:</span> contact@letouriste.bj
-                </p>
-                <p className="text-gray-400">
-                  <span className="font-semibold text-white">Site:</span> www.letouriste.bj
-                </p>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm text-gray-400 mb-2">Moyens de paiement:</p>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-5 bg-blue-700 rounded flex items-center justify-center">
-                    <CreditCard className="w-4 h-3 text-white" />
-                  </div>
-                  <div className="w-8 h-5 bg-red-600 rounded flex items-center justify-center">
-                    <CreditCard className="w-4 h-3 text-white" />
-                  </div>
-                  <div className="w-8 h-5 bg-yellow-500 rounded flex items-center justify-center">
-                    <CreditCard className="w-4 h-3 text-white" />
-                  </div>
-                  <div className="w-8 h-5 bg-green-600 rounded flex items-center justify-center">
-                    <Smartphone className="w-4 h-3 text-white" />
-                  </div>
-                </div>
-              </div>
-            </div>
+      <footer className="bg-[#0a1f3d] text-white relative overflow-hidden">
+        {/* Accent top border */}
+        <div className="h-1 bg-gradient-to-r from-primary-500 via-orange-400 to-primary-600" />
 
-            {/* Quick Links */}
-            <div>
-              <h3 className="font-bold text-lg mb-4">Liens Rapides</h3>
-              <ul className="space-y-2 text-sm">
-                <li><button onClick={() => scrollToSection('about-section')} className="text-gray-400 hover:text-white transition-colors">À Propos</button></li>
-                <li><button onClick={() => scrollToSection('destinations-section')} className="text-gray-400 hover:text-white transition-colors">Destinations</button></li>
-                <li><button onClick={() => scrollToSection('voyages-section')} className="text-gray-400 hover:text-white transition-colors">Nos Voyages</button></li>
-                <li><button onClick={() => scrollToSection('partners-section')} className="text-gray-400 hover:text-white transition-colors">Partenaires</button></li>
-                <li><button onClick={() => scrollToSection('newsletter-section')} className="text-gray-400 hover:text-white transition-colors">Newsletter</button></li>
-                <li><button onClick={onAdminLogin} className="text-gray-400 hover:text-white transition-colors">Administration</button></li>
-              </ul>
-            </div>
-
-            {/* Categories */}
-            <div id="destinations-section">
-              <h3 className="font-bold text-lg mb-4">Destinations</h3>
-              <ul className="space-y-2 text-sm">
-                <li><span className="text-gray-400">Dubaï, EAU</span></li>
-                <li><span className="text-gray-400">Istanbul, Turquie</span></li>
-                <li><span className="text-gray-400">Marrakech, Maroc</span></li>
-                <li><span className="text-gray-400">Zanzibar, Tanzanie</span></li>
-                <li><span className="text-gray-400">Le Caire, Égypte</span></li>
-                <li><span className="text-gray-400">Bali, Indonésie</span></li>
-              </ul>
-            </div>
-
-            {/* Newsletter */}
-            <div id="newsletter-section">
-              <h3 className="font-bold text-lg mb-4">Newsletter</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Rejoignez notre communauté de voyageurs et recevez nos meilleures offres et promotions directement dans votre boîte mail.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2">
+        {/* Newsletter banner */}
+        <div id="newsletter-section" className="border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-4 py-10">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">Restez informé de nos voyages</h3>
+                <p className="text-gray-400 text-sm">Recevez nos offres exclusives et nouveaux départs directement dans votre boîte mail.</p>
+              </div>
+              <div className="flex w-full md:w-auto gap-2 max-w-md">
                 <input
                   type="email"
-                  placeholder="Adresse email"
-                  className="flex-1 px-4 py-2.5 bg-white/10 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 border border-gray-600"
+                  placeholder="Votre adresse email"
+                  className="flex-1 min-w-0 px-4 py-3 bg-white/10 text-white placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 border border-white/10 text-sm"
                 />
-                <button className="px-5 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-medium text-sm whitespace-nowrap">
-                  S'abonner
+                <button className="px-5 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm flex items-center gap-2 whitespace-nowrap">
+                  S'abonner <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Bottom Bar */}
-          <div id="partners-section" className="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-400 text-sm">
-              © {new Date().getFullYear()} Le Touriste.bj - Tous droits réservés.
-            </p>
-            <div className="flex items-center gap-3 md:gap-4">
-              <select className="bg-transparent text-gray-400 text-sm border border-gray-600 rounded px-3 py-1.5 focus:outline-none">
-                <option>Français</option>
-                <option>English</option>
-              </select>
-              <select className="bg-transparent text-gray-400 text-sm border border-gray-600 rounded px-3 py-1.5 focus:outline-none">
-                <option>FCFA</option>
-                <option>USD</option>
-                <option>EUR</option>
-              </select>
+        {/* Main footer grid */}
+        <div className="max-w-7xl mx-auto px-4 py-14">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+
+            {/* Col 1 — Brand */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-12 object-contain brightness-0 invert mb-5" />
+              <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                Votre partenaire voyage de confiance au Bénin. Partez en groupe, payez en douceur grâce à notre système d'épargne intégré.
+              </p>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-start gap-3 text-gray-400">
+                  <MapPin className="w-4 h-4 text-primary-400 mt-0.5 shrink-0" />
+                  Cotonou, Bénin
+                </li>
+                <li className="flex items-center gap-3 text-gray-400">
+                  <Phone className="w-4 h-4 text-primary-400 shrink-0" />
+                  +229 97 00 00 00
+                </li>
+                <li className="flex items-center gap-3 text-gray-400">
+                  <Mail className="w-4 h-4 text-primary-400 shrink-0" />
+                  contact@letouriste.bj
+                </li>
+                <li className="flex items-center gap-3 text-gray-400">
+                  <Globe className="w-4 h-4 text-primary-400 shrink-0" />
+                  www.letouriste.bj
+                </li>
+                <li className="flex items-center gap-3 text-gray-400">
+                  <Clock className="w-4 h-4 text-primary-400 shrink-0" />
+                  Lun – Ven : 08h30 – 17h00
+                </li>
+              </ul>
+
+              {/* Social icons */}
+              <div className="flex items-center gap-3 mt-7">
+                {[
+                  { href: 'https://facebook.com', icon: <Facebook className="w-4 h-4" /> },
+                  { href: 'https://www.tiktok.com/@letouriste.bj', icon: <TikTokIcon className="w-4 h-4" /> },
+                  { href: 'https://www.instagram.com/letouriste.bj', icon: <Instagram className="w-4 h-4" /> },
+                  { href: 'https://linkedin.com', icon: <Linkedin className="w-4 h-4" /> },
+                ].map(({ href, icon }, i) => (
+                  <a key={i} href={href} target="_blank" rel="noopener noreferrer"
+                    className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-gray-400 hover:bg-primary-500 hover:text-white transition-all">
+                    {icon}
+                  </a>
+                ))}
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <TikTokIcon className="w-5 h-5" />
-              </a>
-              <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
-                <Linkedin className="w-5 h-5" />
-              </a>
+
+            {/* Col 2 — Liens rapides */}
+            <div>
+              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Navigation</h4>
+              <ul className="space-y-3">
+                {[
+                  { label: 'Accueil', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+                  { label: 'À propos', action: () => scrollToSection('about-section') },
+                  { label: 'Destinations', action: () => scrollToSection('destinations-section') },
+                  { label: 'Nos voyages', action: () => scrollToSection('voyages-section') },
+                  { label: 'Partenaires', action: () => scrollToSection('partners-section') },
+                  { label: 'Administration', action: onAdminLogin },
+                ].map(({ label, action }) => (
+                  <li key={label}>
+                    <button
+                      onClick={action}
+                      className="text-gray-400 hover:text-primary-400 text-sm transition-colors flex items-center gap-2 group"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Col 3 — Destinations */}
+            <div id="destinations-section">
+              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Destinations</h4>
+              <ul className="space-y-3">
+                {[
+                  'Dubaï, EAU',
+                  'Istanbul, Turquie',
+                  'Marrakech, Maroc',
+                  'Zanzibar, Tanzanie',
+                  'Le Caire, Égypte',
+                  'Bali, Indonésie',
+                ].map((dest) => (
+                  <li key={dest}>
+                    <button
+                      onClick={() => scrollToSection('voyages-section')}
+                      className="text-gray-400 hover:text-primary-400 text-sm transition-colors flex items-center gap-2 group"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {dest}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Col 4 — Paiement & horaires */}
+            <div>
+              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Paiement accepté</h4>
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                {[
+                  { label: 'MTN MoMo', bg: 'bg-yellow-400', text: 'text-black' },
+                  { label: 'Kkiapay', bg: 'bg-orange-500', text: 'text-white' },
+                  { label: 'Visa', bg: 'bg-blue-700', text: 'text-white' },
+                  { label: 'Moov Money', bg: 'bg-blue-400', text: 'text-white' },
+                ].map(({ label, bg, text }) => (
+                  <div key={label} className={`${bg} ${text} rounded-lg px-3 py-2 text-xs font-bold text-center`}>
+                    {label}
+                  </div>
+                ))}
+              </div>
+
+              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-4">Nos avantages</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                {[
+                  'Paiement échelonné',
+                  'Épargne intégrée',
+                  'Voyages en groupe',
+                  'Support 6j/7',
+                ].map(adv => (
+                  <li key={adv} className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
+                    {adv}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div id="partners-section" className="border-t border-white/10">
+          <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-gray-500">
+            <p>© {new Date().getFullYear()} Le Touriste.bj — Tous droits réservés.</p>
+            <div className="flex items-center gap-5">
+              <button className="hover:text-gray-300 transition-colors">Politique de confidentialité</button>
+              <button className="hover:text-gray-300 transition-colors">Conditions d'utilisation</button>
+            </div>
+            <div className="flex items-center gap-2 text-gray-500">
+              <Calendar className="w-4 h-4" />
+              <span>{getFormattedDate()}</span>
             </div>
           </div>
         </div>

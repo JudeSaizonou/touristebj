@@ -4,7 +4,7 @@ import type { VoyageFormData } from '../components/VoyageForm';
 import { VoyageursList } from '../components/VoyageursList';
 import { StatsCard } from '../components/StatsCard';
 import * as tripsApi from '../api/trips';
-import { uploadTripImages, deleteTripImage } from '../api/trips';
+import { uploadTripImages, deleteTripImage, getPartnerVoyageById } from '../api/trips';
 import { ToastContainer, useToast } from '../components/Toast';
 
 interface EditVoyageProps {
@@ -27,7 +27,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
     (async () => {
       try {
         const [trip, st] = await Promise.all([
-          tripsApi.getVoyageById(voyageId),
+          getPartnerVoyageById(voyageId),
           tripsApi.getVoyageStats(voyageId),
         ]);
         if (!cancelled) {

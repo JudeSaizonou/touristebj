@@ -159,6 +159,11 @@ export function mapTripToVoyage(t: TripBackend): any {
     activeBookings: t.activeBookings,
     availableSpots: t.availableSpots,
     paymentDeadlineDays: t.paymentDeadlineDays ?? 14,
+    rawDepartureDate: t.departureDate || '',
+    returnDate: t.returnDate || '',
+    tripType: t.tripType || 'voyage',
+    allowInstallments: t.allowInstallments ?? true,
+    minInstallmentAmount: t.minInstallmentAmount ?? 5000,
     // Champs calculés / valeurs par défaut pour la vue publique
     acomptesPourcentage: 50,
     note: 4,
@@ -192,6 +197,11 @@ export async function getVoyages(params?: {
 
 export async function getVoyageById(voyageId: string): Promise<any> {
   const res = await apiRequest<TripDetailResponse>(`${TRIPS_PREFIX}/trips/${voyageId}`);
+  return mapTripToVoyage(res.trip);
+}
+
+export async function getPartnerVoyageById(voyageId: string): Promise<any> {
+  const res = await apiRequest<{ success: boolean; trip: TripBackend }>(`${TRIPS_PREFIX}/partner/trips/${voyageId}`);
   return mapTripToVoyage(res.trip);
 }
 

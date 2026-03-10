@@ -25,6 +25,7 @@ export interface Voyage {
   prix: string;
   acomptesRecus: string;
   placesRestantes: string;
+  rawStatus?: string;
 }
 
 export interface DashboardStats {
