@@ -13,15 +13,16 @@ export const Dashboard: React.FC = () => {
     let cancelled = false;
     (async () => {
       try {
-        const [computed, charts] = await Promise.all([getDashboardStats(), getChartsData()]);
-        if (!cancelled) {
-          setStats(computed);
-          setChartData(charts);
-        }
+        const computed = await getDashboardStats();
+        if (!cancelled) setStats(computed);
       } catch (e) {
-        if (!cancelled) {
-          setError((e as { message?: string })?.message || 'Erreur chargement');
-        }
+        if (!cancelled) setError((e as { message?: string })?.message || 'Erreur chargement des statistiques');
+      }
+      try {
+        const charts = await getChartsData();
+        if (!cancelled) setChartData(charts);
+      } catch {
+        // charts non critiques, on affiche des données vides
       }
     })();
     return () => { cancelled = true; };
