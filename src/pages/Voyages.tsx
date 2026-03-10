@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Calendar, Upload, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Calendar, Upload, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X, Play } from 'lucide-react';
 import { Voyage, VoyageStatus } from '../types';
 import * as tripsApi from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -68,6 +68,7 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
         prix: v.prix ? `${v.prix} ${v.devise || ''}`.trim() : '',
         acomptesRecus: v.acomptesRecus,
         placesRestantes: v.placesRestantes,
+        rawStatus: v.status,
       }));
       setVoyages(mappedData);
     } catch (e) {
@@ -77,6 +78,16 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
 
   const handleDelete = (id: string) => {
     setDeleteTarget(id);
+  };
+
+  const handleActivate = async (id: string) => {
+    try {
+      await tripsApi.activateVoyage(id);
+      await loadVoyages();
+      addToast('success', 'Voyage activé avec succès');
+    } catch (e) {
+      addToast('error', (e as { message?: string })?.message || 'Erreur activation');
+    }
   };
 
   const confirmDelete = async () => {
@@ -470,6 +481,15 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
+                      {(voyage.rawStatus === 'DRAFT' || voyage.rawStatus === 'PAUSED') && (
+                        <button
+                          onClick={() => handleActivate(voyage.id)}
+                          title="Activer"
+                          className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+                        >
+                          <Play className="w-4 h-4 text-green-600" />
+                        </button>
+                      )}
                       <button
                         onClick={() => onEditVoyage(voyage.id)}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"

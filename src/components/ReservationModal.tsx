@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle, Mail, UserCircle, ChevronRight } from 'lucide-react';
+import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle, Mail, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createBooking } from '../api/trips';
 import { payBookingMtn, payDepositKkiapay, getTransactionStatus } from '../api/payments';
@@ -51,9 +51,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   // Contact info fields
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  const [emergencyName, setEmergencyName] = useState('');
-  const [emergencyPhone, setEmergencyPhone] = useState('');
-  const [emergencyRelation, setEmergencyRelation] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
 
   useEffect(() => {
@@ -77,7 +74,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     : parseFloat(String(voyage.prix || '0').replace(/[^\d]/g, '')) || 0;
 
   const sousTotal = basePrice * nombrePersonnes;
-  const acompte = Math.round(sousTotal * 0.5);
+  const depositPerPerson = typeof voyage.depositAmount === 'number' ? voyage.depositAmount : Math.round(basePrice * 0.5);
+  const acompte = depositPerPerson * nombrePersonnes;
   const soldeRestant = sousTotal - acompte;
 
   const mtnFees = Math.round(acompte * MTN_FEE_RATE);
@@ -95,12 +93,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     try {
       const contactInfo = {
         email: contactEmail.trim() || undefined,
-        phoneNumber: contactPhone.trim() || undefined,
-        emergencyContact: emergencyName.trim() ? {
-          name: emergencyName.trim(),
-          phoneNumber: emergencyPhone.trim(),
-          relationship: emergencyRelation.trim() || 'Proche',
-        } : undefined,
+        phone: contactPhone.trim() || undefined,
       };
       const booking = await createBooking(
         voyage._id || voyage.id,
@@ -216,9 +209,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     setCountdown(120);
     setContactEmail('');
     setContactPhone('');
-    setEmergencyName('');
-    setEmergencyPhone('');
-    setEmergencyRelation('');
     setSpecialRequests('');
     onClose();
   };
@@ -338,37 +328,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     onChange={e => setContactPhone(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
                   />
-                </div>
-              </div>
-
-              <div className="border-t border-gray-100 pt-4">
-                <p className="text-xs font-semibold text-[#17233E]/70 mb-3 flex items-center gap-1.5">
-                  <UserCircle className="w-3.5 h-3.5" /> Contact d'urgence
-                </p>
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Nom complet"
-                    value={emergencyName}
-                    onChange={e => setEmergencyName(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="tel"
-                      placeholder="Téléphone"
-                      value={emergencyPhone}
-                      onChange={e => setEmergencyPhone(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Relation (ex: Épouse)"
-                      value={emergencyRelation}
-                      onChange={e => setEmergencyRelation(e.target.value)}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
-                    />
-                  </div>
                 </div>
               </div>
 
