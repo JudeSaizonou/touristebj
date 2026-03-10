@@ -14,7 +14,9 @@ export interface VoyageFormData {
   allowInstallments: boolean;
   minInstallmentAmount: number;
   maxParticipants: number;
-  photos: string[];
+  existingPhotos: string[];   // URLs déjà sur le serveur (inchangées)
+  removedPhotos: string[];    // URLs à supprimer via DELETE
+  newPhotoFiles: File[];      // nouveaux fichiers à uploader via multipart
   included: string[];
   excluded: string[];
   itinerary: Array<{ day: number; description: string; activities: string[] }>;
@@ -59,7 +61,11 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
   const [allowInstallments, setAllowInstallments] = useState(initialData?.allowInstallments ?? true);
   const [minInstallmentAmount, setMinInstallmentAmount] = useState(String(initialData?.minInstallmentAmount ?? 5000));
   const [maxParticipants, setMaxParticipants] = useState(String(initialData?.maxParticipants ?? 20));
-  const [photos, setPhotos] = useState<string[]>(initialData?.photos || []);
+  // images existantes (URLs serveur) vs nouveaux fichiers
+  const [existingPhotos, setExistingPhotos] = useState<string[]>(initialData?.existingPhotos || []);
+  const [removedPhotos, setRemovedPhotos] = useState<string[]>([]);
+  const [newPhotoFiles, setNewPhotoFiles] = useState<File[]>([]);
+  const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const [included, setIncluded] = useState<string[]>(initialData?.included?.length ? initialData.included : ['']);
   const [excluded, setExcluded] = useState<string[]>(initialData?.excluded?.length ? initialData.excluded : ['']);
   const [itinerary, setItinerary] = useState<Array<{ day: number; description: string; activities: string[] }>>(
@@ -68,43 +74,35 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ─── Image compression ─────────────────────────────────────────────────────
+  // ─── Image upload ───────────────────────────────────────────────────────────
 
-  const compressImage = (file: File, maxWidth = 1024, quality = 0.72): Promise<string> =>
-    new Promise((resolve, reject) => {
+  const previewFile = (file: File): Promise<string> =>
+    new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onerror = reject;
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onerror = reject;
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.src = ev.target?.result as string;
-      };
+      reader.onload = (ev) => resolve(ev.target?.result as string);
       reader.readAsDataURL(file);
     });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    Array.from(files).forEach(async (file) => {
-      if (photos.length >= 8) return;
-      try {
-        const compressed = await compressImage(file);
-        setPhotos(prev => prev.length >= 8 ? prev : [...prev, compressed]);
-      } catch { /* ignore */ }
-    });
+    const totalExisting = existingPhotos.length + newPhotoFiles.length;
+    const slots = Math.max(0, 10 - totalExisting);
+    const picked = Array.from(files).slice(0, slots);
+    const previews = await Promise.all(picked.map(previewFile));
+    setNewPhotoFiles(prev => [...prev, ...picked]);
+    setNewPhotoPreviews(prev => [...prev, ...previews]);
     if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeExisting = (url: string) => {
+    setExistingPhotos(prev => prev.filter(u => u !== url));
+    setRemovedPhotos(prev => [...prev, url]);
+  };
+
+  const removeNew = (idx: number) => {
+    setNewPhotoFiles(prev => prev.filter((_, i) => i !== idx));
+    setNewPhotoPreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   // ─── Itinerary helpers ──────────────────────────────────────────────────────
@@ -160,7 +158,9 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
       allowInstallments,
       minInstallmentAmount: Number(minInstallmentAmount) || 5000,
       maxParticipants: Number(maxParticipants) || 20,
-      photos,
+      existingPhotos,
+      removedPhotos,
+      newPhotoFiles,
       included: included.filter(s => s.trim()),
       excluded: excluded.filter(s => s.trim()),
       itinerary: itinerary.map(d => ({
@@ -349,24 +349,43 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
 
       {/* ── Section 6 : Photos ── */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Photos</h2>
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors"
-        >
-          <Upload className="w-8 h-8 text-gray-400 mb-2" />
-          <p className="text-sm font-medium text-gray-700">Cliquez pour ajouter des photos</p>
-          <p className="text-xs text-gray-400 mt-1">JPG, PNG — max 8 photos — compressées automatiquement</p>
-        </div>
-        <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileUpload} className="hidden" />
-        {photos.length > 0 && (
-          <div className="flex gap-3 mt-4 flex-wrap">
-            {photos.map((photo, i) => (
-              <div key={i} className="w-24 h-20 rounded-lg relative overflow-hidden bg-gray-100">
-                <img src={photo} alt="" className="w-full h-full object-cover" />
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          Photos <span className="text-xs font-normal text-gray-400">({existingPhotos.length + newPhotoFiles.length}/10)</span>
+        </h2>
+
+        {existingPhotos.length + newPhotoFiles.length < 10 && (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors mb-4"
+          >
+            <Upload className="w-8 h-8 text-gray-400 mb-2" />
+            <p className="text-sm font-medium text-gray-700">Cliquez pour ajouter des photos</p>
+            <p className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB/photo — max 10 photos</p>
+          </div>
+        )}
+        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" multiple onChange={handleFileUpload} className="hidden" />
+
+        {(existingPhotos.length > 0 || newPhotoFiles.length > 0) && (
+          <div className="flex gap-3 flex-wrap">
+            {existingPhotos.map((url, i) => (
+              <div key={`existing-${i}`} className="w-24 h-20 rounded-lg relative overflow-hidden bg-gray-100 group">
+                <img src={url} alt="" className="w-full h-full object-cover" />
                 <button
                   type="button"
-                  onClick={() => setPhotos(photos.filter((_, j) => j !== i))}
+                  onClick={() => removeExisting(url)}
+                  className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            {newPhotoPreviews.map((preview, i) => (
+              <div key={`new-${i}`} className="w-24 h-20 rounded-lg relative overflow-hidden bg-gray-100">
+                <img src={preview} alt="" className="w-full h-full object-cover" />
+                <div className="absolute bottom-0 left-0 right-0 bg-primary-500/80 text-white text-[9px] text-center py-0.5">Nouveau</div>
+                <button
+                  type="button"
+                  onClick={() => removeNew(i)}
                   className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
                 >
                   <X className="w-3 h-3" />

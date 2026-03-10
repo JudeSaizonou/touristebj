@@ -4,6 +4,7 @@ import type { VoyageFormData } from '../components/VoyageForm';
 import { VoyageursList } from '../components/VoyageursList';
 import { StatsCard } from '../components/StatsCard';
 import * as tripsApi from '../api/trips';
+import { uploadTripImages, deleteTripImage } from '../api/trips';
 import { ToastContainer, useToast } from '../components/Toast';
 
 interface EditVoyageProps {
@@ -43,6 +44,15 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
   const handleSubmit = async (data: VoyageFormData) => {
     if (!voyage) return;
     try {
+      // 1. Supprimer les images retirées
+      for (const url of data.removedPhotos) {
+        await deleteTripImage(voyageId, url);
+      }
+      // 2. Uploader les nouvelles images
+      if (data.newPhotoFiles.length > 0) {
+        await uploadTripImages(voyageId, data.newPhotoFiles);
+      }
+      // 3. Mettre à jour les autres champs
       const updated = await tripsApi.updateVoyage(voyageId, {
         title: data.title,
         destination: data.destination,
@@ -56,7 +66,6 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
         allowInstallments: data.allowInstallments,
         minInstallmentAmount: data.minInstallmentAmount,
         maxParticipants: data.maxParticipants,
-        images: data.photos,
         included: data.included,
         excluded: data.excluded,
         itinerary: data.itinerary,
@@ -90,7 +99,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
     allowInstallments: voyage.allowInstallments ?? true,
     minInstallmentAmount: voyage.minInstallmentAmount || 5000,
     maxParticipants: Number(voyage.nombrePersonnes) || 20,
-    photos: voyage.photos || [],
+    existingPhotos: voyage.photos || [],
     included: voyage.ceQuiEstInclus || [],
     excluded: voyage.ceQuiNestPasInclus || [],
     itinerary: voyage.itineraire?.map((d: any) => ({

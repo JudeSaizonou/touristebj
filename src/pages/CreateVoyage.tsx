@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { VoyageForm } from '../components/VoyageForm';
 import type { VoyageFormData } from '../components/VoyageForm';
-import { createVoyage } from '../api/trips';
+import { createVoyage, uploadTripImages } from '../api/trips';
 import { ToastContainer, useToast } from '../components/Toast';
 
 interface CreateVoyageProps {
@@ -16,7 +16,7 @@ export const CreateVoyage: React.FC<CreateVoyageProps> = ({ onBack, onCreate }) 
   const handleSubmit = async (formData: VoyageFormData) => {
     setLoading(true);
     try {
-      await createVoyage({
+      const trip = await createVoyage({
         title: formData.title,
         destination: formData.destination,
         description: formData.description,
@@ -29,11 +29,13 @@ export const CreateVoyage: React.FC<CreateVoyageProps> = ({ onBack, onCreate }) 
         allowInstallments: formData.allowInstallments,
         minInstallmentAmount: formData.minInstallmentAmount,
         maxParticipants: formData.maxParticipants,
-        images: formData.photos,
         included: formData.included,
         excluded: formData.excluded,
         itinerary: formData.itinerary,
       });
+      if (formData.newPhotoFiles.length > 0) {
+        await uploadTripImages(trip.id || trip._id, formData.newPhotoFiles);
+      }
       addToast('success', 'Voyage créé avec succès');
       onCreate({});
       onBack();
