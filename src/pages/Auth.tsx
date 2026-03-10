@@ -239,29 +239,15 @@ export const Auth: React.FC<AuthProps> = ({
     setConnexionLoading(true);
     try {
       await authApi.sendCode(connexionCountry, connexionPhone);
+      // sendCode OK → utilisateur de type USER → flow OTP
       setConnexionOtpSent(true);
       setConnexionStep('otp');
       startTimer(setConnexionOtpTimer, connexionTimerRef, 60);
       addToast('success', 'Code envoyé sur votre téléphone');
-    } catch (err) {
-      const msg = getApiMessage(err);
-      const lower = msg.toLowerCase();
-      // USER_X, ADMIN, PARTNER : pas d'OTP, afficher directement le mot de passe
-      const usePasswordDirectly =
-        lower.includes('déjà vérifié') ||
-        lower.includes('already verified') ||
-        lower.includes('déjà utilisé') ||
-        lower.includes('already used') ||
-        lower.includes('password') ||
-        lower.includes('mot de passe') ||
-        lower.includes('connecter');
-      if (usePasswordDirectly) {
-        setConnexionRole('user_x');
-        setConnexionStep('password-only');
-        addToast('info', 'Entrez votre mot de passe pour vous connecter.');
-      } else {
-        addToast('error', msg);
-      }
+    } catch {
+      // sendCode échoue → USER_X / ADMIN / PARTNER → mot de passe directement
+      setConnexionRole('user_x');
+      setConnexionStep('password-only');
     } finally {
       setConnexionLoading(false);
     }
@@ -825,9 +811,10 @@ export const Auth: React.FC<AuthProps> = ({
                   <form onSubmit={handleConnexionSubmit} className="space-y-4">
                     <h2 className="text-xl font-bold text-gray-900">Mot de passe</h2>
                     <p className="text-sm text-gray-600">
-                      {connexionRole === 'user_x'
-                        ? 'Entrez votre mot de passe pour vous connecter.'
-                        : 'Entrez votre mot de passe pour finaliser la connexion.'}
+                      Entrez votre mot de passe pour vous connecter au{' '}
+                      <span className="font-medium text-gray-800">
+                        {formatFullPhone(connexionCountry, connexionPhone)}
+                      </span>.
                     </p>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
