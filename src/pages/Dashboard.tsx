@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, X, TrendingUp, Users, MapPin, CreditCard, Clock, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip, LineChart, Line, CartesianGrid, YAxis } from 'recharts';
-import { getDashboardStats, getDashboardBookings, getChartsData } from '../api/trips';
-import type { DashboardStats, DashboardBooking } from '../api/trips';
+import { getDashboardStats, getDashboardBookings, getMonthlyStats } from '../api/trips';
+import type { DashboardStats, DashboardBooking, MonthlyPoint } from '../api/trips';
 
 const fmt = (n: number) =>
   n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n);
@@ -141,7 +141,7 @@ export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bookings, setBookings] = useState<DashboardBooking[]>([]);
   const [pagination, setPagination] = useState<any>(null);
-  const [revenueChartData, setRevenueChartData] = useState<{ month: string; value: number }[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyPoint[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -153,7 +153,7 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     loadStats();
-    loadCharts();
+    loadMonthly();
   }, []);
 
   useEffect(() => {
@@ -171,10 +171,10 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const loadCharts = async () => {
+  const loadMonthly = async () => {
     try {
-      const data = await getChartsData();
-      setRevenueChartData(data);
+      const data = await getMonthlyStats(12);
+      setMonthlyData(data);
     } catch {
       // non critique
     }
@@ -233,36 +233,36 @@ export const Dashboard: React.FC = () => {
         />
         <StatCard
           icon={<Users className="w-5 h-5" />}
-          label="Réservations"
-          value={stats?.bookings.total ?? 0}
-          sub={`${stats?.bookings.inProgress ?? 0} en cours`}
+          label="Clients"
+          value={stats?.clients.total ?? 0}
+          sub={`${stats?.bookings.total ?? 0} réservations`}
           color="blue"
         />
         <StatCard
           icon={<CreditCard className="w-5 h-5" />}
           label="Acomptes collectés"
-          value={fmtFcfa(stats?.revenue.deposits ?? 0)}
+          value={fmt(stats?.revenue.deposits ?? 0)}
           sub={`${stats?.bookings.depositPaid ?? 0} payés`}
           color="green"
         />
         <StatCard
           icon={<TrendingUp className="w-5 h-5" />}
           label="Revenu total"
-          value={fmtFcfa(stats?.revenue.total ?? 0)}
+          value={fmt(stats?.revenue.total ?? 0)}
           sub={`${stats?.revenue.transactions ?? 0} transactions`}
           color="purple"
         />
         <StatCard
           icon={<Clock className="w-5 h-5" />}
           label="En attente"
-          value={fmtFcfa(stats?.pending.amount ?? 0)}
+          value={fmt(stats?.pending.amount ?? 0)}
           sub={`${stats?.pending.count ?? 0} résa.`}
           color="amber"
         />
         <StatCard
           icon={<AlertTriangle className="w-5 h-5" />}
           label="En retard"
-          value={fmtFcfa(stats?.overdue.amount ?? 0)}
+          value={fmt(stats?.overdue.amount ?? 0)}
           sub={`${stats?.overdue.bookings ?? 0} résa.`}
           color="red"
         />
@@ -270,16 +270,27 @@ export const Dashboard: React.FC = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue chart */}
         <div className="bg-white rounded-xl p-6 shadow-card border border-gray-100">
           <h3 className="text-base font-semibold text-gray-900 mb-1">Revenus par mois</h3>
           <p className="text-2xl font-bold text-gray-900 mb-4">{fmtFcfa(stats?.revenue.total ?? 0)}</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={revenueChartData}>
+              <BarChart data={monthlyData}>
                 <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <Tooltip content={<CustomTooltip />} cursor={false} />
-                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                  {revenueChartData.map((_, i) => (
+                <Tooltip
+                  content={({ active, payload, label }) =>
+                    active && payload?.length ? (
+                      <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm shadow-lg">
+                        <p className="text-gray-400 text-xs mb-1">{label}</p>
+                        <p>{fmtFcfa(payload[0].value as number)}</p>
+                      </div>
+                    ) : null
+                  }
+                  cursor={false}
+                />
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                  {monthlyData.map((_, i) => (
                     <Cell key={i} fill={i % 2 === 0 ? '#E5E7EB' : '#F97316'} />
                   ))}
                 </Bar>
@@ -288,31 +299,29 @@ export const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* Bookings chart */}
         <div className="bg-white rounded-xl p-6 shadow-card border border-gray-100">
-          <h3 className="text-base font-semibold text-gray-900 mb-1">Répartition des réservations</h3>
-          <p className="text-2xl font-bold text-gray-900 mb-4">{stats?.bookings.total ?? 0} réservations</p>
-          <div className="space-y-3">
-            {[
-              { label: 'En attente d\'acompte', value: stats?.bookings.pendingDeposit ?? 0, color: 'bg-amber-400' },
-              { label: 'Acompte payé', value: stats?.bookings.depositPaid ?? 0, color: 'bg-blue-400' },
-              { label: 'En cours', value: stats?.bookings.inProgress ?? 0, color: 'bg-purple-400' },
-              { label: 'Complétées', value: stats?.bookings.completed ?? 0, color: 'bg-green-400' },
-              { label: 'Annulées', value: stats?.bookings.cancelled ?? 0, color: 'bg-red-400' },
-            ].map(({ label, value, color }) => {
-              const total = stats?.bookings.total || 1;
-              const pct = Math.round((value / total) * 100);
-              return (
-                <div key={label}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-gray-600">{label}</span>
-                    <span className="font-medium text-gray-900">{value} <span className="text-gray-400">({pct}%)</span></span>
-                  </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className={`${color} h-2 rounded-full`} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
+          <h3 className="text-base font-semibold text-gray-900 mb-1">Réservations par mois</h3>
+          <p className="text-2xl font-bold text-gray-900 mb-4">{stats?.bookings.total ?? 0} au total</p>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 11 }} width={30} />
+                <Tooltip
+                  content={({ active, payload, label }) =>
+                    active && payload?.length ? (
+                      <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm shadow-lg">
+                        <p className="text-gray-400 text-xs mb-1">{label}</p>
+                        <p>{payload[0].value} réservations</p>
+                      </div>
+                    ) : null
+                  }
+                />
+                <Line type="monotone" dataKey="bookings" stroke="#F97316" strokeWidth={2.5} dot={{ fill: '#F97316', r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

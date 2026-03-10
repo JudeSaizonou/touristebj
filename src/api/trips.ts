@@ -80,6 +80,7 @@ export interface DashboardStatsResponse {
     };
     pending?: { amount?: number; count?: number };
     overdue?: { amount?: number; bookings?: number };
+    clients?: { total?: number };
   };
 }
 
@@ -431,6 +432,7 @@ export interface DashboardStats {
   revenue: { total: number; deposits: number; installments: number; transactions: number };
   pending: { amount: number; count: number };
   overdue: { amount: number; bookings: number };
+  clients: { total: number };
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -459,7 +461,66 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     },
     pending: { amount: s.pending?.amount ?? 0, count: s.pending?.count ?? 0 },
     overdue: { amount: s.overdue?.amount ?? 0, bookings: s.overdue?.bookings ?? 0 },
+    clients: { total: s.clients?.total ?? 0 },
   };
+}
+
+export interface MonthlyPoint {
+  month: string; // "Avr 25", "Mai 25", etc.
+  revenue: number;
+  deposits: number;
+  installments: number;
+  bookings: number;
+  bookingsCancelled: number;
+  bookingsCompleted: number;
+}
+
+const MONTHS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+function buildMonthLabel(year: number, month: number): string {
+  return `${MONTHS_FR[month - 1]} ${String(year).slice(2)}`;
+}
+
+function fillMonthlyGaps(
+  rawRevenue: Array<{ year: number; month: number; revenue?: number; deposits?: number; installments?: number; transactions?: number }>,
+  rawBookings: Array<{ year: number; month: number; total?: number; cancelled?: number; completed?: number }>,
+  totalMonths: number
+): MonthlyPoint[] {
+  // Build lookup maps
+  const revMap = new Map<string, typeof rawRevenue[0]>();
+  rawRevenue.forEach(r => revMap.set(`${r.year}-${r.month}`, r));
+  const bokMap = new Map<string, typeof rawBookings[0]>();
+  rawBookings.forEach(b => bokMap.set(`${b.year}-${b.month}`, b));
+
+  const now = new Date();
+  const points: MonthlyPoint[] = [];
+  for (let i = totalMonths - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const key = `${y}-${m}`;
+    const rev = revMap.get(key);
+    const bok = bokMap.get(key);
+    points.push({
+      month: buildMonthLabel(y, m),
+      revenue: rev?.revenue ?? 0,
+      deposits: rev?.deposits ?? 0,
+      installments: rev?.installments ?? 0,
+      bookings: bok?.total ?? 0,
+      bookingsCancelled: bok?.cancelled ?? 0,
+      bookingsCompleted: bok?.completed ?? 0,
+    });
+  }
+  return points;
+}
+
+export async function getMonthlyStats(months = 12): Promise<MonthlyPoint[]> {
+  const res = await apiRequest<{
+    success: boolean;
+    revenue?: Array<{ year: number; month: number; revenue?: number; deposits?: number; installments?: number }>;
+    bookings?: Array<{ year: number; month: number; total?: number; cancelled?: number; completed?: number }>;
+  }>(`${TRIPS_PREFIX}/partner/dashboard/monthly-stats?months=${months}`);
+  return fillMonthlyGaps(res.revenue || [], res.bookings || [], months);
 }
 
 export interface DashboardBooking {
