@@ -122,7 +122,7 @@ export default {
   				'sans-serif'
   			],
   			playfair: [
-  				'Playfair Display"',
+  				'"Playfair Display"',
   				'Georgia',
   				'serif'
   			]

@@ -19,13 +19,6 @@ interface PublicLayoutProps {
   onLogout?: () => void;
 }
 
-const getFormattedDate = (): string => {
-  const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-  const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-  const now = new Date();
-  return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
-};
-
 export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLogin, onOpenAuth, onMesVoyages, onLogout }) => {
   const { user, isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -44,15 +37,13 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
     setMobileMenuOpen(false);
     setTimeout(() => {
       const el = document.getElementById(sectionId);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
 
   const navItems = [
-    { label: 'ACCUEIL', action: () => { setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }, active: false },
-    { label: 'VOYAGES', action: () => scrollToSection('voyages-section'), active: true },
+    { label: 'ACCUEIL', action: () => { setMobileMenuOpen(false); window.location.hash = '#/'; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+    { label: 'VOYAGES', action: () => scrollToSection('voyages-section') },
   ];
 
   return (
@@ -60,124 +51,107 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:text-primary-500 focus:font-semibold">
         Aller au contenu principal
       </a>
-      {/* Top Bar - Dark green */}
-      <div className="bg-forest-800 text-white py-2 px-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
-          <div className="flex items-center gap-2 md:gap-6">
-            <span className="hidden md:flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              {getFormattedDate()}
+
+      {/* ═══════ Top Bar ═══════ */}
+      <div className="bg-dark-800 text-white/80 py-2 px-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center text-xs">
+          <div className="flex items-center gap-4 md:gap-6">
+            <span className="hidden md:flex items-center gap-1.5">
+              <Phone className="w-3 h-3 text-primary-400" />
+              +229 97 00 00 00
             </span>
-            <span className="hidden md:flex items-center gap-2">
-              <MapPin className="w-4 h-4" />
-              Cotonou, Bénin
+            <span className="hidden md:flex items-center gap-1.5">
+              <Mail className="w-3 h-3 text-primary-400" />
+              contact@letouriste.bj
             </span>
-            <span className="hidden lg:flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Lun - Vend : 08h 30 - 17h
-            </span>
-            {/* Mobile: show a compact info */}
-            <span className="flex md:hidden items-center gap-1.5 text-xs">
-              <MapPin className="w-3.5 h-3.5" />
-              Cotonou, Bénin
+            <span className="flex md:hidden items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-primary-400" />
+              Cotonou, Benin
             </span>
           </div>
-          <div className="flex items-center gap-3 md:gap-4">
-            <a href="#" aria-label="Facebook" className="hover:text-gray-200 transition-colors">
-              <Facebook className="w-4 h-4" />
+          <div className="flex items-center gap-3">
+            <a href="#" aria-label="Facebook" className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors">
+              <Facebook className="w-3 h-3" />
             </a>
-            <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="hover:text-gray-200 transition-colors">
-              <TikTokIcon className="w-4 h-4" />
+            <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors">
+              <TikTokIcon className="w-3 h-3" />
             </a>
-            <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-gray-200 transition-colors">
-              <Instagram className="w-4 h-4" />
+            <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors">
+              <Instagram className="w-3 h-3" />
             </a>
           </div>
         </div>
       </div>
 
-      {/* Main Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+      {/* ═══════ Header ═══════ */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="shrink-0">
-              <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-10 md:h-12 object-contain" />
-            </div>
+            <button onClick={() => { window.location.hash = '#/'; }} className="shrink-0">
+              <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-10 md:h-11 object-contain" />
+            </button>
 
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-5 xl:gap-6 text-sm mx-auto whitespace-nowrap">
+            {/* Desktop Nav */}
+            <nav className="hidden lg:flex items-center gap-8 text-sm">
               {navItems.map((item) => (
                 <button
                   key={item.label}
                   onClick={item.action}
-                  className={`font-medium transition-colors flex items-center gap-1 ${
-                    item.active
-                      ? 'text-primary-600 font-semibold border-b-2 border-primary-600 pb-1'
-                      : 'text-gray-700 hover:text-primary-600'
-                  }`}
+                  className="font-medium text-dark-800/70 hover:text-primary-500 transition-colors relative py-1"
                 >
                   {item.label}
                 </button>
               ))}
-              {/* Search icon */}
-              <button
-                onClick={() => {
-                  const searchInput = document.querySelector('input[placeholder*="Rechercher"]') as HTMLInputElement;
-                  if (searchInput) {
-                    searchInput.scrollIntoView({ behavior: 'smooth' });
-                    setTimeout(() => searchInput.focus(), 500);
-                  }
-                }}
-                className="text-gray-700 hover:text-primary-600 transition-colors shrink-0"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              </button>
             </nav>
 
-            {/* Right: CTA + user + Hamburger */}
+            {/* Right side */}
             <div className="flex items-center gap-2 md:gap-3 shrink-0">
               {user ? (
-                /* Utilisateur connecté */
                 <>
                   {!isAdmin && onMesVoyages && (
                     <button
                       onClick={onMesVoyages}
-                      className="hidden sm:flex items-center gap-1.5 px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                      className="hidden sm:flex items-center gap-1.5 px-4 py-2 text-dark-800/70 hover:text-primary-500 font-medium transition-colors text-sm"
                     >
                       <PiggyBank className="w-4 h-4" />
-                      MES VOYAGES
+                      Mes Voyages
                     </button>
                   )}
                   {isAdmin && (
                     <button
                       onClick={onAdminLogin}
-                      className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                      className="hidden sm:block px-4 py-2 text-dark-800/70 hover:text-primary-500 font-medium transition-colors text-sm"
                     >
-                      ADMINISTRATION
+                      Administration
                     </button>
                   )}
+                  {/* User avatar menu */}
                   <div className="relative hidden sm:block">
                     <button
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
+                      className="flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
                     >
-                      <div className="w-6 h-6 bg-forest-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      <div className="w-7 h-7 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                         {(user.username || user.phoneNumber || 'U')[0].toUpperCase()}
                       </div>
-                      <span className="max-w-[100px] truncate">{user.username || user.phoneNumber}</span>
-                      <ChevronDown className="w-3.5 h-3.5" />
+                      <span className="max-w-[100px] truncate text-sm font-medium text-dark-800">{user.username || user.phoneNumber}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 text-dark-800/40 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
                     </button>
                     {userMenuOpen && (
                       <>
                         <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
-                        <div className="absolute right-0 top-full mt-1.5 bg-white border border-gray-100 rounded-xl shadow-lg z-20 min-w-[180px] py-1.5 overflow-hidden">
+                        <div className="absolute right-0 top-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-20 min-w-[200px] py-2 overflow-hidden">
+                          <div className="px-4 py-2.5 border-b border-gray-100">
+                            <p className="text-xs text-dark-800/40">Connecte en tant que</p>
+                            <p className="text-sm font-semibold text-dark-800 truncate">{user.username || user.phoneNumber}</p>
+                          </div>
                           {!isAdmin && onMesVoyages && (
                             <button
                               onClick={() => { setUserMenuOpen(false); onMesVoyages(); }}
-                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-dark-800/70 hover:bg-gray-50 transition-colors"
                             >
-                              <PiggyBank className="w-4 h-4 text-forest-800" />
+                              <PiggyBank className="w-4 h-4 text-forest-700" />
                               Mes voyages
                             </button>
                           )}
@@ -186,7 +160,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <LogOut className="w-4 h-4" />
-                            Se déconnecter
+                            Se deconnecter
                           </button>
                         </div>
                       </>
@@ -194,132 +168,98 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                   </div>
                 </>
               ) : (
-                /* Non connecté */
                 <>
                   {onOpenAuth ? (
                     <>
                       <button
-                        onClick={() => onOpenAuth('inscription')}
-                        className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                        onClick={() => onOpenAuth('connexion')}
+                        className="hidden sm:block px-4 py-2 text-dark-800/70 hover:text-primary-500 font-medium transition-colors text-sm"
                       >
-                        S'INSCRIRE
+                        Connexion
                       </button>
                       <button
-                        onClick={() => onOpenAuth('connexion')}
-                        className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                        onClick={() => onOpenAuth('inscription')}
+                        className="hidden sm:block px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm"
                       >
-                        SE CONNECTER
+                        S'inscrire
                       </button>
                     </>
                   ) : (
                     <button
                       onClick={onAdminLogin}
-                      className="hidden sm:block px-3 md:px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors text-sm whitespace-nowrap"
+                      className="hidden sm:block px-4 py-2 text-dark-800/70 hover:text-primary-500 font-medium transition-colors text-sm"
                     >
-                      SE CONNECTER
+                      Connexion
                     </button>
                   )}
                 </>
               )}
-              <button
-                onClick={() => {
-                  const voyagesSection = document.getElementById('voyages-section');
-                  if (voyagesSection) {
-                    voyagesSection.scrollIntoView({ behavior: 'smooth' });
-                  } else {
-                    window.scrollTo({ top: 400, behavior: 'smooth' });
-                  }
-                }}
-                className="hidden md:block px-5 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold text-sm whitespace-nowrap"
-              >
-                RÉSERVER
-              </button>
 
-              {/* Hamburger button - visible below lg */}
+              {/* Hamburger */}
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="lg:hidden p-2 hover:bg-gray-100 rounded-xl transition-colors"
               >
-                {mobileMenuOpen ? (
-                  <X className="w-6 h-6 text-gray-700" />
-                ) : (
-                  <Menu className="w-6 h-6 text-gray-700" />
-                )}
+                {mobileMenuOpen ? <X className="w-5 h-5 text-dark-800" /> : <Menu className="w-5 h-5 text-dark-800" />}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Menu Drawer */}
+        {/* ═══════ Mobile Drawer ═══════ */}
         {mobileMenuOpen && (
           <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-              onClick={() => setMobileMenuOpen(false)}
-            />
-            {/* Drawer */}
-            <div className="fixed top-0 right-0 h-full w-72 sm:w-80 bg-white z-50 shadow-2xl lg:hidden transform transition-transform duration-300 ease-in-out overflow-y-auto">
-              {/* Drawer Header */}
+            <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+            <div className="fixed top-0 right-0 h-full w-72 sm:w-80 bg-white z-50 shadow-2xl lg:hidden overflow-y-auto">
               <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-10 object-contain" />
-                <button
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600" />
+                <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-9 object-contain" />
+                <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                  <X className="w-5 h-5 text-dark-800/60" />
                 </button>
               </div>
 
-              {/* Nav Links */}
               <nav className="p-4 space-y-1">
                 {navItems.map((item) => (
                   <button
                     key={item.label}
                     onClick={item.action}
-                    className={`w-full text-left px-4 py-3 rounded-lg font-medium text-sm transition-colors ${
-                      item.active
-                        ? 'bg-primary-50 text-primary-600 font-semibold'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-primary-600'
-                    }`}
+                    className="w-full text-left px-4 py-3 rounded-xl font-medium text-sm text-dark-800/70 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                   >
                     {item.label}
                   </button>
                 ))}
               </nav>
 
-              {/* Divider */}
               <div className="border-t border-gray-100 mx-4" />
 
-              {/* Actions */}
-              <div className="p-4 space-y-3">
+              <div className="p-4 space-y-2">
                 {user ? (
                   <>
-                    <div className="px-4 py-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500">Connecté en tant que</p>
-                      <p className="font-medium text-dark-800 text-sm truncate">{user.username || user.phoneNumber}</p>
+                    <div className="px-4 py-3 bg-gradient-to-r from-primary-50 to-orange-50 rounded-xl">
+                      <p className="text-[10px] text-dark-800/40 uppercase tracking-wider font-semibold">Connecte</p>
+                      <p className="font-semibold text-dark-800 text-sm truncate">{user.username || user.phoneNumber}</p>
                     </div>
                     {!isAdmin && onMesVoyages && (
                       <button
                         onClick={() => { setMobileMenuOpen(false); onMesVoyages(); }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-forest-800 hover:bg-forest-800/5 rounded-lg font-medium text-sm transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-4 py-3 text-forest-700 hover:bg-forest-50 rounded-xl font-medium text-sm transition-colors text-left"
                       >
-                        <PiggyBank className="w-4 h-4" /> MES VOYAGES
+                        <PiggyBank className="w-4 h-4" /> Mes Voyages
                       </button>
                     )}
                     {isAdmin && (
                       <button
                         onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
-                        className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                        className="w-full px-4 py-3 text-dark-800/70 hover:bg-gray-50 rounded-xl font-medium text-sm transition-colors text-left"
                       >
-                        ADMINISTRATION
+                        Administration
                       </button>
                     )}
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg font-medium text-sm transition-colors text-left"
+                      className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm transition-colors text-left"
                     >
-                      <LogOut className="w-4 h-4" /> Se déconnecter
+                      <LogOut className="w-4 h-4" /> Se deconnecter
                     </button>
                   </>
                 ) : (
@@ -327,53 +267,43 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                     {onOpenAuth ? (
                       <>
                         <button
-                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('inscription'); }}
-                          className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('connexion'); }}
+                          className="w-full px-4 py-3 text-dark-800/70 hover:bg-gray-50 rounded-xl font-medium text-sm transition-colors text-center border border-gray-200"
                         >
-                          S'INSCRIRE
+                          Connexion
                         </button>
                         <button
-                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('connexion'); }}
-                          className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('inscription'); }}
+                          className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
                         >
-                          SE CONNECTER
+                          S'inscrire
                         </button>
                       </>
                     ) : (
                       <button
                         onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
-                        className="w-full px-4 py-3 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-colors text-left"
+                        className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
                       >
-                        SE CONNECTER
+                        Connexion
                       </button>
                     )}
                   </>
                 )}
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    const voyagesSection = document.getElementById('voyages-section');
-                    if (voyagesSection) voyagesSection.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="w-full px-4 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
-                >
-                  RÉSERVER MAINTENANT
-                </button>
               </div>
 
-              {/* Social */}
               <div className="p-4 border-t border-gray-100 mt-2">
-                <p className="text-xs text-gray-400 mb-3 font-medium">Suivez-nous</p>
-                <div className="flex items-center gap-4">
-                  <a href="#" aria-label="Facebook" className="text-gray-400 hover:text-primary-600 transition-colors">
-                    <Facebook className="w-5 h-5" />
-                  </a>
-                  <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-gray-400 hover:text-primary-600 transition-colors">
-                    <TikTokIcon className="w-5 h-5" />
-                  </a>
-                  <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-400 hover:text-primary-600 transition-colors">
-                    <Instagram className="w-5 h-5" />
-                  </a>
+                <p className="text-[10px] text-dark-800/30 uppercase tracking-wider font-semibold mb-3">Suivez-nous</p>
+                <div className="flex items-center gap-3">
+                  {[
+                    { href: '#', label: 'Facebook', icon: <Facebook className="w-4 h-4" /> },
+                    { href: 'https://www.tiktok.com/@letouriste.bj', label: 'TikTok', icon: <TikTokIcon className="w-4 h-4" /> },
+                    { href: 'https://www.instagram.com/letouriste.bj', label: 'Instagram', icon: <Instagram className="w-4 h-4" /> },
+                  ].map(({ href, label, icon }, i) => (
+                    <a key={i} href={href} target={href !== '#' ? '_blank' : undefined} rel={href !== '#' ? 'noopener noreferrer' : undefined} aria-label={label}
+                      className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-dark-800/40 hover:bg-primary-500 hover:text-white transition-all">
+                      {icon}
+                    </a>
+                  ))}
                 </div>
               </div>
             </div>
@@ -381,36 +311,38 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
         )}
       </header>
 
-      {/* Main Content */}
+      {/* ═══════ Content ═══════ */}
       <main id="main-content">{children}</main>
 
-      {/* Footer */}
-      <footer className="bg-dark-900 text-white relative overflow-hidden">
-        {/* Accent top border */}
-        <div className="h-1 bg-gradient-to-r from-primary-500 via-orange-400 to-primary-600" />
+      {/* ═══════ Footer ═══════ */}
+      <footer className="bg-dark-800 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500 rounded-full blur-[150px] -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-forest-500 rounded-full blur-[150px] translate-y-1/2 -translate-x-1/2" />
+        </div>
 
-        {/* Newsletter banner */}
-        <div id="newsletter-section" className="border-b border-white/10">
-          <div className="max-w-7xl mx-auto px-4 py-10">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Newsletter */}
+        <div id="newsletter-section" className="relative border-b border-white/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+            <div className="bg-gradient-to-r from-primary-500/10 to-primary-500/5 border border-primary-500/20 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
-                <h3 className="text-xl font-bold text-white mb-1">Restez informé de nos voyages</h3>
-                <p className="text-gray-400 text-sm">Recevez nos offres exclusives et nouveaux départs directement dans votre boîte mail.</p>
+                <h3 className="text-xl font-bold text-white mb-1">Ne manquez aucun depart</h3>
+                <p className="text-white/50 text-sm">Recevez nos offres et nouveaux voyages en avant-premiere.</p>
               </div>
               <div className="flex flex-col w-full md:w-auto max-w-md gap-2">
                 <div className="flex w-full gap-2">
                   <input
                     type="email"
-                    placeholder="Votre adresse email"
+                    placeholder="Votre email"
                     value={newsletterEmail}
                     onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterMsg(null); }}
-                    className="flex-1 min-w-0 px-4 py-3 bg-white/10 text-white placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 border border-white/10 text-sm"
+                    className="flex-1 min-w-0 px-4 py-3 bg-white/10 text-white placeholder-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 border border-white/10 text-sm"
                   />
                   <button
                     onClick={() => {
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                       if (emailRegex.test(newsletterEmail.trim())) {
-                        setNewsletterMsg({ text: 'Merci ! Vous \u00eates inscrit.', type: 'success' });
+                        setNewsletterMsg({ text: 'Merci ! Vous etes inscrit.', type: 'success' });
                         setNewsletterEmail('');
                       } else {
                         setNewsletterMsg({ text: 'Email invalide', type: 'error' });
@@ -432,70 +364,63 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
           </div>
         </div>
 
-        {/* Main footer grid */}
-        <div className="max-w-7xl mx-auto px-4 py-14">
+        {/* Footer grid */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-14">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-
-            {/* Col 1 — Brand */}
+            {/* Brand */}
             <div>
-              <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-12 object-contain brightness-0 invert mb-5" />
-              <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                Votre partenaire voyage au Bénin. Réservez en groupe, épargnez progressivement avec ZePargn.
+              <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-11 object-contain brightness-0 invert mb-5" />
+              <p className="text-white/40 text-sm leading-relaxed mb-6">
+                Votre partenaire voyage au Benin. Reservez en groupe, epargnez progressivement avec ZePargn.
               </p>
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-start gap-3 text-gray-400">
-                  <MapPin className="w-4 h-4 text-primary-400 mt-0.5 shrink-0" />
-                  Cotonou, Bénin
+              <ul className="space-y-2.5 text-sm">
+                <li className="flex items-center gap-2.5 text-white/50">
+                  <MapPin className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                  Cotonou, Benin
                 </li>
-                <li className="flex items-center gap-3 text-gray-400">
-                  <Phone className="w-4 h-4 text-primary-400 shrink-0" />
+                <li className="flex items-center gap-2.5 text-white/50">
+                  <Phone className="w-3.5 h-3.5 text-primary-400 shrink-0" />
                   +229 97 00 00 00
                 </li>
-                <li className="flex items-center gap-3 text-gray-400">
-                  <Mail className="w-4 h-4 text-primary-400 shrink-0" />
+                <li className="flex items-center gap-2.5 text-white/50">
+                  <Mail className="w-3.5 h-3.5 text-primary-400 shrink-0" />
                   contact@letouriste.bj
                 </li>
-                <li className="flex items-center gap-3 text-gray-400">
-                  <Globe className="w-4 h-4 text-primary-400 shrink-0" />
-                  www.letouriste.bj
-                </li>
-                <li className="flex items-center gap-3 text-gray-400">
-                  <Clock className="w-4 h-4 text-primary-400 shrink-0" />
-                  Lun – Ven : 08h30 – 17h00
+                <li className="flex items-center gap-2.5 text-white/50">
+                  <Clock className="w-3.5 h-3.5 text-primary-400 shrink-0" />
+                  Lun - Ven : 08h30 - 17h00
                 </li>
               </ul>
-
-              {/* Social icons */}
-              <div className="flex items-center gap-3 mt-7">
+              <div className="flex items-center gap-2.5 mt-6">
                 {[
-                  { href: '#', label: 'Facebook', icon: <Facebook className="w-4 h-4" /> },
-                  { href: 'https://www.tiktok.com/@letouriste.bj', label: 'TikTok', icon: <TikTokIcon className="w-4 h-4" /> },
-                  { href: 'https://www.instagram.com/letouriste.bj', label: 'Instagram', icon: <Instagram className="w-4 h-4" /> },
+                  { href: '#', label: 'Facebook', icon: <Facebook className="w-3.5 h-3.5" /> },
+                  { href: 'https://www.tiktok.com/@letouriste.bj', label: 'TikTok', icon: <TikTokIcon className="w-3.5 h-3.5" /> },
+                  { href: 'https://www.instagram.com/letouriste.bj', label: 'Instagram', icon: <Instagram className="w-3.5 h-3.5" /> },
                 ].map(({ href, label, icon }, i) => (
                   <a key={i} href={href} target={href !== '#' ? '_blank' : undefined} rel={href !== '#' ? 'noopener noreferrer' : undefined} aria-label={label}
-                    className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-gray-400 hover:bg-primary-500 hover:text-white transition-all">
+                    className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white/40 hover:bg-primary-500 hover:text-white transition-all">
                     {icon}
                   </a>
                 ))}
               </div>
             </div>
 
-            {/* Col 2 — Navigation */}
+            {/* Navigation */}
             <div>
-              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Navigation</h4>
-              <ul className="space-y-3">
+              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-5">Navigation</h4>
+              <ul className="space-y-2.5">
                 {[
-                  { label: 'Accueil', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+                  { label: 'Accueil', action: () => { window.location.hash = '#/'; window.scrollTo({ top: 0 }); } },
                   { label: 'Nos voyages', action: () => scrollToSection('voyages-section') },
                   { label: 'Mes voyages', action: onMesVoyages },
-                  { label: 'Administration', action: onAdminLogin },
+                  ...(isAdmin ? [{ label: 'Administration', action: onAdminLogin }] : []),
                 ].map(({ label, action }) => (
                   <li key={label}>
                     <button
                       onClick={action}
-                      className="text-gray-400 hover:text-primary-400 text-sm transition-colors flex items-center gap-2 group"
+                      className="text-white/40 hover:text-primary-400 text-sm transition-colors flex items-center gap-2 group"
                     >
-                      <span className="w-1 h-1 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-primary-400" />
                       {label}
                     </button>
                   </li>
@@ -503,44 +428,36 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               </ul>
             </div>
 
-            {/* Col 3 — Nos partenaires */}
+            {/* Partners + Payment */}
             <div>
-              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Nos partenaires</h4>
-              <div className="space-y-4 mb-8">
-                <div className="bg-gradient-to-r from-forest-800 to-[#2a7d5e] rounded-xl px-4 py-3 flex items-center gap-3">
-                  <img src={LogoZepargn} alt="ZePargn" className="h-8 object-contain brightness-0 invert" />
-                  <p className="text-white/70 text-xs">Épargne et paiement échelonné</p>
+              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-5">Nos partenaires</h4>
+              <div className="space-y-3 mb-8">
+                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors">
+                  <img src={LogoZepargn} alt="ZePargn" className="h-7 object-contain brightness-0 invert" />
+                  <p className="text-white/40 text-xs">Epargne & paiement echelonne</p>
                 </div>
-                <div className="bg-amber-50 rounded-xl px-4 py-3 border border-amber-300">
-                  <p className="text-amber-800 font-bold text-sm">Miwakpon</p>
-                  <p className="text-amber-700 text-xs">Tourisme et découverte</p>
+                <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-white/10 transition-colors">
+                  <p className="text-amber-400 font-bold text-sm">Miwakpon</p>
+                  <p className="text-white/40 text-xs">Tourisme & decouverte</p>
                 </div>
               </div>
 
-              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Paiement sécurisé par</h4>
-              <div className="flex items-center gap-3">
-                <div className="bg-yellow-400 text-black rounded-lg px-3 py-2 text-xs font-bold text-center">
-                  MTN MoMo
-                </div>
-                <div className="bg-green-600 text-white rounded-lg px-3 py-2 text-xs font-bold text-center">
-                  FedaPay
-                </div>
+              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Paiement securise</h4>
+              <div className="flex items-center gap-2.5">
+                <div className="bg-yellow-400 text-yellow-900 rounded-lg px-3 py-1.5 text-xs font-bold">MTN MoMo</div>
+                <div className="bg-green-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold">FedaPay</div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div id="partners-section" className="border-t border-white/10">
-          <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-gray-500">
-            <p>© {new Date().getFullYear()} Le Touriste.bj — Tous droits réservés.</p>
+        {/* Bottom */}
+        <div className="relative border-t border-white/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/30">
+            <p>&copy; {new Date().getFullYear()} Le Touriste.bj - Tous droits reserves.</p>
             <div className="flex items-center gap-5">
-              <a href="#" aria-label="Politique de confidentialité" title="Bientôt disponible" className="hover:text-gray-300 transition-colors">Politique de confidentialité</a>
-              <a href="#" aria-label="Conditions d'utilisation" title="Bientôt disponible" className="hover:text-gray-300 transition-colors">Conditions d'utilisation</a>
-            </div>
-            <div className="flex items-center gap-2 text-gray-500">
-              <Calendar className="w-4 h-4" />
-              <span>{getFormattedDate()}</span>
+              <a href="#" className="hover:text-white/60 transition-colors">Politique de confidentialite</a>
+              <a href="#" className="hover:text-white/60 transition-colors">Conditions d'utilisation</a>
             </div>
           </div>
         </div>

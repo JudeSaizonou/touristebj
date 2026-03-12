@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ToastContainer, useToast } from '@/components/Toast';
 import { useAuth } from '../context/AuthContext';
 import * as authApi from '../api/auth';
+import LogoTouristeBj from '../assets/LogoTouristeBj.png';
 import type { ApiError } from '../api/client';
 
 export type AuthMode = 'inscription' | 'connexion';
@@ -425,10 +426,18 @@ export const Auth: React.FC<AuthProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative blobs */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-forest-500/10 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      <div className="w-full max-w-md">
+      <div className="relative w-full max-w-md">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-12 object-contain" />
+        </div>
+
         {onBack && (canGoBackInscription || canGoBackConnexion) ? (
           <button
             type="button"
@@ -458,7 +467,7 @@ export const Auth: React.FC<AuthProps> = ({
           </button>
         ) : null}
 
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="relative bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           {/* Tabs Inscription / Connexion */}
           <div className="flex border-b border-gray-200">
             <button
