@@ -696,7 +696,8 @@ export async function createBooking(
   },
   specialRequests?: string
 ): Promise<MappedBooking> {
-  const body: Record<string, unknown> = { tripId, numberOfParticipants };
+  const bookingNumber = 'BK-' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const body: Record<string, unknown> = { tripId, numberOfParticipants, bookingNumber };
   if (contactInfo && Object.values(contactInfo).some(Boolean)) body.contactInfo = contactInfo;
   if (specialRequests?.trim()) body.specialRequests = specialRequests.trim();
   const res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
