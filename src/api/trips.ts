@@ -696,13 +696,24 @@ export async function createBooking(
   },
   specialRequests?: string
 ): Promise<MappedBooking> {
-  const body: Record<string, unknown> = { tripId, numberOfParticipants };
+  const bookingNumber = 'BK-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const body: Record<string, unknown> = { tripId, numberOfParticipants, bookingNumber };
   if (contactInfo && Object.values(contactInfo).some(Boolean)) body.contactInfo = contactInfo;
   if (specialRequests?.trim()) body.specialRequests = specialRequests.trim();
-  const res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
-    `${TRIPS_PREFIX}/reservations`,
-    { method: 'POST', body: JSON.stringify(body) }
-  );
+
+  // Try /reservations first, fallback to /bookings
+  let res: { success: boolean; booking: BookingBackend };
+  try {
+    res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
+      `${TRIPS_PREFIX}/reservations`,
+      { method: 'POST', body: JSON.stringify(body) }
+    );
+  } catch {
+    res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
+      `${TRIPS_PREFIX}/bookings`,
+      { method: 'POST', body: JSON.stringify(body) }
+    );
+  }
   return mapBooking(res.booking);
 }
 
