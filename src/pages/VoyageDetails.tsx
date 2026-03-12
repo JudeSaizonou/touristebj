@@ -7,7 +7,7 @@ import LogoZepargn from '../assets/LogoZepargn.png';
 import { useAuth } from '../context/AuthContext';
 import {
   MapPin, Clock, Users, Calendar,
-  Check, X, ChevronDown, ChevronLeft, Globe, Loader2, Shield, PiggyBank, ArrowRight
+  Check, X, ChevronDown, ChevronLeft, Globe, Loader2, ArrowRight
 } from 'lucide-react';
 
 import type { AuthMode } from './Auth';
@@ -355,20 +355,11 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                   </div>
                 </div>
 
-                {/* Trust badges */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
-                  {[
-                    { icon: <Shield className="w-4 h-4" />, text: 'Paiement 100% securise', color: 'text-green-600 bg-green-50' },
-                    { icon: <PiggyBank className="w-4 h-4" />, text: 'Epargne flexible avec ZePargn', color: 'text-forest-700 bg-forest-50' },
-                    { icon: <Users className="w-4 h-4" />, text: 'Voyage en groupe organise', color: 'text-primary-600 bg-primary-50' },
-                  ].map((item) => (
-                    <div key={item.text} className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${item.color} rounded-lg flex items-center justify-center shrink-0`}>
-                        {item.icon}
-                      </div>
-                      <span className="text-xs text-dark-800/60 font-medium">{item.text}</span>
-                    </div>
-                  ))}
+                {/* Trust info */}
+                <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5 space-y-2 text-xs text-dark-800/50">
+                  <p>Paiement 100% securise via MTN MoMo et FedaPay</p>
+                  <p>Epargne flexible avec ZePargn</p>
+                  <p>Voyage de groupe organise</p>
                 </div>
               </div>
             </div>

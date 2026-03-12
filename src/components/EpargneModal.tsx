@@ -30,12 +30,21 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
     onFailed: (status) => setStep(status),
   });
 
+  const canClose = step === 'form' || step === 'successful' || step === 'failed' || step === 'expired' || step === 'timeout';
+
   useEffect(() => {
     if (isOpen && user?.phoneNumber) {
       const national = user.phoneNumber.replace(/^\+\d{1,3}/, '').replace(/\D/g, '');
       setPhoneNumber(national);
     }
   }, [isOpen, user]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && canClose) onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, canClose, onClose]);
 
   if (!isOpen || !booking) return null;
 
@@ -120,14 +129,6 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
     clearTimers();
     setStep('form');
   };
-
-  const canClose = step === 'form' || step === 'successful' || step === 'failed' || step === 'expired' || step === 'timeout';
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && canClose) handleClose(); };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
-  }, [canClose]);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
