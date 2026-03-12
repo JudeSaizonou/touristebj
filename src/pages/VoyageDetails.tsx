@@ -3,6 +3,7 @@ import { PublicLayout } from '../components/PublicLayout';
 import { ToastContainer, useToast } from '../components/Toast';
 import { ReservationModal } from '../components/ReservationModal';
 import { getVoyageById } from '../api/trips';
+import LogoZepargn from '../assets/LogoZepargn.png';
 import { useAuth } from '../context/AuthContext';
 import {
   MapPin, Clock, Users, Calendar,
@@ -132,9 +133,9 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
           {/* Images */}
           <div className="mb-8">
             <div className="rounded-2xl overflow-hidden h-[420px] mb-4">
-              <img src={voyage.photos[selectedImage]} alt={voyage.titre} className="w-full h-full object-cover" />
+              <img src={voyage.photos?.[selectedImage] || voyage.photos?.[0] || ''} alt={voyage.titre} className="w-full h-full object-cover" />
             </div>
-            {voyage.photos.length > 1 && (
+            {(voyage.photos?.length ?? 0) > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {voyage.photos.map((photo: string, index: number) => (
                   <div
@@ -337,18 +338,13 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-primary-500 font-semibold mb-3 tracking-wide uppercase text-sm">Nos Partenaires</p>
           <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-4">Nos Incroyables Partenaires</h2>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8 items-center">
-            {[
-              { label: 'ZePargn', bg: 'bg-gradient-to-r from-forest-800 to-[#2a7d5e]', text: 'text-white', border: 'border-transparent' },
-              { label: 'MTN MoMo', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-300' },
-              { label: 'Kkiapay', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-300' },
-              { label: 'Moov Money', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-300' },
-              { label: 'Visa', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-300' },
-            ].map(({ label, bg, text, border }) => (
-              <div key={label} className={`${bg} rounded-xl p-6 h-20 flex items-center justify-center border ${border} transition-shadow hover:shadow-md`}>
-                <span className={`${text} font-bold text-lg tracking-wide`}>{label}</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 max-w-lg mx-auto gap-4 md:gap-8 items-center">
+            <div className="bg-gradient-to-r from-forest-800 to-[#2a7d5e] rounded-xl p-4 h-20 flex items-center justify-center border border-transparent transition-shadow hover:shadow-md">
+              <img src={LogoZepargn} alt="ZePargn" className="h-12 object-contain brightness-0 invert" />
+            </div>
+            <div className="bg-amber-50 rounded-xl p-6 h-20 flex items-center justify-center border border-amber-300 transition-shadow hover:shadow-md">
+              <span className="text-amber-800 font-bold text-lg tracking-wide">Miwakpon</span>
+            </div>
           </div>
         </div>
       </div>

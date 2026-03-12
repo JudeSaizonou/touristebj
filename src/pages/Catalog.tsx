@@ -3,6 +3,7 @@ import { MapPin, Star, LayoutGrid, List, Search, Loader2, LogIn, SlidersHorizont
 import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
+import LogoZepargn from '../assets/LogoZepargn.png';
 import { useDebounce } from '../hooks/useDebounce';
 
 import type { AuthMode } from './Auth';
@@ -517,18 +518,13 @@ export const Catalog: React.FC<CatalogProps> = ({
           <p className="text-gray-500 mb-12 max-w-2xl mx-auto text-sm">
             En partenariat avec ZePargn, nous vous offrons des conditions de paiement flexibles pour vos voyages.
           </p>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8 items-center">
-            {[
-              { label: 'ZePargn', bg: 'bg-gradient-to-r from-forest-800 to-[#2a7d5e]', text: 'text-white', border: 'border-transparent' },
-              { label: 'MTN MoMo', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-300' },
-              { label: 'Kkiapay', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-300' },
-              { label: 'Moov Money', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-300' },
-              { label: 'Visa', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-300' },
-            ].map(({ label, bg, text, border }) => (
-              <div key={label} className={`${bg} rounded-xl p-6 h-20 flex items-center justify-center border ${border} transition-shadow hover:shadow-md`}>
-                <span className={`${text} font-bold text-lg tracking-wide`}>{label}</span>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 max-w-lg mx-auto gap-4 md:gap-8 items-center">
+            <div className="bg-gradient-to-r from-forest-800 to-[#2a7d5e] rounded-xl p-4 h-20 flex items-center justify-center border border-transparent transition-shadow hover:shadow-md">
+              <img src={LogoZepargn} alt="ZePargn" className="h-12 object-contain brightness-0 invert" />
+            </div>
+            <div className="bg-amber-50 rounded-xl p-6 h-20 flex items-center justify-center border border-amber-300 transition-shadow hover:shadow-md">
+              <span className="text-amber-800 font-bold text-lg tracking-wide">Miwakpon</span>
+            </div>
           </div>
         </div>
       </div>

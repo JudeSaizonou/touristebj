@@ -1,7 +1,7 @@
 export const PAYMENT_FEES = {
-  MTN: 0.02,       // +2%
-  KKIAPAY: 0.005,  // +0.5%
+  MTN: 0.02,
+  FEDAPAY: 0.02,
 } as const;
 
-export const KKIAPAY_KEY = import.meta.env.VITE_KKIAPAY_PUBLIC_KEY as string | undefined;
-export const KKIAPAY_SANDBOX = import.meta.env.VITE_KKIAPAY_SANDBOX !== 'false';
+export const FEDAPAY_KEY = import.meta.env.VITE_FEDAPAY_PUBLIC_KEY as string | undefined;
+export const FEDAPAY_ENV = (import.meta.env.VITE_FEDAPAY_ENV || 'sandbox') as 'sandbox' | 'live';
