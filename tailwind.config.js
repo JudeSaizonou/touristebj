@@ -8,6 +8,19 @@ export default {
   theme: {
   	extend: {
   		colors: {
+  			forest: {
+  				'50': '#f0fdf8',
+  				'100': '#ccfbef',
+  				'200': '#99f6db',
+  				'300': '#5ceac3',
+  				'400': '#2dd4a5',
+  				'500': '#1a9d7a',
+  				'600': '#1a7d62',
+  				'700': '#1a6350',
+  				'800': '#1a4d3e',
+  				'900': '#0f2e25',
+  				DEFAULT: '#1a4d3e'
+  			},
   			primary: {
   				'50': '#fff8f3',
   				'100': '#ffe8d5',

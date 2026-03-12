@@ -5,10 +5,12 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
+import { useDebounce } from '../hooks/useDebounce';
 
 export const ReservationsList: React.FC = () => {
   const [reservations, setReservations] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -36,7 +38,7 @@ export const ReservationsList: React.FC = () => {
   };
 
   const filtered = reservations.filter(r =>
-    (r.voyageDestination || '').toLowerCase().includes(searchQuery.toLowerCase())
+    (r.voyageDestination || '').toLowerCase().includes(debouncedSearch.toLowerCase())
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const displayed = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);

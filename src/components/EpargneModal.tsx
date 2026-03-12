@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, PiggyBank, Loader2, CheckCircle, AlertCircle, RefreshCw, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { payBookingMtn, payInstallmentKkiapay, getTransactionStatus } from '../api/payments';
+import { payBookingMtn, payInstallmentKkiapay } from '../api/payments';
 import { openKkiapay } from '../api/kkiapay';
 import type { MappedBooking } from '../types';
+import { usePaymentPolling } from '../hooks/usePaymentPolling';
+import { PAYMENT_FEES, KKIAPAY_KEY, KKIAPAY_SANDBOX } from '../config/payments';
 
 interface EpargneModalProps {
   isOpen: boolean;
@@ -15,12 +17,6 @@ interface EpargneModalProps {
 type Step = 'form' | 'loading' | 'processing' | 'successful' | 'failed' | 'expired' | 'timeout';
 type PaymentMethod = 'mtn' | 'kkiapay';
 
-const MTN_FEE_RATE = 0.02;   // +2%
-const KKIA_FEE_RATE = 0.005; // +0.5%
-
-const KKIAPAY_KEY = import.meta.env.VITE_KKIAPAY_PUBLIC_KEY as string | undefined;
-const KKIAPAY_SANDBOX = import.meta.env.VITE_KKIAPAY_SANDBOX !== 'false';
-
 export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onClose, onSuccess }) => {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('form');
@@ -28,9 +24,11 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mtn');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [countdown, setCountdown] = useState(120);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { countdown, startPolling, clearTimers } = usePaymentPolling({
+    onSuccess: () => setStep('successful'),
+    onFailed: (status) => setStep(status),
+  });
 
   useEffect(() => {
     if (isOpen && user?.phoneNumber) {
@@ -39,20 +37,13 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
     }
   }, [isOpen, user]);
 
-  const clearTimers = () => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
-  };
-
-  useEffect(() => () => clearTimers(), []);
-
   if (!isOpen || !booking) return null;
 
   const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const remaining = booking.remainingAmount;
   const amountNum = parseInt(amount.replace(/\D/g, '')) || 0;
-  const fees = Math.round(amountNum * (paymentMethod === 'mtn' ? MTN_FEE_RATE : KKIA_FEE_RATE));
+  const fees = Math.round(amountNum * (paymentMethod === 'mtn' ? PAYMENT_FEES.MTN : PAYMENT_FEES.KKIAPAY));
   const totalDebited = amountNum + fees;
   const isAmountValid = amountNum > 0 && amountNum <= remaining;
   const isPhoneValid = phoneNumber.replace(/\D/g, '').length >= 8;
@@ -61,29 +52,6 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
   const daysLeft = booking.paymentDeadline
     ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
-
-  const startPolling = (referenceId: string) => {
-    setCountdown(120);
-    setStep('processing');
-
-    countdownRef.current = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) { clearTimers(); setStep('timeout'); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-
-    let elapsed = 0;
-    pollRef.current = setInterval(async () => {
-      elapsed += 3;
-      if (elapsed >= 120) { clearTimers(); setStep('timeout'); return; }
-      try {
-        const status = await getTransactionStatus(referenceId);
-        if (status.status === 'successful') { clearTimers(); setStep('successful'); }
-        else if (status.status === 'failed' || status.status === 'expired') { clearTimers(); setStep(status.status); }
-      } catch { /* ignore */ }
-    }, 3000);
-  };
 
   const handlePayMtn = async () => {
     setStep('loading');
@@ -95,6 +63,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
         countryCode: '229',
         type: 'INSTALLMENT',
       });
+      setStep('processing');
       startPolling(res.referenceId);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Impossible d\'initier le paiement.');
@@ -140,7 +109,6 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
     setStep('form');
     setAmount('');
     setErrorMsg('');
-    setCountdown(120);
     onClose();
   };
 
@@ -152,17 +120,22 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
   const handleRetry = () => {
     clearTimers();
     setStep('form');
-    setCountdown(120);
   };
 
   const canClose = step === 'form' || step === 'successful' || step === 'failed' || step === 'expired' || step === 'timeout';
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && canClose) handleClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [canClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60" onClick={step === 'form' ? handleClose : undefined} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
-        <div className="bg-[#1a4d3e] px-6 py-5 flex items-center justify-between">
+        <div className="bg-forest-800 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-white">
             <PiggyBank className="w-5 h-5" />
             <h2 className="font-playfair text-xl font-bold">Épargner</h2>
@@ -179,19 +152,19 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
           {step === 'form' && (
             <div className="space-y-4">
               <div>
-                <p className="font-semibold text-[#17233E]">{booking.voyage?.titre || 'Voyage'}</p>
-                <p className="text-sm text-[#17233E]/60">{booking.voyage?.destination}</p>
+                <p className="font-semibold text-dark-800">{booking.voyage?.titre || 'Voyage'}</p>
+                <p className="text-sm text-dark-800/60">{booking.voyage?.destination}</p>
               </div>
 
               {/* Barre de progression */}
               <div>
-                <div className="flex justify-between text-xs text-[#17233E]/60 mb-1.5">
+                <div className="flex justify-between text-xs text-dark-800/60 mb-1.5">
                   <span>Épargné : {fmtPrice(booking.amountPaid)}</span>
                   <span>Total : {fmtPrice(booking.totalPrice)}</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#1a4d3e] rounded-full"
+                    className="h-full bg-forest-800 rounded-full"
                     style={{ width: `${Math.min(100, Math.round((booking.amountPaid / booking.totalPrice) * 100))}%` }}
                   />
                 </div>
@@ -200,12 +173,12 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               {/* Solde restant + deadline */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-gray-50 rounded-xl p-3 text-center">
-                  <p className="text-xs text-[#17233E]/50 mb-1">Solde restant</p>
-                  <p className="font-bold text-[#17233E] text-sm">{fmtPrice(remaining)}</p>
+                  <p className="text-xs text-dark-800/50 mb-1">Solde restant</p>
+                  <p className="font-bold text-dark-800 text-sm">{fmtPrice(remaining)}</p>
                 </div>
                 <div className={`rounded-xl p-3 text-center ${daysLeft !== null && daysLeft <= 14 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                  <p className="text-xs text-[#17233E]/50 mb-1">Date limite</p>
-                  <p className={`font-bold text-sm ${daysLeft !== null && daysLeft <= 14 ? 'text-red-600' : 'text-[#17233E]'}`}>
+                  <p className="text-xs text-dark-800/50 mb-1">Date limite</p>
+                  <p className={`font-bold text-sm ${daysLeft !== null && daysLeft <= 14 ? 'text-red-600' : 'text-dark-800'}`}>
                     {daysLeft !== null ? `${daysLeft} jours` : '—'}
                   </p>
                 </div>
@@ -213,14 +186,14 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
 
               {/* Montant */}
               <div>
-                <label className="block text-sm font-semibold text-[#17233E] mb-2">Montant à épargner (FCFA)</label>
+                <label className="block text-sm font-semibold text-dark-800 mb-2">Montant à épargner (FCFA)</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   placeholder="Ex: 25000"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a4d3e]/30 focus:border-[#1a4d3e] text-[#17233E]"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-800/30 focus:border-forest-800 text-dark-800"
                 />
                 {amountNum > remaining && (
                   <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
@@ -231,7 +204,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
 
               {/* Choix du moyen de paiement */}
               <div>
-                <p className="text-sm font-semibold text-[#17233E] mb-2">Moyen de paiement</p>
+                <p className="text-sm font-semibold text-dark-800 mb-2">Moyen de paiement</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -239,7 +212,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
                       paymentMethod === 'mtn'
                         ? 'border-yellow-400 bg-yellow-50 text-yellow-800'
-                        : 'border-gray-200 text-[#17233E]/60 hover:border-gray-300'
+                        : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
                     }`}
                   >
                     <span className="text-2xl">📱</span>
@@ -251,8 +224,8 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                     onClick={() => setPaymentMethod('kkiapay')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
                       paymentMethod === 'kkiapay'
-                        ? 'border-[#1a4d3e] bg-green-50 text-green-800'
-                        : 'border-gray-200 text-[#17233E]/60 hover:border-gray-300'
+                        ? 'border-forest-800 bg-green-50 text-green-800'
+                        : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
                     }`}
                   >
                     <span className="text-2xl">💳</span>
@@ -265,11 +238,11 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               {/* Téléphone MTN */}
               {paymentMethod === 'mtn' && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#17233E] mb-2 flex items-center gap-1.5">
+                  <label className="block text-sm font-semibold text-dark-800 mb-2 flex items-center gap-1.5">
                     <Phone className="w-4 h-4" /> Numéro MTN Bénin
                   </label>
                   <div className="flex gap-2">
-                    <span className="flex items-center px-3 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-[#17233E]/70 font-medium whitespace-nowrap">
+                    <span className="flex items-center px-3 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-dark-800/70 font-medium whitespace-nowrap">
                       +229
                     </span>
                     <input
@@ -278,7 +251,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                       placeholder="0197000000"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1a4d3e]/30 focus:border-[#1a4d3e] text-[#17233E]"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-forest-800/30 focus:border-forest-800 text-dark-800"
                     />
                   </div>
                 </div>
@@ -320,7 +293,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               <button
                 onClick={handlePay}
                 disabled={!isValid}
-                className="w-full py-3.5 bg-[#1a4d3e] text-white rounded-xl font-semibold hover:bg-[#153d31] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-3.5 bg-forest-800 text-white rounded-xl font-semibold hover:bg-forest-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Payer {amountNum > 0 && isAmountValid ? fmtPrice(totalDebited) : ''} via {paymentMethod === 'mtn' ? 'MTN' : 'Kkiapay'}
               </button>
@@ -330,8 +303,8 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
           {/* LOADING */}
           {step === 'loading' && (
             <div className="py-12 flex flex-col items-center gap-4">
-              <Loader2 className="w-10 h-10 text-[#1a4d3e] animate-spin" />
-              <p className="text-[#17233E]/70 font-medium">
+              <Loader2 className="w-10 h-10 text-forest-800 animate-spin" />
+              <p className="text-dark-800/70 font-medium">
                 {paymentMethod === 'mtn' ? 'Initiation du paiement MTN...' : 'Chargement du widget Kkiapay...'}
               </p>
             </div>
@@ -345,8 +318,8 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                   <div className="w-8 h-8 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin" />
                 </div>
                 <div className="text-center">
-                  <p className="font-playfair font-bold text-[#17233E] text-lg">En attente de confirmation</p>
-                  <p className="text-sm text-[#17233E]/60 mt-1">Une notification a été envoyée sur votre téléphone MTN.</p>
+                  <p className="font-playfair font-bold text-dark-800 text-lg">En attente de confirmation</p>
+                  <p className="text-sm text-dark-800/60 mt-1">Une notification a été envoyée sur votre téléphone MTN.</p>
                 </div>
               </div>
 
@@ -371,7 +344,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               <div className="text-center">
                 <div className="inline-flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
                   <div className={`w-2 h-2 rounded-full ${countdown > 30 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
-                  <span className="text-sm font-medium text-[#17233E]">
+                  <span className="text-sm font-medium text-dark-800">
                     Expire dans <strong>{countdown}s</strong>
                   </span>
                 </div>
@@ -387,15 +360,15 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                   <CheckCircle className="w-8 h-8 text-green-500" />
                 </div>
                 <div>
-                  <p className="font-playfair font-bold text-[#17233E] text-xl">Paiement confirmé !</p>
-                  <p className="text-sm text-[#17233E]/60 mt-1">
+                  <p className="font-playfair font-bold text-dark-800 text-xl">Paiement confirmé !</p>
+                  <p className="text-sm text-dark-800/60 mt-1">
                     Votre versement de <strong>{fmtPrice(amountNum)}</strong> a été enregistré.
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleSuccess}
-                className="w-full py-3.5 bg-[#1a4d3e] text-white rounded-xl font-semibold hover:bg-[#153d31] transition-colors"
+                className="w-full py-3.5 bg-forest-800 text-white rounded-xl font-semibold hover:bg-forest-900 transition-colors"
               >
                 Voir mon épargne
               </button>
@@ -410,10 +383,10 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                   <AlertCircle className="w-8 h-8 text-red-500" />
                 </div>
                 <div>
-                  <p className="font-playfair font-bold text-[#17233E] text-xl">
+                  <p className="font-playfair font-bold text-dark-800 text-xl">
                     {step === 'failed' ? 'Paiement refusé' : step === 'expired' ? 'Délai expiré' : 'Temps écoulé'}
                   </p>
-                  <p className="text-sm text-[#17233E]/60 mt-1">
+                  <p className="text-sm text-dark-800/60 mt-1">
                     {step === 'failed'
                       ? 'La transaction MTN a été refusée. Vérifiez votre solde.'
                       : 'Le délai de confirmation MTN est dépassé. Réessayez.'}
@@ -423,13 +396,13 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               <div className="flex gap-3">
                 <button
                   onClick={handleClose}
-                  className="flex-1 py-3 border border-gray-200 text-[#17233E] rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
+                  className="flex-1 py-3 border border-gray-200 text-dark-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={handleRetry}
-                  className="flex-1 py-3 bg-[#1a4d3e] text-white rounded-xl font-semibold hover:bg-[#153d31] transition-colors text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-forest-800 text-white rounded-xl font-semibold hover:bg-forest-900 transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" /> Réessayer
                 </button>

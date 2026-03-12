@@ -6,6 +6,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface VoyagesProps {
   onCreateVoyage: () => void;
@@ -41,6 +42,7 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [statusFilter, setStatusFilter] = useState<'all' | VoyageStatus>('all');
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
@@ -137,7 +139,7 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
 
   // Filter by search, status, and advanced filters
   let filteredVoyages = voyages.filter(v => {
-    const matchSearch = v.destination.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = v.destination.toLowerCase().includes(debouncedSearch.toLowerCase());
     const matchStatus = statusFilter === 'all' || v.etat === statusFilter;
     const matchFilterStatut = filterStatut.length === 0 || filterStatut.includes(v.etat);
     return matchSearch && matchStatus && matchFilterStatut;
