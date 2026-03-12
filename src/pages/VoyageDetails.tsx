@@ -132,9 +132,9 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
           {/* Images */}
           <div className="mb-8">
             <div className="rounded-2xl overflow-hidden h-[420px] mb-4">
-              <img src={voyage.photos[selectedImage]} alt={voyage.titre} className="w-full h-full object-cover" />
+              <img src={voyage.photos?.[selectedImage] || voyage.photos?.[0] || ''} alt={voyage.titre} className="w-full h-full object-cover" />
             </div>
-            {voyage.photos.length > 1 && (
+            {(voyage.photos?.length ?? 0) > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {voyage.photos.map((photo: string, index: number) => (
                   <div

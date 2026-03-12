@@ -133,9 +133,9 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       // 2. Ouvrir le widget avec le montant et le transactionId du backend
       await openKkiapay({
         amount: init.amount,
-        api_key: KKIAPAY_KEY,
+        key: KKIAPAY_KEY,
         sandbox: KKIAPAY_SANDBOX,
-        reference: init.transactionId,
+        data: init.transactionId,
         phone: phoneNumber.replace(/\D/g, '') || undefined,
         name: user?.username || undefined,
       });
