@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Facebook, Instagram, Linkedin, Calendar, MapPin, Clock, Phone, Mail, Globe, ArrowRight, Menu, X, PiggyBank, LogOut, ChevronDown } from 'lucide-react';
+import { Facebook, Instagram, Calendar, MapPin, Clock, Phone, Mail, Globe, ArrowRight, Menu, X, PiggyBank, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
@@ -8,6 +8,7 @@ const TikTokIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
+import LogoZepargn from '../assets/LogoZepargn.png';
 import type { AuthMode } from '../pages/Auth';
 
 interface PublicLayoutProps {
@@ -51,11 +52,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
 
   const navItems = [
     { label: 'ACCUEIL', action: () => { setMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }, active: false },
-    { label: 'À PROPOS', action: () => scrollToSection('about-section'), active: false },
-    { label: 'DESTINATIONS', action: () => scrollToSection('destinations-section'), active: false },
     { label: 'VOYAGES', action: () => scrollToSection('voyages-section'), active: true },
-    { label: 'PAGES', action: () => scrollToSection('partners-section'), active: false },
-    { label: 'BLOG', action: () => scrollToSection('newsletter-section'), active: false },
   ];
 
   return (
@@ -95,9 +92,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
             <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-gray-200 transition-colors">
               <Instagram className="w-4 h-4" />
             </a>
-            <a href="#" aria-label="LinkedIn" className="hover:text-gray-200 transition-colors hidden sm:block">
-              <Linkedin className="w-4 h-4" />
-            </a>
           </div>
         </div>
       </div>
@@ -124,7 +118,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                   }`}
                 >
                   {item.label}
-                  <svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                 </button>
               ))}
               {/* Search icon */}
@@ -381,9 +374,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                   <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-400 hover:text-primary-600 transition-colors">
                     <Instagram className="w-5 h-5" />
                   </a>
-                  <a href="#" aria-label="LinkedIn" className="text-gray-400 hover:text-primary-600 transition-colors">
-                    <Linkedin className="w-5 h-5" />
-                  </a>
                 </div>
               </div>
             </div>
@@ -393,41 +383,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
 
       {/* Main Content */}
       <main id="main-content">{children}</main>
-
-      {/* Instagram Gallery Section */}
-      <div id="about-section" className="bg-dark-900 pt-12 pb-0">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-center gap-3 md:gap-6 flex-wrap">
-            {[
-              'https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=200&h=200&fit=crop',
-              'https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=200&h=200&fit=crop',
-              'https://images.unsplash.com/photo-1583422409516-2895a77efded?w=200&h=200&fit=crop',
-            ].map((img, i) => (
-              <div key={i} className="w-20 h-20 md:w-28 md:h-28 rounded-xl overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
-                <img src={img} alt="" className="w-full h-full object-cover" />
-              </div>
-            ))}
-            <a
-              href="https://www.instagram.com/letouriste.bj"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 md:px-5 md:py-2.5 border border-white text-white rounded-full text-xs md:text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
-            >
-              <Instagram className="w-4 h-4" />
-              Follow On Instagram
-            </a>
-            {[
-              'https://images.unsplash.com/photo-1528181304800-259b08848526?w=200&h=200&fit=crop',
-              'https://images.unsplash.com/photo-1503152394-c571994fd383?w=200&h=200&fit=crop',
-              'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=200&h=200&fit=crop',
-            ].map((img, i) => (
-              <div key={i + 3} className="w-20 h-20 md:w-28 md:h-28 rounded-xl overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
-                <img src={img} alt="" className="w-full h-full object-cover" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* Footer */}
       <footer className="bg-dark-900 text-white relative overflow-hidden">
@@ -479,13 +434,13 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
 
         {/* Main footer grid */}
         <div className="max-w-7xl mx-auto px-4 py-14">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
 
             {/* Col 1 — Brand */}
-            <div className="sm:col-span-2 lg:col-span-1">
+            <div>
               <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-12 object-contain brightness-0 invert mb-5" />
               <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                Votre partenaire voyage de confiance au Bénin. Partez en groupe, payez en douceur grâce à notre système d'épargne intégré.
+                Votre partenaire voyage au Bénin. Réservez en groupe, épargnez progressivement avec ZePargn.
               </p>
               <ul className="space-y-3 text-sm">
                 <li className="flex items-start gap-3 text-gray-400">
@@ -516,7 +471,6 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                   { href: '#', label: 'Facebook', icon: <Facebook className="w-4 h-4" /> },
                   { href: 'https://www.tiktok.com/@letouriste.bj', label: 'TikTok', icon: <TikTokIcon className="w-4 h-4" /> },
                   { href: 'https://www.instagram.com/letouriste.bj', label: 'Instagram', icon: <Instagram className="w-4 h-4" /> },
-                  { href: '#', label: 'LinkedIn', icon: <Linkedin className="w-4 h-4" /> },
                 ].map(({ href, label, icon }, i) => (
                   <a key={i} href={href} target={href !== '#' ? '_blank' : undefined} rel={href !== '#' ? 'noopener noreferrer' : undefined} aria-label={label}
                     className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-gray-400 hover:bg-primary-500 hover:text-white transition-all">
@@ -526,16 +480,14 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               </div>
             </div>
 
-            {/* Col 2 — Liens rapides */}
+            {/* Col 2 — Navigation */}
             <div>
               <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Navigation</h4>
               <ul className="space-y-3">
                 {[
                   { label: 'Accueil', action: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
-                  { label: 'À propos', action: () => scrollToSection('about-section') },
-                  { label: 'Destinations', action: () => scrollToSection('destinations-section') },
                   { label: 'Nos voyages', action: () => scrollToSection('voyages-section') },
-                  { label: 'Partenaires', action: () => scrollToSection('partners-section') },
+                  { label: 'Mes voyages', action: onMesVoyages },
                   { label: 'Administration', action: onAdminLogin },
                 ].map(({ label, action }) => (
                   <li key={label}>
@@ -551,61 +503,29 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               </ul>
             </div>
 
-            {/* Col 3 — Destinations */}
-            <div id="destinations-section">
-              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Destinations</h4>
-              <ul className="space-y-3">
-                {[
-                  'Dubaï, EAU',
-                  'Istanbul, Turquie',
-                  'Marrakech, Maroc',
-                  'Zanzibar, Tanzanie',
-                  'Le Caire, Égypte',
-                  'Bali, Indonésie',
-                ].map((dest) => (
-                  <li key={dest}>
-                    <button
-                      onClick={() => scrollToSection('voyages-section')}
-                      className="text-gray-400 hover:text-primary-400 text-sm transition-colors flex items-center gap-2 group"
-                    >
-                      <span className="w-1 h-1 rounded-full bg-primary-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      {dest}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Col 4 — Paiement & horaires */}
+            {/* Col 3 — Nos partenaires */}
             <div>
-              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Paiement accepté</h4>
-              <div className="grid grid-cols-2 gap-3 mb-8">
-                {[
-                  { label: 'MTN MoMo', bg: 'bg-yellow-400', text: 'text-black' },
-                  { label: 'Kkiapay', bg: 'bg-orange-500', text: 'text-white' },
-                  { label: 'Visa', bg: 'bg-blue-700', text: 'text-white' },
-                  { label: 'Moov Money', bg: 'bg-blue-400', text: 'text-white' },
-                ].map(({ label, bg, text }) => (
-                  <div key={label} className={`${bg} ${text} rounded-lg px-3 py-2 text-xs font-bold text-center`}>
-                    {label}
-                  </div>
-                ))}
+              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-5">Nos partenaires</h4>
+              <div className="space-y-4 mb-8">
+                <div className="bg-gradient-to-r from-forest-800 to-[#2a7d5e] rounded-xl px-4 py-3 flex items-center gap-3">
+                  <img src={LogoZepargn} alt="ZePargn" className="h-8 object-contain brightness-0 invert" />
+                  <p className="text-white/70 text-xs">Épargne et paiement échelonné</p>
+                </div>
+                <div className="bg-amber-50 rounded-xl px-4 py-3 border border-amber-300">
+                  <p className="text-amber-800 font-bold text-sm">Miwakpon</p>
+                  <p className="text-amber-700 text-xs">Tourisme et découverte</p>
+                </div>
               </div>
 
-              <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-4">Nos avantages</h4>
-              <ul className="space-y-2 text-sm text-gray-400">
-                {[
-                  'Paiement échelonné',
-                  'Épargne intégrée',
-                  'Voyages en groupe',
-                  'Support 6j/7',
-                ].map(adv => (
-                  <li key={adv} className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
-                    {adv}
-                  </li>
-                ))}
-              </ul>
+              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Paiement sécurisé par</h4>
+              <div className="flex items-center gap-3">
+                <div className="bg-yellow-400 text-black rounded-lg px-3 py-2 text-xs font-bold text-center">
+                  MTN MoMo
+                </div>
+                <div className="bg-green-600 text-white rounded-lg px-3 py-2 text-xs font-bold text-center">
+                  FedaPay
+                </div>
+              </div>
             </div>
           </div>
         </div>

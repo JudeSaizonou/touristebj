@@ -41,7 +41,7 @@ export async function payBookingMtn(
   );
 }
 
-export interface KkiapayInitResponse {
+export interface FedaPayInitResponse {
   success: boolean;
   message?: string;
   transactionId: string;
@@ -53,9 +53,9 @@ export interface KkiapayInitResponse {
   booking?: any;
 }
 
-/** Initie un paiement Kkiapay pour l'acompte. Retourne transactionId à passer au widget. */
-export async function payDepositKkiapay(bookingId: string, amount: number): Promise<KkiapayInitResponse> {
-  return apiRequest<KkiapayInitResponse>(
+/** Initie un paiement FedaPay pour l'acompte. Retourne transactionId à passer au widget. */
+export async function payDepositFedaPay(bookingId: string, amount: number): Promise<FedaPayInitResponse> {
+  return apiRequest<FedaPayInitResponse>(
     `${TRIPS_PREFIX}/bookings/${bookingId}/pay-deposit`,
     {
       method: 'POST',
@@ -64,9 +64,9 @@ export async function payDepositKkiapay(bookingId: string, amount: number): Prom
   );
 }
 
-/** Initie un paiement Kkiapay pour un versement échelonné. Retourne transactionId à passer au widget. */
-export async function payInstallmentKkiapay(bookingId: string, amount: number): Promise<KkiapayInitResponse> {
-  return apiRequest<KkiapayInitResponse>(
+/** Initie un paiement FedaPay pour un versement échelonné. Retourne transactionId à passer au widget. */
+export async function payInstallmentFedaPay(bookingId: string, amount: number): Promise<FedaPayInitResponse> {
+  return apiRequest<FedaPayInitResponse>(
     `${TRIPS_PREFIX}/bookings/${bookingId}/pay-installment`,
     {
       method: 'POST',

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle, Mail, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createBooking } from '../api/trips';
-import { payBookingMtn, payDepositKkiapay } from '../api/payments';
-import { openKkiapay } from '../api/kkiapay';
+import { payBookingMtn, payDepositFedaPay } from '../api/payments';
+import { openFedaPay } from '../api/fedapay';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
-import { PAYMENT_FEES, KKIAPAY_KEY, KKIAPAY_SANDBOX } from '../config/payments';
+import { PAYMENT_FEES, FEDAPAY_KEY, FEDAPAY_ENV } from '../config/payments';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -24,7 +24,7 @@ type Step =
   | 'successful'
   | 'error';
 
-type PaymentMethod = 'mtn' | 'kkiapay';
+type PaymentMethod = 'mtn' | 'fedapay';
 
 export const ReservationModal: React.FC<ReservationModalProps> = ({
   isOpen,
@@ -71,8 +71,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const soldeRestant = sousTotal - acompte;
 
   const mtnFees = Math.round(acompte * PAYMENT_FEES.MTN);
-  const kkiaFees = Math.round(acompte * PAYMENT_FEES.KKIAPAY);
-  const fees = paymentMethod === 'mtn' ? mtnFees : kkiaFees;
+  const fedapayFees = Math.round(acompte * PAYMENT_FEES.FEDAPAY);
+  const fees = paymentMethod === 'mtn' ? mtnFees : fedapayFees;
   const totalDebited = acompte + fees;
 
   const isPhoneValid = phoneNumber.replace(/\D/g, '').length >= 8;
@@ -120,36 +120,36 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     }
   };
 
-  const handlePayKkiapay = async () => {
-    if (!bookingId || !KKIAPAY_KEY) {
-      setErrorMsg('Kkiapay n\'est pas configuré. Contactez le support.');
+  const handlePayFedaPay = async () => {
+    if (!bookingId || !FEDAPAY_KEY) {
+      setErrorMsg('FedaPay n\'est pas configuré. Contactez le support.');
       return;
     }
     setStep('paying');
     setErrorMsg('');
     try {
       // 1. Backend crée la transaction et retourne transactionId + montant avec frais
-      const init = await payDepositKkiapay(bookingId, acompte);
-      // 2. Ouvrir le widget avec le montant et le transactionId du backend
-      await openKkiapay({
+      const init = await payDepositFedaPay(bookingId, acompte);
+      // 2. Ouvrir le widget FedaPay
+      await openFedaPay({
         amount: init.amount,
-        key: KKIAPAY_KEY,
-        sandbox: KKIAPAY_SANDBOX,
-        data: init.transactionId,
-        phone: phoneNumber.replace(/\D/g, '') || undefined,
-        name: user?.username || undefined,
+        publicKey: FEDAPAY_KEY,
+        environment: FEDAPAY_ENV,
+        description: 'Acompte voyage',
+        customerPhone: phoneNumber.replace(/\D/g, '') || undefined,
+        customerEmail: contactEmail || undefined,
       });
       // 3. Widget success → webhook backend met à jour la réservation automatiquement
       setStep('successful');
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Paiement Kkiapay échoué.');
+      setErrorMsg(err?.message || 'Paiement FedaPay échoué.');
       setStep('payment-form');
     }
   };
 
   const handlePay = () => {
     if (paymentMethod === 'mtn') handlePayMtn();
-    else handlePayKkiapay();
+    else handlePayFedaPay();
   };
 
   const handleClose = () => {
@@ -371,16 +371,16 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('kkiapay')}
+                    onClick={() => setPaymentMethod('fedapay')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
-                      paymentMethod === 'kkiapay'
+                      paymentMethod === 'fedapay'
                         ? 'border-primary-500 bg-orange-50 text-orange-800'
                         : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
                     }`}
                   >
                     <span className="text-2xl">💳</span>
-                    <span>Kkiapay</span>
-                    <span className="text-xs font-normal opacity-70">+0.5% de frais</span>
+                    <span>Carte / Mobile</span>
+                    <span className="text-xs font-normal opacity-70">+2% de frais</span>
                   </button>
                 </div>
               </div>
@@ -407,10 +407,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </div>
               )}
 
-              {/* Info Kkiapay */}
-              {paymentMethod === 'kkiapay' && (
+              {/* Info FedaPay */}
+              {paymentMethod === 'fedapay' && (
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-3.5 text-sm text-orange-800">
-                  Le widget Kkiapay s'ouvrira pour finaliser le paiement. Vous pouvez utiliser carte bancaire, Mobile Money et d'autres moyens.
+                  Le widget FedaPay s'ouvrira pour finaliser le paiement. Vous pouvez utiliser carte bancaire, Mobile Money et d'autres moyens.
                 </div>
               )}
 
@@ -422,7 +422,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-amber-700">
-                    Frais {paymentMethod === 'mtn' ? 'MTN (+2%)' : 'Kkiapay (+0.5%)'}
+                    Frais {paymentMethod === 'mtn' ? 'MTN (+2%)' : 'FedaPay (+2%)'}
                   </span>
                   <span className="font-semibold text-amber-800">{fmtPrice(fees)}</span>
                 </div>
@@ -443,7 +443,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 disabled={paymentMethod === 'mtn' && !isPhoneValid}
                 className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Payer {fmtPrice(totalDebited)} via {paymentMethod === 'mtn' ? 'MTN' : 'Kkiapay'}
+                Payer {fmtPrice(totalDebited)} via {paymentMethod === 'mtn' ? 'MTN' : 'FedaPay'}
               </button>
 
               <button
@@ -460,7 +460,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             <div className="py-12 flex flex-col items-center gap-4">
               <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
               <p className="text-dark-800/70 font-medium">
-                {paymentMethod === 'mtn' ? 'Connexion à MTN Mobile Money...' : 'Chargement du widget Kkiapay...'}
+                {paymentMethod === 'mtn' ? 'Connexion à MTN Mobile Money...' : 'Chargement du widget FedaPay...'}
               </p>
             </div>
           )}
