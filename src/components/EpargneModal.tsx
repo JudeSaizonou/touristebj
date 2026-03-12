@@ -130,7 +130,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
   }, [canClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60" onClick={step === 'form' ? handleClose : undefined} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
