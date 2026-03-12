@@ -6,6 +6,7 @@ import { VoyageurDetailsModal } from '../components/VoyageurDetailsModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
 import { Voyageur, VoyageurDocumentType } from '../types';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface VoyageurRow {
   voyageur: Voyageur;
@@ -23,6 +24,7 @@ export const AllVoyageursList: React.FC = () => {
   const [allData, setAllData] = useState<VoyageurRow[]>([]);
   const [activeRow, setActiveRow] = useState<VoyageurRow | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [currentPage, setCurrentPage] = useState(1);
   const [showExportModal, setShowExportModal] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
@@ -42,8 +44,8 @@ export const AllVoyageursList: React.FC = () => {
   }, []);
 
   const filtered = allData.filter(d =>
-    d.voyageur.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.voyageDestination.toLowerCase().includes(searchQuery.toLowerCase())
+    d.voyageur.nom.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+    d.voyageDestination.toLowerCase().includes(debouncedSearch.toLowerCase())
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / itemsPerPage));
   const displayed = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);

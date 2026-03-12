@@ -16,87 +16,72 @@ import { Auth, AuthMode } from './pages/Auth';
 import { MesVoyages } from './pages/MesVoyages';
 import { MonEpargne } from './pages/MonEpargne';
 import { useAuth } from './context/AuthContext';
+import { useHashRouter } from './hooks/useHashRouter';
 import { StorageService } from './utils/storage';
 import { PageView } from './types';
 
-type AppView = PageView | 'catalog' | 'voyage-details' | 'auth' | 'mes-voyages' | 'mon-epargne';
-
 function App() {
   const { user, isAdmin, logout: authLogout } = useAuth();
-  const [currentView, setCurrentView] = useState<AppView>('catalog');
-  const [editingVoyageId, setEditingVoyageId] = useState<string>('1');
-  const [viewingVoyageId, setViewingVoyageId] = useState<string>('1');
-  const [viewingBookingId, setViewingBookingId] = useState<string>('');
+  const { route, navigate } = useHashRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('connexion');
-  const [, setAuthRedirect] = useState<'catalog' | 'dashboard'>('catalog');
   const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
     StorageService.initialize();
   }, []);
 
-  // Rediriger vers le catalogue si plus de token alors qu'on est en vue admin
+  // Redirect to catalog if not authenticated and trying to access admin routes
   useEffect(() => {
-    const adminViews: AppView[] = ['dashboard', 'voyages', 'create-voyage', 'edit-voyage', 'reservations', 'all-voyageurs', 'parametres'];
-    if (!user && adminViews.includes(currentView)) {
-      setCurrentView('catalog');
+    if (!user && route.path.startsWith('/admin')) {
+      navigate('/');
     }
-  }, [user, currentView]);
+  }, [user, route.path, navigate]);
 
   const handleAdminLogin = () => {
     if (isAdmin) {
-      setCurrentView('dashboard');
+      navigate('/admin/dashboard');
     } else {
-      setAuthRedirect('dashboard');
       setAuthMode('connexion');
-      setCurrentView('auth');
+      navigate('/auth');
     }
   };
 
   const handleLogout = () => {
     authLogout();
-    setCurrentView('catalog');
+    navigate('/');
     setSidebarOpen(false);
   };
 
   const handleAuthSuccess = (_isAdminUser: boolean) => {
-    // setAuth écrit en localStorage de façon synchrone → source de vérité fiable
-    // même si la réponse API n'incluait pas le champ role
     try {
       const raw = localStorage.getItem('touriste_user');
       const savedUser = raw ? JSON.parse(raw) : null;
       const adminFromStorage = savedUser?.role === 'ADMIN' || savedUser?.role === 'PARTNER';
-      setCurrentView(adminFromStorage ? 'dashboard' : 'catalog');
+      navigate(adminFromStorage ? '/admin/dashboard' : '/');
     } catch {
-      setCurrentView(_isAdminUser ? 'dashboard' : 'catalog');
+      navigate(_isAdminUser ? '/admin/dashboard' : '/');
     }
-    setAuthRedirect('catalog');
   };
 
-  const handleEditVoyage = (voyageId: string) => {
-    setEditingVoyageId(voyageId);
-    setCurrentView('edit-voyage');
-  };
-
-  const handleViewDetails = (voyageId: string) => {
-    setViewingVoyageId(voyageId);
-    setCurrentView('voyage-details');
+  const handleOpenAuth = (mode: AuthMode) => {
+    setAuthMode(mode);
+    navigate('/auth');
   };
 
   const handleNavigate = (page: PageView) => {
-    setCurrentView(page);
+    const pageToRoute: Record<PageView, string> = {
+      dashboard: '/admin/dashboard',
+      voyages: '/admin/voyages',
+      'create-voyage': '/admin/voyages/new',
+      'edit-voyage': '/admin/voyages',
+      reservations: '/admin/reservations',
+      'all-voyageurs': '/admin/voyageurs',
+      parametres: '/admin/parametres',
+    };
+    navigate(pageToRoute[page] || '/admin/dashboard');
     setSidebarOpen(false);
-  };
-
-  const handleNavigateMesVoyages = () => {
-    setCurrentView('mes-voyages');
-  };
-
-  const handleViewBooking = (bookingId: string) => {
-    setViewingBookingId(bookingId);
-    setCurrentView('mon-epargne');
   };
 
   const handleRequestRefund = (method: 'mobile-money' | 'bancaire', montant: string) => {
@@ -105,89 +90,85 @@ function App() {
     addToast('success', `Demande de reversement de ${montant} FCFA par ${methodLabel} enregistrée`);
   };
 
-  // Auth (full page)
-  if (currentView === 'auth') {
+  // --- Public routes ---
+
+  if (route.path === '/auth') {
     return (
       <Auth
         initialMode={authMode}
-        onBack={() => setCurrentView('catalog')}
+        onBack={() => navigate('/')}
         onSuccess={handleAuthSuccess}
       />
     );
   }
 
-  // Public views
-  if (currentView === 'catalog') {
+  if (route.path === '/') {
     return (
       <Catalog
-        onViewDetails={handleViewDetails}
+        onViewDetails={(id) => navigate(`/voyage/${id}`)}
         onAdminLogin={handleAdminLogin}
-        onOpenAuth={(mode) => {
-          setAuthRedirect('catalog');
-          setAuthMode(mode);
-          setCurrentView('auth');
-        }}
-        onMesVoyages={handleNavigateMesVoyages}
+        onOpenAuth={handleOpenAuth}
+        onMesVoyages={() => navigate('/mes-voyages')}
         onLogout={handleLogout}
       />
     );
   }
 
-  if (currentView === 'voyage-details') {
+  if (route.path === '/voyage/:id') {
     return (
       <VoyageDetails
-        voyageId={viewingVoyageId}
-        onBack={() => setCurrentView('catalog')}
+        voyageId={route.params.id}
+        onBack={() => navigate('/')}
         onAdminLogin={handleAdminLogin}
-        onOpenAuth={(mode) => {
-          setAuthRedirect('catalog');
-          setAuthMode(mode);
-          setCurrentView('auth');
-        }}
-        onMesVoyages={handleNavigateMesVoyages}
+        onOpenAuth={handleOpenAuth}
+        onMesVoyages={() => navigate('/mes-voyages')}
         onLogout={handleLogout}
       />
     );
   }
 
-  if (currentView === 'mes-voyages') {
+  if (route.path === '/mes-voyages') {
     return (
       <MesVoyages
-        onBack={() => setCurrentView('catalog')}
-        onViewBooking={handleViewBooking}
+        onBack={() => navigate('/')}
+        onViewBooking={(bookingId) => navigate(`/epargne/${bookingId}`)}
         onAdminLogin={handleAdminLogin}
-        onOpenAuth={(mode) => {
-          setAuthRedirect('catalog');
-          setAuthMode(mode);
-          setCurrentView('auth');
-        }}
-        onMesVoyages={handleNavigateMesVoyages}
+        onOpenAuth={handleOpenAuth}
+        onMesVoyages={() => navigate('/mes-voyages')}
         onLogout={handleLogout}
       />
     );
   }
 
-  if (currentView === 'mon-epargne') {
+  if (route.path === '/epargne/:bookingId') {
     return (
       <MonEpargne
-        bookingId={viewingBookingId}
-        onBack={() => setCurrentView('mes-voyages')}
+        bookingId={route.params.bookingId}
+        onBack={() => navigate('/mes-voyages')}
         onAdminLogin={handleAdminLogin}
-        onOpenAuth={(mode) => {
-          setAuthRedirect('catalog');
-          setAuthMode(mode);
-          setCurrentView('auth');
-        }}
-        onMesVoyages={handleNavigateMesVoyages}
+        onOpenAuth={handleOpenAuth}
+        onMesVoyages={() => navigate('/mes-voyages')}
         onLogout={handleLogout}
       />
     );
   }
 
-  // Admin views
-  const sidebarPage = (currentView === 'create-voyage' || currentView === 'edit-voyage')
+  // --- Admin routes ---
+
+  const adminRouteToPage: Record<string, string> = {
+    '/admin/dashboard': 'dashboard',
+    '/admin/voyages': 'voyages',
+    '/admin/voyages/new': 'create-voyage',
+    '/admin/voyages/:id/edit': 'edit-voyage',
+    '/admin/reservations': 'reservations',
+    '/admin/voyageurs': 'all-voyageurs',
+    '/admin/parametres': 'parametres',
+  };
+
+  const currentAdminPage = adminRouteToPage[route.path] || 'dashboard';
+  const sidebarPage = (currentAdminPage === 'create-voyage' || currentAdminPage === 'edit-voyage')
     ? 'voyages'
-    : (currentView as 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'parametres');
+    : (currentAdminPage as 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'parametres');
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -221,33 +202,33 @@ function App() {
           userRole={user?.role === 'ADMIN' ? 'Admin' : user?.role === 'PARTNER' ? 'Partenaire' : user?.role || 'Admin'}
           greeting="Hello"
           subGreeting="Faisons le point,"
-          onNavigateToVoyage={handleEditVoyage}
+          onNavigateToVoyage={(id) => navigate(`/admin/voyages/${id}/edit`)}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
         <main className="flex-1 overflow-y-auto">
-          {currentView === 'dashboard' && <Dashboard />}
-          {currentView === 'voyages' && (
+          {currentAdminPage === 'dashboard' && <Dashboard />}
+          {currentAdminPage === 'voyages' && (
             <Voyages
-              onCreateVoyage={() => setCurrentView('create-voyage')}
-              onEditVoyage={handleEditVoyage}
+              onCreateVoyage={() => navigate('/admin/voyages/new')}
+              onEditVoyage={(id) => navigate(`/admin/voyages/${id}/edit`)}
             />
           )}
-          {currentView === 'create-voyage' && (
+          {currentAdminPage === 'create-voyage' && (
             <CreateVoyage
-              onBack={() => setCurrentView('voyages')}
-              onCreate={() => setCurrentView('voyages')}
+              onBack={() => navigate('/admin/voyages')}
+              onCreate={() => navigate('/admin/voyages')}
             />
           )}
-          {currentView === 'edit-voyage' && (
+          {currentAdminPage === 'edit-voyage' && (
             <EditVoyage
-              voyageId={editingVoyageId}
-              onBack={() => setCurrentView('voyages')}
+              voyageId={route.params.id}
+              onBack={() => navigate('/admin/voyages')}
               onUpdate={() => {}}
             />
           )}
-          {currentView === 'reservations' && <ReservationsList />}
-          {currentView === 'all-voyageurs' && <AllVoyageursList />}
-          {currentView === 'parametres' && <Parametres />}
+          {currentAdminPage === 'reservations' && <ReservationsList />}
+          {currentAdminPage === 'all-voyageurs' && <AllVoyageursList />}
+          {currentAdminPage === 'parametres' && <Parametres />}
         </main>
       </div>
     </div>

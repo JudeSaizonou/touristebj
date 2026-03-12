@@ -21,7 +21,7 @@ interface MonEpargneProps {
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'text-amber-600 bg-amber-50 border-amber-200' },
   DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  SAVING:          { label: 'Épargne en cours',    color: 'text-[#1a4d3e] bg-[#1a4d3e]/5 border-[#1a4d3e]/20' },
+  SAVING:          { label: 'Épargne en cours',    color: 'text-forest-800 bg-forest-800/5 border-forest-800/20' },
   FULLY_PAID:      { label: 'Voyage payé',         color: 'text-green-600 bg-green-50 border-green-200' },
   CANCELLED:       { label: 'Annulé',              color: 'text-red-600 bg-red-50 border-red-200' },
 };
@@ -87,8 +87,8 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     >
       {loading && (
         <div className="flex flex-col items-center py-32 gap-4">
-          <Loader2 className="w-8 h-8 text-[#1a4d3e] animate-spin" />
-          <p className="text-[#17233E]/60">Chargement...</p>
+          <Loader2 className="w-8 h-8 text-forest-800 animate-spin" />
+          <p className="text-dark-800/60">Chargement...</p>
         </div>
       )}
 
@@ -96,7 +96,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
         <div className="flex flex-col items-center py-24 gap-4">
           <AlertCircle className="w-8 h-8 text-red-400" />
           <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={loadData} className="px-6 py-2.5 bg-[#1a4d3e] text-white rounded-lg hover:bg-[#153d31] transition-colors text-sm font-medium">
+          <button onClick={loadData} className="px-6 py-2.5 bg-forest-800 text-white rounded-lg hover:bg-forest-900 transition-colors text-sm font-medium">
             Réessayer
           </button>
         </div>
@@ -111,7 +111,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
               alt={booking.voyage?.titre}
               className="absolute inset-0 w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-[#17233E]/80" />
+            <div className="absolute inset-0 bg-dark-800/80" />
             <div className="relative h-full flex flex-col justify-end pb-8 px-4 max-w-4xl mx-auto">
               <button
                 onClick={onBack}
@@ -143,19 +143,19 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 {/* Carte progression */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-5">
-                    <TrendingUp className="w-5 h-5 text-[#1a4d3e]" />
-                    <h2 className="font-playfair font-bold text-[#17233E] text-lg">Progression de l'épargne</h2>
+                    <TrendingUp className="w-5 h-5 text-forest-800" />
+                    <h2 className="font-playfair font-bold text-dark-800 text-lg">Progression de l'épargne</h2>
                   </div>
 
                   {/* Barre principale */}
                   <div className="mb-5">
                     <div className="flex justify-between text-sm mb-2">
-                      <span className="text-[#17233E]/60">Montant épargné</span>
-                      <span className="font-bold text-[#17233E]">{percent}%</span>
+                      <span className="text-dark-800/60">Montant épargné</span>
+                      <span className="font-bold text-dark-800">{percent}%</span>
                     </div>
                     <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-full rounded-full transition-all duration-700 ${percent >= 100 ? 'bg-green-500' : 'bg-[#1a4d3e]'}`}
+                        className={`h-full rounded-full transition-all duration-700 ${percent >= 100 ? 'bg-green-500' : 'bg-forest-800'}`}
                         style={{ width: `${percent}%` }}
                       />
                     </div>
@@ -164,15 +164,15 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   {/* Stats */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-3 bg-gray-50 rounded-xl">
-                      <p className="text-xs text-[#17233E]/50 mb-1">Total voyage</p>
-                      <p className="font-bold text-[#17233E] text-sm">{fmtPrice(booking.totalPrice)}</p>
+                      <p className="text-xs text-dark-800/50 mb-1">Total voyage</p>
+                      <p className="font-bold text-dark-800 text-sm">{fmtPrice(booking.totalPrice)}</p>
                     </div>
-                    <div className="text-center p-3 bg-[#1a4d3e]/5 rounded-xl">
-                      <p className="text-xs text-[#17233E]/50 mb-1">Épargné</p>
-                      <p className="font-bold text-[#1a4d3e] text-sm">{fmtPrice(booking.amountPaid)}</p>
+                    <div className="text-center p-3 bg-forest-800/5 rounded-xl">
+                      <p className="text-xs text-dark-800/50 mb-1">Épargné</p>
+                      <p className="font-bold text-forest-800 text-sm">{fmtPrice(booking.amountPaid)}</p>
                     </div>
                     <div className={`text-center p-3 rounded-xl ${booking.remainingAmount > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
-                      <p className="text-xs text-[#17233E]/50 mb-1">Restant</p>
+                      <p className="text-xs text-dark-800/50 mb-1">Restant</p>
                       <p className={`font-bold text-sm ${booking.remainingAmount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
                         {fmtPrice(booking.remainingAmount)}
                       </p>
@@ -183,34 +183,34 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 {/* Historique des paiements */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-5">
-                    <CreditCard className="w-5 h-5 text-[#17233E]" />
-                    <h2 className="font-playfair font-bold text-[#17233E] text-lg">Historique des paiements</h2>
+                    <CreditCard className="w-5 h-5 text-dark-800" />
+                    <h2 className="font-playfair font-bold text-dark-800 text-lg">Historique des paiements</h2>
                   </div>
 
                   {payments.length === 0 ? (
                     <div className="text-center py-8">
-                      <p className="text-[#17233E]/40 text-sm">Aucun paiement enregistré</p>
+                      <p className="text-dark-800/40 text-sm">Aucun paiement enregistré</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {payments.map((p) => (
                         <div key={p.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
                           <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-[#1a4d3e]/10'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-forest-800/10'}`}>
                               {p.type === 'DEPOSIT'
                                 ? <CheckCircle className="w-4 h-4 text-blue-500" />
-                                : <PiggyBank className="w-4 h-4 text-[#1a4d3e]" />
+                                : <PiggyBank className="w-4 h-4 text-forest-800" />
                               }
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-[#17233E]">
+                              <p className="text-sm font-medium text-dark-800">
                                 {PAYMENT_TYPE_LABELS[p.type] ?? p.type}
                               </p>
-                              <p className="text-xs text-[#17233E]/50">{p.date}</p>
+                              <p className="text-xs text-dark-800/50">{p.date}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-semibold text-[#17233E] text-sm">{fmtPrice(p.amount)}</p>
+                            <p className="font-semibold text-dark-800 text-sm">{fmtPrice(p.amount)}</p>
                             <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
                               {p.status === 'COMPLETED' ? 'Confirmé' : p.status}
                             </span>
@@ -248,7 +248,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 {booking.status !== 'FULLY_PAID' && booking.status !== 'CANCELLED' && (
                   <button
                     onClick={() => setEpargneOpen(true)}
-                    className="w-full py-4 bg-[#1a4d3e] text-white rounded-2xl font-semibold hover:bg-[#153d31] transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-forest-800 text-white rounded-2xl font-semibold hover:bg-forest-900 transition-colors flex items-center justify-center gap-2"
                   >
                     <PiggyBank className="w-5 h-5" />
                     Ajouter un versement
@@ -265,22 +265,22 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
 
                 {/* Infos voyage */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
-                  <h3 className="font-playfair font-bold text-[#17233E]">Détails du voyage</h3>
+                  <h3 className="font-playfair font-bold text-dark-800">Détails du voyage</h3>
                   {booking.voyage?.departureDate && (
-                    <div className="flex items-center gap-2 text-sm text-[#17233E]/70">
-                      <Calendar className="w-4 h-4 text-[#FF7F2A] flex-shrink-0" />
+                    <div className="flex items-center gap-2 text-sm text-dark-800/70">
+                      <Calendar className="w-4 h-4 text-primary-500 flex-shrink-0" />
                       <span>{booking.voyage.departureDate}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-sm text-[#17233E]/70">
-                    <svg className="w-4 h-4 text-[#FF7F2A] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex items-center gap-2 text-sm text-dark-800/70">
+                    <svg className="w-4 h-4 text-primary-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <span>{booking.nombrePersonnes} personne{booking.nombrePersonnes > 1 ? 's' : ''}</span>
                   </div>
                   <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs text-[#17233E]/50 mb-0.5">Acompte versé</p>
-                    <p className="font-semibold text-[#17233E]">{fmtPrice(booking.depositAmount)}</p>
+                    <p className="text-xs text-dark-800/50 mb-0.5">Acompte versé</p>
+                    <p className="font-semibold text-dark-800">{fmtPrice(booking.depositAmount)}</p>
                     <p className="text-xs text-red-500 mt-0.5">Non remboursable</p>
                   </div>
                 </div>

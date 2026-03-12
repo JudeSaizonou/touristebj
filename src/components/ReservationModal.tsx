@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle, Mail, ChevronRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createBooking } from '../api/trips';
-import { payBookingMtn, payDepositKkiapay, getTransactionStatus } from '../api/payments';
+import { payBookingMtn, payDepositKkiapay } from '../api/payments';
 import { openKkiapay } from '../api/kkiapay';
+import { usePaymentPolling } from '../hooks/usePaymentPolling';
+import { PAYMENT_FEES, KKIAPAY_KEY, KKIAPAY_SANDBOX } from '../config/payments';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -24,12 +26,6 @@ type Step =
 
 type PaymentMethod = 'mtn' | 'kkiapay';
 
-const MTN_FEE_RATE = 0.02;    // +2%
-const KKIA_FEE_RATE = 0.005;  // +0.5%
-
-const KKIAPAY_KEY = import.meta.env.VITE_KKIAPAY_PUBLIC_KEY as string | undefined;
-const KKIAPAY_SANDBOX = import.meta.env.VITE_KKIAPAY_SANDBOX !== 'false';
-
 export const ReservationModal: React.FC<ReservationModalProps> = ({
   isOpen,
   voyage,
@@ -43,15 +39,18 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [bookingId, setBookingId] = useState('');
-  const [countdown, setCountdown] = useState(120);
   const [mtnStatus, setMtnStatus] = useState<'failed' | 'expired' | 'timeout' | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { countdown, startPolling, clearTimers } = usePaymentPolling({
+    onSuccess: () => setStep('successful'),
+    onFailed: (status) => { setMtnStatus(status); setStep('error'); },
+  });
 
   // Contact info fields
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   useEffect(() => {
     if (isOpen && user?.phoneNumber) {
@@ -59,13 +58,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
       setPhoneNumber(national);
     }
   }, [isOpen, user]);
-
-  const clearTimers = () => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
-  };
-
-  useEffect(() => () => clearTimers(), []);
 
   if (!isOpen || !voyage) return null;
 
@@ -78,8 +70,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const acompte = depositPerPerson * nombrePersonnes;
   const soldeRestant = sousTotal - acompte;
 
-  const mtnFees = Math.round(acompte * MTN_FEE_RATE);
-  const kkiaFees = Math.round(acompte * KKIA_FEE_RATE);
+  const mtnFees = Math.round(acompte * PAYMENT_FEES.MTN);
+  const kkiaFees = Math.round(acompte * PAYMENT_FEES.KKIAPAY);
   const fees = paymentMethod === 'mtn' ? mtnFees : kkiaFees;
   const totalDebited = acompte + fees;
 
@@ -109,47 +101,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     }
   };
 
-  const startPolling = (referenceId: string) => {
-    setCountdown(120);
-    setStep('processing');
-
-    countdownRef.current = setInterval(() => {
-      setCountdown((c) => {
-        if (c <= 1) {
-          clearTimers();
-          setMtnStatus('timeout');
-          setStep('error');
-          return 0;
-        }
-        return c - 1;
-      });
-    }, 1000);
-
-    let elapsed = 0;
-    pollRef.current = setInterval(async () => {
-      elapsed += 3;
-      if (elapsed >= 120) {
-        clearTimers();
-        setMtnStatus('timeout');
-        setStep('error');
-        return;
-      }
-      try {
-        const status = await getTransactionStatus(referenceId);
-        if (status.status === 'successful') {
-          clearTimers();
-          setStep('successful');
-        } else if (status.status === 'failed' || status.status === 'expired') {
-          clearTimers();
-          setMtnStatus(status.status);
-          setStep('error');
-        }
-      } catch {
-        // ignore polling errors
-      }
-    }, 3000);
-  };
-
   const handlePayMtn = async () => {
     if (!isPhoneValid || !bookingId) return;
     setStep('paying');
@@ -161,6 +112,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         countryCode: '229',
         type: 'DEPOSIT',
       });
+      setStep('processing');
       startPolling(res.referenceId);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Impossible d\'initier le paiement MTN.');
@@ -206,23 +158,29 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     setNombrePersonnes(1);
     setErrorMsg('');
     setMtnStatus(null);
-    setCountdown(120);
     setContactEmail('');
     setContactPhone('');
     setSpecialRequests('');
+    setEmailError('');
     onClose();
   };
 
   const isProcessingStep = step === 'processing';
   const canClose = !isProcessingStep && step !== 'creating' && step !== 'paying';
 
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && canClose) handleClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [canClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/60" onClick={canClose ? handleClose : undefined} />
 
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
         {/* Header */}
-        <div className="bg-[#17233E] px-6 py-5 flex items-center justify-between">
+        <div className="bg-dark-800 px-6 py-5 flex items-center justify-between">
           <h2 className="font-playfair text-xl font-bold text-white">
             {step === 'successful' ? 'Réservation confirmée !' : 'Réserver ce voyage'}
           </h2>
@@ -242,21 +200,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   <img src={voyage.photos[0]} alt={voyage.titre} className="w-20 h-16 rounded-xl object-cover flex-shrink-0" />
                 )}
                 <div>
-                  <p className="font-playfair font-bold text-[#17233E] text-base">{voyage.titre}</p>
-                  <p className="text-sm text-[#17233E]/60 flex items-center gap-1 mt-0.5">
+                  <p className="font-playfair font-bold text-dark-800 text-base">{voyage.titre}</p>
+                  <p className="text-sm text-dark-800/60 flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3.5 h-3.5" /> {voyage.dateDebut}
                   </p>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-[#17233E] mb-2 flex items-center gap-1.5">
+                <label className="block text-sm font-semibold text-dark-800 mb-2 flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> Nombre de personnes
                 </label>
                 <select
                   value={nombrePersonnes}
                   onChange={(e) => setNombrePersonnes(parseInt(e.target.value))}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-[#17233E]"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-dark-800"
                 >
                   {[...Array(10)].map((_, i) => (
                     <option key={i} value={i + 1}>{i + 1} personne{i > 0 ? 's' : ''}</option>
@@ -266,20 +224,20 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
               <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#17233E]/60">{fmtPrice(basePrice)} × {nombrePersonnes}</span>
-                  <span className="font-semibold text-[#17233E]">{fmtPrice(sousTotal)}</span>
+                  <span className="text-dark-800/60">{fmtPrice(basePrice)} × {nombrePersonnes}</span>
+                  <span className="font-semibold text-dark-800">{fmtPrice(sousTotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#17233E]/60">Acompte à payer maintenant (50%)</span>
-                  <span className="font-bold text-[#FF7F2A]">{fmtPrice(acompte)}</span>
+                  <span className="text-dark-800/60">Acompte à payer maintenant (50%)</span>
+                  <span className="font-bold text-primary-500">{fmtPrice(acompte)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#17233E]/60">Solde à épargner</span>
-                  <span className="font-semibold text-[#17233E]">{fmtPrice(soldeRestant)}</span>
+                  <span className="text-dark-800/60">Solde à épargner</span>
+                  <span className="font-semibold text-dark-800">{fmtPrice(soldeRestant)}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-2.5 flex justify-between">
-                  <span className="font-bold text-[#17233E]">Total voyage</span>
-                  <span className="font-bold text-[#17233E]">{fmtPrice(sousTotal)}</span>
+                  <span className="font-bold text-dark-800">Total voyage</span>
+                  <span className="font-bold text-dark-800">{fmtPrice(sousTotal)}</span>
                 </div>
               </div>
 
@@ -292,7 +250,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
               <button
                 onClick={() => setStep('contact-form')}
-                className="w-full py-3.5 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
               >
                 Continuer <ChevronRight className="w-4 h-4" />
               </button>
@@ -302,23 +260,34 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           {/* STEP: contact form */}
           {step === 'contact-form' && (
             <div className="space-y-5">
-              <p className="text-sm text-[#17233E]/60">Informations de contact <span className="text-xs">(optionnel)</span></p>
+              <p className="text-sm text-dark-800/60">Informations de contact <span className="text-xs">(optionnel)</span></p>
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-[#17233E]/70 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-semibold text-dark-800/70 mb-1 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5" /> Email
                   </label>
                   <input
                     type="email"
                     placeholder="votre@email.com"
                     value={contactEmail}
-                    onChange={e => setContactEmail(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
+                    onChange={e => {
+                      const val = e.target.value;
+                      setContactEmail(val);
+                      if (val.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim())) {
+                        setEmailError("Format d'email invalide");
+                      } else {
+                        setEmailError('');
+                      }
+                    }}
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-dark-800 ${emailError ? 'border-red-400' : 'border-gray-200'}`}
                   />
+                  {emailError && (
+                    <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-[#17233E]/70 mb-1 flex items-center gap-1.5">
+                  <label className="block text-xs font-semibold text-dark-800/70 mb-1 flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5" /> Téléphone de contact
                   </label>
                   <input
@@ -326,32 +295,33 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     placeholder="0197000000"
                     value={contactPhone}
                     onChange={e => setContactPhone(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E]"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-dark-800"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-[#17233E]/70 mb-1">Demandes particulières</label>
+                <label className="block text-xs font-semibold text-dark-800/70 mb-1">Demandes particulières</label>
                 <textarea
                   rows={2}
                   placeholder="Chambre non-fumeur, régime alimentaire..."
                   value={specialRequests}
                   onChange={e => setSpecialRequests(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-sm text-[#17233E] resize-none"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-dark-800 resize-none"
                 />
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => setStep('summary')}
-                  className="flex-1 py-3 border border-gray-200 text-[#17233E] rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
+                  className="flex-1 py-3 border border-gray-200 text-dark-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
                 >
                   Retour
                 </button>
                 <button
                   onClick={handleConfirmReservation}
-                  className="flex-1 py-3.5 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors text-sm"
+                  disabled={!!emailError}
+                  className="flex-1 py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Réserver
                 </button>
@@ -362,29 +332,29 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           {/* STEP: creating booking */}
           {step === 'creating' && (
             <div className="py-12 flex flex-col items-center gap-4">
-              <Loader2 className="w-10 h-10 text-[#FF7F2A] animate-spin" />
-              <p className="text-[#17233E]/70 font-medium">Création de votre réservation...</p>
+              <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+              <p className="text-dark-800/70 font-medium">Création de votre réservation...</p>
             </div>
           )}
 
           {/* STEP: payment form */}
           {step === 'payment-form' && (
             <div className="space-y-5">
-              <div className="flex items-center gap-2 text-[#17233E]/60 text-sm">
+              <div className="flex items-center gap-2 text-dark-800/60 text-sm">
                 <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                 Réservation créée — Payez l'acompte pour confirmer
               </div>
 
               {/* Recap acompte */}
-              <div className="bg-[#17233E]/5 rounded-xl p-4 text-center">
-                <p className="text-xs text-[#17233E]/50 mb-1">Acompte à régler</p>
-                <p className="font-playfair text-3xl font-bold text-[#17233E]">{fmtPrice(acompte)}</p>
-                <p className="text-xs text-[#17233E]/50 mt-0.5">50% du total voyage</p>
+              <div className="bg-dark-800/5 rounded-xl p-4 text-center">
+                <p className="text-xs text-dark-800/50 mb-1">Acompte à régler</p>
+                <p className="font-playfair text-3xl font-bold text-dark-800">{fmtPrice(acompte)}</p>
+                <p className="text-xs text-dark-800/50 mt-0.5">50% du total voyage</p>
               </div>
 
               {/* Choix du moyen de paiement */}
               <div>
-                <p className="text-sm font-semibold text-[#17233E] mb-2">Moyen de paiement</p>
+                <p className="text-sm font-semibold text-dark-800 mb-2">Moyen de paiement</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
@@ -392,7 +362,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
                       paymentMethod === 'mtn'
                         ? 'border-yellow-400 bg-yellow-50 text-yellow-800'
-                        : 'border-gray-200 text-[#17233E]/60 hover:border-gray-300'
+                        : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
                     }`}
                   >
                     <span className="text-2xl">📱</span>
@@ -404,8 +374,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                     onClick={() => setPaymentMethod('kkiapay')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
                       paymentMethod === 'kkiapay'
-                        ? 'border-[#FF7F2A] bg-orange-50 text-orange-800'
-                        : 'border-gray-200 text-[#17233E]/60 hover:border-gray-300'
+                        ? 'border-primary-500 bg-orange-50 text-orange-800'
+                        : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
                     }`}
                   >
                     <span className="text-2xl">💳</span>
@@ -418,11 +388,11 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               {/* Champ téléphone (MTN uniquement) */}
               {paymentMethod === 'mtn' && (
                 <div>
-                  <label className="block text-sm font-semibold text-[#17233E] mb-2 flex items-center gap-1.5">
+                  <label className="block text-sm font-semibold text-dark-800 mb-2 flex items-center gap-1.5">
                     <Phone className="w-4 h-4" /> Numéro MTN Bénin
                   </label>
                   <div className="flex gap-2">
-                    <span className="flex items-center px-3 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-[#17233E]/70 font-medium whitespace-nowrap">
+                    <span className="flex items-center px-3 py-3 bg-gray-100 border border-gray-200 rounded-xl text-sm text-dark-800/70 font-medium whitespace-nowrap">
                       +229
                     </span>
                     <input
@@ -431,7 +401,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                       placeholder="0197000000"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF7F2A]/50 focus:border-[#FF7F2A] text-[#17233E]"
+                      className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-dark-800"
                     />
                   </div>
                 </div>
@@ -471,14 +441,14 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <button
                 onClick={handlePay}
                 disabled={paymentMethod === 'mtn' && !isPhoneValid}
-                className="w-full py-3.5 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Payer {fmtPrice(totalDebited)} via {paymentMethod === 'mtn' ? 'MTN' : 'Kkiapay'}
               </button>
 
               <button
                 onClick={() => onSuccess(bookingId)}
-                className="w-full text-center text-sm text-[#17233E]/50 hover:text-[#17233E] transition-colors"
+                className="w-full text-center text-sm text-dark-800/50 hover:text-dark-800 transition-colors"
               >
                 Payer plus tard depuis "Mes Voyages"
               </button>
@@ -488,8 +458,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           {/* STEP: paying */}
           {step === 'paying' && (
             <div className="py-12 flex flex-col items-center gap-4">
-              <Loader2 className="w-10 h-10 text-[#FF7F2A] animate-spin" />
-              <p className="text-[#17233E]/70 font-medium">
+              <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+              <p className="text-dark-800/70 font-medium">
                 {paymentMethod === 'mtn' ? 'Connexion à MTN Mobile Money...' : 'Chargement du widget Kkiapay...'}
               </p>
             </div>
@@ -503,8 +473,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   <div className="w-8 h-8 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin" />
                 </div>
                 <div className="text-center">
-                  <p className="font-playfair font-bold text-[#17233E] text-lg">En attente de confirmation</p>
-                  <p className="text-sm text-[#17233E]/60 mt-1">
+                  <p className="font-playfair font-bold text-dark-800 text-lg">En attente de confirmation</p>
+                  <p className="text-sm text-dark-800/60 mt-1">
                     Confirmez le paiement sur votre téléphone MTN.
                   </p>
                 </div>
@@ -522,7 +492,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <div className="text-center">
                 <div className="inline-flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2">
                   <div className={`w-2 h-2 rounded-full ${countdown > 30 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
-                  <span className="text-sm font-medium text-[#17233E]">
+                  <span className="text-sm font-medium text-dark-800">
                     Expire dans <strong>{countdown}s</strong>
                   </span>
                 </div>
@@ -538,8 +508,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   <CheckCircle className="w-8 h-8 text-green-500" />
                 </div>
                 <div>
-                  <p className="font-playfair font-bold text-[#17233E] text-xl">Réservation confirmée !</p>
-                  <p className="text-sm text-[#17233E]/60 mt-1">
+                  <p className="font-playfair font-bold text-dark-800 text-xl">Réservation confirmée !</p>
+                  <p className="text-sm text-dark-800/60 mt-1">
                     Votre acompte de <strong>{fmtPrice(acompte)}</strong> a été reçu. Un reçu vous sera envoyé par email.
                   </p>
                   {bookingId && (
@@ -547,12 +517,12 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   )}
                 </div>
               </div>
-              <div className="bg-[#1a4d3e]/5 rounded-xl p-4 text-sm text-center text-[#17233E]/70">
+              <div className="bg-forest-800/5 rounded-xl p-4 text-sm text-center text-dark-800/70">
                 Il vous reste <strong>{fmtPrice(soldeRestant)}</strong> à épargner avant le voyage.
               </div>
               <button
                 onClick={() => onSuccess(bookingId)}
-                className="w-full py-3.5 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors"
+                className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
               >
                 Voir mes voyages
               </button>
@@ -567,7 +537,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   <AlertCircle className="w-8 h-8 text-red-500" />
                 </div>
                 <div>
-                  <p className="font-playfair font-bold text-[#17233E] text-xl">
+                  <p className="font-playfair font-bold text-dark-800 text-xl">
                     {mtnStatus === 'failed' ? 'Paiement refusé'
                       : mtnStatus === 'expired' ? 'Délai expiré'
                       : mtnStatus === 'timeout' ? 'Temps écoulé'
@@ -591,21 +561,21 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 {bookingId ? (
                   <button
                     onClick={() => onSuccess(bookingId)}
-                    className="flex-1 py-3 border border-gray-200 text-[#17233E] rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
+                    className="flex-1 py-3 border border-gray-200 text-dark-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
                   >
                     Mes voyages
                   </button>
                 ) : (
                   <button
                     onClick={handleClose}
-                    className="flex-1 py-3 border border-gray-200 text-[#17233E] rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
+                    className="flex-1 py-3 border border-gray-200 text-dark-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
                   >
                     Fermer
                   </button>
                 )}
                 <button
                   onClick={() => { setMtnStatus(null); setStep(bookingId ? 'payment-form' : 'summary'); }}
-                  className="flex-1 py-3 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors text-sm flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors text-sm flex items-center justify-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" /> Réessayer
                 </button>

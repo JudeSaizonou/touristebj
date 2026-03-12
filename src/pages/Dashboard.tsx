@@ -381,6 +381,8 @@ export const Dashboard: React.FC = () => {
                   key={b.id}
                   className="hover:bg-gray-50 transition-colors cursor-pointer"
                   onClick={() => setSelectedBooking(b)}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedBooking(b); } }}
                 >
                   <td className="px-6 py-4">
                     <p className="font-medium text-gray-900 text-sm">{b.client.nom}</p>

@@ -29,6 +29,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
   const { user, isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterMsg, setNewsletterMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const handleLogout = () => {
     logout();
@@ -58,8 +60,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
 
   return (
     <div className="min-h-screen bg-white">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:text-primary-500 focus:font-semibold">
+        Aller au contenu principal
+      </a>
       {/* Top Bar - Dark green */}
-      <div className="bg-[#1a4d3e] text-white py-2 px-4">
+      <div className="bg-forest-800 text-white py-2 px-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
           <div className="flex items-center gap-2 md:gap-6">
             <span className="hidden md:flex items-center gap-2">
@@ -81,16 +86,16 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
             </span>
           </div>
           <div className="flex items-center gap-3 md:gap-4">
-            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="hover:text-gray-200 transition-colors">
+            <a href="#" aria-label="Facebook" className="hover:text-gray-200 transition-colors">
               <Facebook className="w-4 h-4" />
             </a>
-            <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" className="hover:text-gray-200 transition-colors">
+            <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="hover:text-gray-200 transition-colors">
               <TikTokIcon className="w-4 h-4" />
             </a>
-            <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" className="hover:text-gray-200 transition-colors">
+            <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="hover:text-gray-200 transition-colors">
               <Instagram className="w-4 h-4" />
             </a>
-            <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="hover:text-gray-200 transition-colors hidden sm:block">
+            <a href="#" aria-label="LinkedIn" className="hover:text-gray-200 transition-colors hidden sm:block">
               <Linkedin className="w-4 h-4" />
             </a>
           </div>
@@ -164,7 +169,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
                       className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm font-medium text-gray-700"
                     >
-                      <div className="w-6 h-6 bg-[#1a4d3e] rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      <div className="w-6 h-6 bg-forest-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                         {(user.username || user.phoneNumber || 'U')[0].toUpperCase()}
                       </div>
                       <span className="max-w-[100px] truncate">{user.username || user.phoneNumber}</span>
@@ -179,7 +184,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                               onClick={() => { setUserMenuOpen(false); onMesVoyages(); }}
                               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
-                              <PiggyBank className="w-4 h-4 text-[#1a4d3e]" />
+                              <PiggyBank className="w-4 h-4 text-forest-800" />
                               Mes voyages
                             </button>
                           )}
@@ -299,12 +304,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                   <>
                     <div className="px-4 py-3 bg-gray-50 rounded-lg">
                       <p className="text-xs text-gray-500">Connecté en tant que</p>
-                      <p className="font-medium text-[#17233E] text-sm truncate">{user.username || user.phoneNumber}</p>
+                      <p className="font-medium text-dark-800 text-sm truncate">{user.username || user.phoneNumber}</p>
                     </div>
                     {!isAdmin && onMesVoyages && (
                       <button
                         onClick={() => { setMobileMenuOpen(false); onMesVoyages(); }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-[#1a4d3e] hover:bg-[#1a4d3e]/5 rounded-lg font-medium text-sm transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-4 py-3 text-forest-800 hover:bg-forest-800/5 rounded-lg font-medium text-sm transition-colors text-left"
                       >
                         <PiggyBank className="w-4 h-4" /> MES VOYAGES
                       </button>
@@ -367,16 +372,16 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               <div className="p-4 border-t border-gray-100 mt-2">
                 <p className="text-xs text-gray-400 mb-3 font-medium">Suivez-nous</p>
                 <div className="flex items-center gap-4">
-                  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-600 transition-colors">
+                  <a href="#" aria-label="Facebook" className="text-gray-400 hover:text-primary-600 transition-colors">
                     <Facebook className="w-5 h-5" />
                   </a>
-                  <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-600 transition-colors">
+                  <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="text-gray-400 hover:text-primary-600 transition-colors">
                     <TikTokIcon className="w-5 h-5" />
                   </a>
-                  <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-600 transition-colors">
+                  <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-400 hover:text-primary-600 transition-colors">
                     <Instagram className="w-5 h-5" />
                   </a>
-                  <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-primary-600 transition-colors">
+                  <a href="#" aria-label="LinkedIn" className="text-gray-400 hover:text-primary-600 transition-colors">
                     <Linkedin className="w-5 h-5" />
                   </a>
                 </div>
@@ -387,10 +392,10 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
       </header>
 
       {/* Main Content */}
-      <main id="voyages-section">{children}</main>
+      <main id="main-content">{children}</main>
 
       {/* Instagram Gallery Section */}
-      <div id="about-section" className="bg-[#0a1f3d] pt-12 pb-0">
+      <div id="about-section" className="bg-dark-900 pt-12 pb-0">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-center gap-3 md:gap-6 flex-wrap">
             {[
@@ -425,7 +430,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
       </div>
 
       {/* Footer */}
-      <footer className="bg-[#0a1f3d] text-white relative overflow-hidden">
+      <footer className="bg-dark-900 text-white relative overflow-hidden">
         {/* Accent top border */}
         <div className="h-1 bg-gradient-to-r from-primary-500 via-orange-400 to-primary-600" />
 
@@ -437,15 +442,36 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                 <h3 className="text-xl font-bold text-white mb-1">Restez informé de nos voyages</h3>
                 <p className="text-gray-400 text-sm">Recevez nos offres exclusives et nouveaux départs directement dans votre boîte mail.</p>
               </div>
-              <div className="flex w-full md:w-auto gap-2 max-w-md">
-                <input
-                  type="email"
-                  placeholder="Votre adresse email"
-                  className="flex-1 min-w-0 px-4 py-3 bg-white/10 text-white placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 border border-white/10 text-sm"
-                />
-                <button className="px-5 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm flex items-center gap-2 whitespace-nowrap">
-                  S'abonner <ArrowRight className="w-4 h-4" />
-                </button>
+              <div className="flex flex-col w-full md:w-auto max-w-md gap-2">
+                <div className="flex w-full gap-2">
+                  <input
+                    type="email"
+                    placeholder="Votre adresse email"
+                    value={newsletterEmail}
+                    onChange={(e) => { setNewsletterEmail(e.target.value); setNewsletterMsg(null); }}
+                    className="flex-1 min-w-0 px-4 py-3 bg-white/10 text-white placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 border border-white/10 text-sm"
+                  />
+                  <button
+                    onClick={() => {
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                      if (emailRegex.test(newsletterEmail.trim())) {
+                        setNewsletterMsg({ text: 'Merci ! Vous \u00eates inscrit.', type: 'success' });
+                        setNewsletterEmail('');
+                      } else {
+                        setNewsletterMsg({ text: 'Email invalide', type: 'error' });
+                      }
+                      setTimeout(() => setNewsletterMsg(null), 3000);
+                    }}
+                    className="px-5 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm flex items-center gap-2 whitespace-nowrap"
+                  >
+                    S'abonner <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+                {newsletterMsg && (
+                  <p className={`text-sm font-medium ${newsletterMsg.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    {newsletterMsg.text}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -487,12 +513,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               {/* Social icons */}
               <div className="flex items-center gap-3 mt-7">
                 {[
-                  { href: 'https://facebook.com', icon: <Facebook className="w-4 h-4" /> },
-                  { href: 'https://www.tiktok.com/@letouriste.bj', icon: <TikTokIcon className="w-4 h-4" /> },
-                  { href: 'https://www.instagram.com/letouriste.bj', icon: <Instagram className="w-4 h-4" /> },
-                  { href: 'https://linkedin.com', icon: <Linkedin className="w-4 h-4" /> },
-                ].map(({ href, icon }, i) => (
-                  <a key={i} href={href} target="_blank" rel="noopener noreferrer"
+                  { href: '#', label: 'Facebook', icon: <Facebook className="w-4 h-4" /> },
+                  { href: 'https://www.tiktok.com/@letouriste.bj', label: 'TikTok', icon: <TikTokIcon className="w-4 h-4" /> },
+                  { href: 'https://www.instagram.com/letouriste.bj', label: 'Instagram', icon: <Instagram className="w-4 h-4" /> },
+                  { href: '#', label: 'LinkedIn', icon: <Linkedin className="w-4 h-4" /> },
+                ].map(({ href, label, icon }, i) => (
+                  <a key={i} href={href} target={href !== '#' ? '_blank' : undefined} rel={href !== '#' ? 'noopener noreferrer' : undefined} aria-label={label}
                     className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-gray-400 hover:bg-primary-500 hover:text-white transition-all">
                     {icon}
                   </a>
@@ -589,8 +615,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
           <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-gray-500">
             <p>© {new Date().getFullYear()} Le Touriste.bj — Tous droits réservés.</p>
             <div className="flex items-center gap-5">
-              <button className="hover:text-gray-300 transition-colors">Politique de confidentialité</button>
-              <button className="hover:text-gray-300 transition-colors">Conditions d'utilisation</button>
+              <a href="#" aria-label="Politique de confidentialité" title="Bientôt disponible" className="hover:text-gray-300 transition-colors">Politique de confidentialité</a>
+              <a href="#" aria-label="Conditions d'utilisation" title="Bientôt disponible" className="hover:text-gray-300 transition-colors">Conditions d'utilisation</a>
             </div>
             <div className="flex items-center gap-2 text-gray-500">
               <Calendar className="w-4 h-4" />

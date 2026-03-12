@@ -18,7 +18,7 @@ interface MesVoyagesProps {
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'bg-amber-100 text-amber-700' },
   DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'bg-blue-100 text-blue-700' },
-  SAVING:          { label: 'Épargne en cours',    color: 'bg-[#1a4d3e]/10 text-[#1a4d3e]' },
+  SAVING:          { label: 'Épargne en cours',    color: 'bg-forest-800/10 text-forest-800' },
   FULLY_PAID:      { label: 'Voyage payé',         color: 'bg-green-100 text-green-700' },
   CANCELLED:       { label: 'Annulé',              color: 'bg-red-100 text-red-600' },
 };
@@ -68,7 +68,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600)' }}
         >
-          <div className="absolute inset-0 bg-[#1a4d3e]/85" />
+          <div className="absolute inset-0 bg-forest-800/85" />
         </div>
         <div className="relative h-full flex items-center justify-center">
           <div className="text-center text-white">
@@ -78,7 +78,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
             <div className="flex items-center justify-center gap-2 text-gray-300 text-sm">
               <button onClick={onBack} className="hover:text-white transition-colors">Accueil</button>
               <span>/</span>
-              <span className="text-[#FF7F2A]">Mes Voyages</span>
+              <span className="text-primary-500">Mes Voyages</span>
             </div>
           </div>
         </div>
@@ -93,8 +93,8 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-[#1a4d3e] animate-spin" />
-            <p className="text-[#17233E]/60">Chargement de vos réservations...</p>
+            <Loader2 className="w-8 h-8 text-forest-800 animate-spin" />
+            <p className="text-dark-800/60">Chargement de vos réservations...</p>
           </div>
         )}
 
@@ -107,7 +107,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
             </div>
             <button
               onClick={loadBookings}
-              className="px-6 py-2.5 bg-[#1a4d3e] text-white rounded-lg hover:bg-[#153d31] transition-colors font-medium text-sm"
+              className="px-6 py-2.5 bg-forest-800 text-white rounded-lg hover:bg-forest-900 transition-colors font-medium text-sm"
             >
               Réessayer
             </button>
@@ -121,14 +121,14 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
               <Plane className="w-9 h-9 text-gray-300" />
             </div>
             <div>
-              <p className="text-xl font-playfair font-bold text-[#17233E] mb-2">Aucune réservation</p>
-              <p className="text-[#17233E]/60 text-sm max-w-sm">
+              <p className="text-xl font-playfair font-bold text-dark-800 mb-2">Aucune réservation</p>
+              <p className="text-dark-800/60 text-sm max-w-sm">
                 Vous n'avez pas encore réservé de voyage. Découvrez nos destinations et commencez à épargner !
               </p>
             </div>
             <button
               onClick={onBack}
-              className="px-8 py-3 bg-[#FF7F2A] text-white rounded-xl font-semibold hover:bg-[#e66d1e] transition-colors"
+              className="px-8 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
             >
               Découvrir les voyages
             </button>
@@ -138,7 +138,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
         {/* Booking cards */}
         {!loading && !error && bookings.length > 0 && (
           <div className="space-y-5">
-            <p className="text-sm text-[#17233E]/60">
+            <p className="text-sm text-dark-800/60">
               {bookings.length} réservation{bookings.length > 1 ? 's' : ''}
             </p>
             {bookings.map((booking) => {
@@ -172,23 +172,23 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                     <div className="flex-1 p-5">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h3 className="font-playfair font-bold text-[#17233E] text-lg leading-tight">
+                          <h3 className="font-playfair font-bold text-dark-800 text-lg leading-tight">
                             {booking.voyage?.titre || 'Voyage'}
                           </h3>
-                          <div className="flex items-center gap-1.5 text-xs text-[#17233E]/60 mt-1">
-                            <MapPin className="w-3.5 h-3.5 text-[#FF7F2A]" />
+                          <div className="flex items-center gap-1.5 text-xs text-dark-800/60 mt-1">
+                            <MapPin className="w-3.5 h-3.5 text-primary-500" />
                             {booking.voyage?.destination}
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-3">
-                          <p className="text-xs text-[#17233E]/50">Total</p>
-                          <p className="font-bold text-[#17233E]">{fmtPrice(booking.totalPrice)}</p>
-                          <p className="text-xs text-[#17233E]/50">{booking.nombrePersonnes} pers.</p>
+                          <p className="text-xs text-dark-800/50">Total</p>
+                          <p className="font-bold text-dark-800">{fmtPrice(booking.totalPrice)}</p>
+                          <p className="text-xs text-dark-800/50">{booking.nombrePersonnes} pers.</p>
                         </div>
                       </div>
 
                       {/* Info row */}
-                      <div className="flex flex-wrap gap-3 mb-4 text-xs text-[#17233E]/60">
+                      <div className="flex flex-wrap gap-3 mb-4 text-xs text-dark-800/60">
                         {booking.voyage?.departureDate && (
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3.5 h-3.5" />
@@ -206,19 +206,19 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                       {/* Progress bar */}
                       {booking.status !== 'CANCELLED' && (
                         <div className="mb-4">
-                          <div className="flex justify-between text-xs text-[#17233E]/60 mb-1.5">
+                          <div className="flex justify-between text-xs text-dark-800/60 mb-1.5">
                             <span>Épargné : {fmtPrice(booking.amountPaid)}</span>
                             <span className="font-medium">{percent}%</span>
                           </div>
                           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div
-                              className={`h-full rounded-full transition-all ${percent >= 100 ? 'bg-green-500' : 'bg-[#1a4d3e]'}`}
+                              className={`h-full rounded-full transition-all ${percent >= 100 ? 'bg-green-500' : 'bg-forest-800'}`}
                               style={{ width: `${percent}%` }}
                             />
                           </div>
                           {booking.remainingAmount > 0 && (
-                            <p className="text-xs text-[#17233E]/50 mt-1">
-                              Restant : <span className="font-medium text-[#17233E]">{fmtPrice(booking.remainingAmount)}</span>
+                            <p className="text-xs text-dark-800/50 mt-1">
+                              Restant : <span className="font-medium text-dark-800">{fmtPrice(booking.remainingAmount)}</span>
                             </p>
                           )}
                         </div>
@@ -228,7 +228,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                       <div className="flex gap-2.5">
                         <button
                           onClick={() => onViewBooking(booking.id)}
-                          className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-[#17233E] rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
+                          className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-dark-800 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
                         >
                           <Eye className="w-4 h-4" />
                           Détails
@@ -236,7 +236,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                         {booking.status !== 'FULLY_PAID' && booking.status !== 'CANCELLED' && (
                           <button
                             onClick={() => setEpargneBooking(booking)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-[#1a4d3e] text-white rounded-lg hover:bg-[#153d31] transition-colors font-medium text-sm"
+                            className="flex items-center gap-1.5 px-4 py-2 bg-forest-800 text-white rounded-lg hover:bg-forest-900 transition-colors font-medium text-sm"
                           >
                             <PiggyBank className="w-4 h-4" />
                             Épargner

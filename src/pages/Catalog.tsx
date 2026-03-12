@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, LayoutGrid, List, Search, Loader2, LogIn } from 'lucide-react';
+import { MapPin, Star, LayoutGrid, List, Search, Loader2, LogIn, SlidersHorizontal, X } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
+import { useDebounce } from '../hooks/useDebounce';
 
 import type { AuthMode } from './Auth';
 
@@ -29,9 +30,26 @@ export const Catalog: React.FC<CatalogProps> = ({
   const [authRequired, setAuthRequired] = useState(false);
   const [sortBy, setSortBy] = useState('default');
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = [priceMin, priceMax, dateFrom, dateTo].filter(Boolean).length;
+
+  const resetFilters = () => {
+    setPriceMin('');
+    setPriceMax('');
+    setDateFrom('');
+    setDateTo('');
+    setSearchQuery('');
+    setSortBy('default');
+  };
 
   const loadVoyages = async () => {
     setLoading(true);
@@ -60,13 +78,37 @@ export const Catalog: React.FC<CatalogProps> = ({
 
   useEffect(() => {
     let result = [...voyages];
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const query = debouncedSearch.toLowerCase();
       result = result.filter(v =>
         v.titre?.toLowerCase().includes(query) ||
         v.destination?.toLowerCase().includes(query) ||
         v.pays?.toLowerCase().includes(query)
       );
+    }
+    // Price range filter
+    if (priceMin) {
+      const min = Number(priceMin);
+      result = result.filter(v => (v.totalPrice ?? 0) >= min);
+    }
+    if (priceMax) {
+      const max = Number(priceMax);
+      result = result.filter(v => (v.totalPrice ?? 0) <= max);
+    }
+    // Departure date filter
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      result = result.filter(v => {
+        if (!v.rawDepartureDate) return false;
+        return new Date(v.rawDepartureDate) >= from;
+      });
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      result = result.filter(v => {
+        if (!v.rawDepartureDate) return false;
+        return new Date(v.rawDepartureDate) <= to;
+      });
     }
     switch (sortBy) {
       case 'price-low':
@@ -81,7 +123,7 @@ export const Catalog: React.FC<CatalogProps> = ({
     }
     setFilteredVoyages(result);
     setCurrentPage(1);
-  }, [searchQuery, sortBy, voyages]);
+  }, [debouncedSearch, sortBy, voyages, priceMin, priceMax, dateFrom, dateTo]);
 
   const totalPages = Math.ceil(filteredVoyages.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -101,7 +143,7 @@ export const Catalog: React.FC<CatalogProps> = ({
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600)' }}
         >
-          <div className="absolute inset-0 bg-[#1a4d3e]/85" />
+          <div className="absolute inset-0 bg-forest-800/85" />
         </div>
         <div className="relative h-full flex items-center justify-center">
           <div className="text-center text-white">
@@ -126,7 +168,7 @@ export const Catalog: React.FC<CatalogProps> = ({
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-[#1a4d3e] animate-spin" />
+            <Loader2 className="w-8 h-8 text-forest-800 animate-spin" />
             <p className="text-gray-400">Chargement des voyages...</p>
           </div>
         )}
@@ -137,7 +179,7 @@ export const Catalog: React.FC<CatalogProps> = ({
             <p className="text-red-500 font-medium">{error}</p>
             <button
               onClick={loadVoyages}
-              className="px-6 py-2.5 bg-[#1a4d3e] text-white rounded-lg hover:bg-[#153d31] transition-colors text-sm font-medium"
+              className="px-6 py-2.5 bg-forest-800 text-white rounded-lg hover:bg-forest-900 transition-colors text-sm font-medium"
             >
               Réessayer
             </button>
@@ -148,7 +190,7 @@ export const Catalog: React.FC<CatalogProps> = ({
         {!loading && authRequired && (
           <div className="relative">
             {/* Bannière discrète */}
-            <div className="flex items-center justify-between bg-[#1a4d3e] text-white rounded-xl px-5 py-3.5 mb-6 gap-4">
+            <div className="flex items-center justify-between bg-forest-800 text-white rounded-xl px-5 py-3.5 mb-6 gap-4">
               <div className="flex items-center gap-3">
                 <LogIn className="w-5 h-5 shrink-0" />
                 <p className="text-sm font-medium">Connectez-vous pour explorer nos voyages disponibles</p>
@@ -156,7 +198,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => onOpenAuth?.('connexion')}
-                  className="px-4 py-1.5 bg-white text-[#1a4d3e] rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
+                  className="px-4 py-1.5 bg-white text-forest-800 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
                 >
                   Se connecter
                 </button>
@@ -212,6 +254,79 @@ export const Catalog: React.FC<CatalogProps> = ({
               </div>
             </div>
 
+            {/* Filter Panel */}
+            <div className="mb-4">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-sm font-medium transition-colors ${
+                    showFilters || activeFilterCount > 0
+                      ? 'border-forest-800 bg-forest-800/5 text-forest-800'
+                      : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Filtres
+                  {activeFilterCount > 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-forest-800 text-white text-xs font-bold rounded-full">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </button>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={resetFilters}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+              {showFilters && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white p-4 rounded-xl border border-gray-200 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Prix min (FCFA)</label>
+                    <input
+                      type="number"
+                      value={priceMin}
+                      onChange={(e) => setPriceMin(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Prix max (FCFA)</label>
+                    <input
+                      type="number"
+                      value={priceMax}
+                      onChange={(e) => setPriceMax(e.target.value)}
+                      placeholder="1 000 000"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Départ après</label>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Départ avant</label>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center justify-between mb-8">
               <p className="text-gray-600 text-sm">
                 {filteredVoyages.length === 0
@@ -259,13 +374,13 @@ export const Catalog: React.FC<CatalogProps> = ({
                       <div className="flex-1 flex flex-col justify-between py-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <p className="text-xs text-[#17233E]/50 mb-2">
+                            <p className="text-xs text-dark-800/50 mb-2">
                               {voyage.duree} | Full Day Tours
                             </p>
-                            <h3 className="font-playfair text-xl font-bold text-[#17233E] mb-1.5">{voyage.titre}</h3>
+                            <h3 className="font-playfair text-xl font-bold text-dark-800 mb-1.5">{voyage.titre}</h3>
                             <div className="flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-[#FF7F2A]" />
-                              <span className="text-sm text-[#17233E]/60">{voyage.pays}</span>
+                              <MapPin className="w-3.5 h-3.5 text-primary-500" />
+                              <span className="text-sm text-dark-800/60">{voyage.pays}</span>
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0 ml-4">
@@ -274,25 +389,25 @@ export const Catalog: React.FC<CatalogProps> = ({
                                 <Star key={i} className={`w-3.5 h-3.5 ${i < (voyage.note ?? 4) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
                               ))}
                             </div>
-                            <p className="text-xs text-[#17233E]/50">{voyage.nombreAvis || 0} Reviews</p>
+                            <p className="text-xs text-dark-800/50">{voyage.nombreAvis || 0} Reviews</p>
                           </div>
                         </div>
                         <div className="flex items-end justify-between mt-auto pt-4">
                           <div>
-                            <p className="text-xs text-[#17233E]/40 mb-0.5">Conditions de paiement</p>
-                            <p className="text-sm font-semibold text-[#17233E]">{voyage.conditionsPaiement}</p>
+                            <p className="text-xs text-dark-800/40 mb-0.5">Conditions de paiement</p>
+                            <p className="text-sm font-semibold text-dark-800">{voyage.conditionsPaiement}</p>
                           </div>
                           <div className="flex flex-col items-end gap-2">
                             <div className="text-right">
-                              <p className="text-xs text-[#17233E]/40 mb-0.5">Montant</p>
-                              <p className="font-playfair text-2xl font-bold text-[#17233E]">
-                                {voyage.prix.replace(/,/g, '.')}<span className="text-sm font-normal text-[#17233E]/50">FcFA</span>
+                              <p className="text-xs text-dark-800/40 mb-0.5">Montant</p>
+                              <p className="font-playfair text-2xl font-bold text-dark-800">
+                                {voyage.prix.replace(/,/g, '.')}<span className="text-sm font-normal text-dark-800/50">FcFA</span>
                               </p>
-                              <p className="text-xs text-[#17233E]/40">Par personne</p>
+                              <p className="text-xs text-dark-800/40">Par personne</p>
                             </div>
                             <button
                               onClick={() => onViewDetails(voyage.id)}
-                              className="px-6 py-2.5 bg-[#FF7F2A] text-white rounded-lg hover:bg-[#e66d1e] transition-colors font-semibold text-sm"
+                              className="px-6 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold text-sm"
                             >
                               Voir Les Détails
                             </button>
@@ -314,7 +429,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-3 left-3">
-                        <span className="bg-white/90 backdrop-blur-sm text-xs font-medium px-3 py-1 rounded-full text-[#17233E]">
+                        <span className="bg-white/90 backdrop-blur-sm text-xs font-medium px-3 py-1 rounded-full text-dark-800">
                           {voyage.duree}
                         </span>
                       </div>
@@ -326,21 +441,21 @@ export const Catalog: React.FC<CatalogProps> = ({
                         ))}
                         <span className="text-xs text-gray-400 ml-1">({voyage.nombreAvis || 0})</span>
                       </div>
-                      <h3 className="font-playfair text-lg font-bold text-[#17233E] mb-1">{voyage.titre}</h3>
+                      <h3 className="font-playfair text-lg font-bold text-dark-800 mb-1">{voyage.titre}</h3>
                       <div className="flex items-center gap-1.5 mb-4">
-                        <MapPin className="w-3.5 h-3.5 text-[#FF7F2A]" />
-                        <span className="text-sm text-[#17233E]/60">{voyage.pays}</span>
+                        <MapPin className="w-3.5 h-3.5 text-primary-500" />
+                        <span className="text-sm text-dark-800/60">{voyage.pays}</span>
                       </div>
                       <div className="flex items-end justify-between">
                         <div>
-                          <p className="text-xs text-[#17233E]/40">À partir de</p>
-                          <p className="font-playfair text-xl font-bold text-[#17233E]">
-                            {voyage.prix.replace(/,/g, '.')}<span className="text-xs font-normal text-[#17233E]/50"> FcFA</span>
+                          <p className="text-xs text-dark-800/40">À partir de</p>
+                          <p className="font-playfair text-xl font-bold text-dark-800">
+                            {voyage.prix.replace(/,/g, '.')}<span className="text-xs font-normal text-dark-800/50"> FcFA</span>
                           </p>
                         </div>
                         <button
                           onClick={() => onViewDetails(voyage.id)}
-                          className="px-5 py-2 bg-[#FF7F2A] text-white rounded-lg hover:bg-[#e66d1e] transition-colors font-semibold text-sm"
+                          className="px-5 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold text-sm"
                         >
                           Détails
                         </button>
@@ -355,7 +470,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               <div className="text-center py-16">
                 <p className="text-gray-400 text-lg mb-2">Aucun voyage ne correspond à votre recherche</p>
                 <button
-                  onClick={() => { setSearchQuery(''); setSortBy('default'); }}
+                  onClick={resetFilters}
                   className="text-primary-500 hover:text-primary-600 font-medium"
                 >
                   Réinitialiser les filtres
@@ -380,7 +495,7 @@ export const Catalog: React.FC<CatalogProps> = ({
       {/* CTA Section */}
       <div className="relative py-24 mt-16 overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600)' }}>
-          <div className="absolute inset-0 bg-[#1a4d3e]/90" />
+          <div className="absolute inset-0 bg-forest-800/90" />
         </div>
         <div className="relative max-w-4xl mx-auto text-center px-4">
           <p className="text-primary-400 font-semibold mb-3 tracking-wide text-sm uppercase">Love Where You're Going</p>
@@ -403,11 +518,15 @@ export const Catalog: React.FC<CatalogProps> = ({
             En partenariat avec ZePargn, nous vous offrons des conditions de paiement flexibles pour vos voyages.
           </p>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8 items-center">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="bg-gray-50 rounded-lg p-6 h-20 flex items-center justify-center border border-gray-100">
-                <div className="text-gray-300 font-bold text-lg tracking-wider">
-                  {['ZEPARGN', 'PARTNER', 'TRAVEL', 'AGENCY', 'GROUP'][i]}
-                </div>
+            {[
+              { label: 'ZePargn', bg: 'bg-gradient-to-r from-forest-800 to-[#2a7d5e]', text: 'text-white', border: 'border-transparent' },
+              { label: 'MTN MoMo', bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-300' },
+              { label: 'Kkiapay', bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-300' },
+              { label: 'Moov Money', bg: 'bg-blue-50', text: 'text-blue-600', border: 'border-blue-300' },
+              { label: 'Visa', bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-300' },
+            ].map(({ label, bg, text, border }) => (
+              <div key={label} className={`${bg} rounded-xl p-6 h-20 flex items-center justify-center border ${border} transition-shadow hover:shadow-md`}>
+                <span className={`${text} font-bold text-lg tracking-wide`}>{label}</span>
               </div>
             ))}
           </div>
