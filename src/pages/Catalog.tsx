@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Search, Loader2, LogIn, SlidersHorizontal, X, ArrowRight, Compass, PiggyBank, Shield, Clock, Users, Calendar, ChevronRight } from 'lucide-react';
+import { MapPin, Star, Search, Loader2, SlidersHorizontal, X, ArrowRight, Clock, Users, Calendar, ChevronRight } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
@@ -146,10 +146,7 @@ export const Catalog: React.FC<CatalogProps> = ({
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 w-full">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 bg-primary-500/20 border border-primary-500/30 rounded-full px-4 py-1.5 mb-6">
-              <Compass className="w-4 h-4 text-primary-400" />
-              <span className="text-primary-300 text-sm font-medium">Agence de voyage au Benin</span>
-            </div>
+            <p className="text-primary-400 text-sm font-semibold uppercase tracking-widest mb-4">Agence de voyage au Benin</p>
 
             <h1 className="font-playfair text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
               Voyagez en groupe,
@@ -225,39 +222,24 @@ export const Catalog: React.FC<CatalogProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-10">
             {[
               {
-                step: '01',
-                icon: <Compass className="w-7 h-7" />,
+                num: '1',
                 title: 'Choisissez votre voyage',
                 desc: 'Parcourez nos destinations et trouvez le voyage qui vous correspond.',
-                color: 'bg-primary-50 text-primary-600',
-                border: 'border-primary-100',
               },
               {
-                step: '02',
-                icon: <PiggyBank className="w-7 h-7" />,
+                num: '2',
                 title: 'Reservez avec 50%',
                 desc: 'Payez un acompte de 50% via MTN MoMo ou FedaPay pour confirmer votre place.',
-                color: 'bg-forest-50 text-forest-700',
-                border: 'border-forest-100',
               },
               {
-                step: '03',
-                icon: <Shield className="w-7 h-7" />,
+                num: '3',
                 title: 'Epargnez le reste',
                 desc: 'Payez le solde a votre rythme avec ZePargn avant la date du voyage.',
-                color: 'bg-amber-50 text-amber-700',
-                border: 'border-amber-100',
               },
             ].map((item) => (
-              <div
-                key={item.step}
-                className={`relative bg-white border ${item.border} rounded-2xl p-7 hover:shadow-lg transition-all duration-300 group`}
-              >
-                <div className="absolute -top-4 left-6 bg-dark-800 text-white text-xs font-bold px-3 py-1 rounded-full">
-                  Etape {item.step}
-                </div>
-                <div className={`w-14 h-14 ${item.color} rounded-xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                  {item.icon}
+              <div key={item.num} className="text-center">
+                <div className="w-14 h-14 bg-primary-500 text-white rounded-full flex items-center justify-center mx-auto mb-5 text-xl font-bold">
+                  {item.num}
                 </div>
                 <h3 className="text-lg font-bold text-dark-800 mb-2">{item.title}</h3>
                 <p className="text-sm text-dark-800/60 leading-relaxed">{item.desc}</p>
@@ -305,9 +287,6 @@ export const Catalog: React.FC<CatalogProps> = ({
             <div className="relative">
               <div className="flex flex-col sm:flex-row items-center justify-between bg-gradient-to-r from-dark-800 to-dark-700 text-white rounded-2xl px-6 py-5 mb-8 gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-500/20 rounded-xl flex items-center justify-center">
-                    <LogIn className="w-5 h-5 text-primary-400" />
-                  </div>
                   <div>
                     <p className="font-semibold text-sm">Connectez-vous pour decouvrir nos voyages</p>
                     <p className="text-xs text-white/60">Inscription gratuite en 2 minutes</p>
@@ -568,23 +547,21 @@ export const Catalog: React.FC<CatalogProps> = ({
                 Grace a notre partenariat avec ZePargn, payez 50% a la reservation puis epargnez le reste a votre rythme.
               </p>
 
-              <div className="space-y-5">
+              <ul className="space-y-4">
                 {[
-                  { icon: <Shield className="w-5 h-5" />, title: 'Paiement securise', desc: 'MTN MoMo et FedaPay pour des transactions fiables' },
-                  { icon: <PiggyBank className="w-5 h-5" />, title: 'Epargne flexible', desc: 'Payez le solde en plusieurs fois avant le depart' },
-                  { icon: <Users className="w-5 h-5" />, title: 'Voyages de groupe', desc: 'Partagez des moments uniques avec d\'autres passionnes' },
+                  { title: 'Paiement securise', desc: 'MTN MoMo et FedaPay pour des transactions fiables' },
+                  { title: 'Epargne flexible', desc: 'Payez le solde en plusieurs fois avant le depart' },
+                  { title: 'Voyages de groupe', desc: 'Partagez des moments uniques avec d\'autres passionnes' },
                 ].map((item) => (
-                  <div key={item.title} className="flex gap-4">
-                    <div className="w-11 h-11 bg-primary-50 text-primary-600 rounded-xl flex items-center justify-center shrink-0">
-                      {item.icon}
-                    </div>
+                  <li key={item.title} className="flex gap-3">
+                    <span className="w-2 h-2 bg-primary-500 rounded-full mt-2 shrink-0" />
                     <div>
                       <h4 className="font-semibold text-dark-800 mb-0.5">{item.title}</h4>
                       <p className="text-sm text-dark-800/50">{item.desc}</p>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
 
             <div className="relative">
@@ -596,16 +573,9 @@ export const Catalog: React.FC<CatalogProps> = ({
                 />
               </div>
               {/* Floating card */}
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 max-w-[220px]">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-dark-800">100%</p>
-                    <p className="text-xs text-dark-800/50">Paiements securises</p>
-                  </div>
-                </div>
+              <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 max-w-[200px]">
+                <p className="text-2xl font-bold text-primary-500 mb-0.5">100%</p>
+                <p className="text-xs text-dark-800/50">Paiements securises</p>
               </div>
             </div>
           </div>

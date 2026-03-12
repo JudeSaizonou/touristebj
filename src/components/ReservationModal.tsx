@@ -52,12 +52,22 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [specialRequests, setSpecialRequests] = useState('');
   const [emailError, setEmailError] = useState('');
 
+  const isProcessingStep = step === 'processing';
+  const canClose = !isProcessingStep && step !== 'creating' && step !== 'paying';
+
   useEffect(() => {
     if (isOpen && user?.phoneNumber) {
       const national = user.phoneNumber.replace(/^\+\d{1,3}/, '').replace(/\D/g, '');
       setPhoneNumber(national);
     }
   }, [isOpen, user]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && canClose) onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [isOpen, canClose, onClose]);
 
   if (!isOpen || !voyage) return null;
 
@@ -128,9 +138,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     setStep('paying');
     setErrorMsg('');
     try {
-      // 1. Backend crée la transaction et retourne transactionId + montant avec frais
       const init = await payDepositFedaPay(bookingId, acompte);
-      // 2. Ouvrir le widget FedaPay
       await openFedaPay({
         amount: init.amount,
         publicKey: FEDAPAY_KEY,
@@ -139,7 +147,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         customerPhone: phoneNumber.replace(/\D/g, '') || undefined,
         customerEmail: contactEmail || undefined,
       });
-      // 3. Widget success → webhook backend met à jour la réservation automatiquement
       setStep('successful');
     } catch (err: any) {
       setErrorMsg(err?.message || 'Paiement FedaPay échoué.');
@@ -164,15 +171,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     setEmailError('');
     onClose();
   };
-
-  const isProcessingStep = step === 'processing';
-  const canClose = !isProcessingStep && step !== 'creating' && step !== 'paying';
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape' && canClose) handleClose(); };
-    document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
-  }, [canClose]);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
