@@ -26,16 +26,16 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
     let cancelled = false;
     (async () => {
       try {
-        const [trip, st] = await Promise.all([
-          getPartnerVoyageById(voyageId),
-          tripsApi.getVoyageStats(voyageId),
-        ]);
-        if (!cancelled) {
-          setVoyage(trip);
-          setStats(st);
-        }
+        const trip = await getPartnerVoyageById(voyageId);
+        if (!cancelled) setVoyage(trip);
       } catch {
         if (!cancelled) setVoyage(null);
+      }
+      try {
+        const st = await tripsApi.getVoyageStats(voyageId);
+        if (!cancelled) setStats(st);
+      } catch {
+        // stats endpoint may not exist — non-blocking
       }
     })();
     return () => { cancelled = true; };
