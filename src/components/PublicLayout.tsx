@@ -42,7 +42,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
   };
 
   const navItems = [
-    { label: 'ACCUEIL', action: () => { setMobileMenuOpen(false); window.location.hash = '#/'; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+    { label: 'ACCUEIL', action: () => { setMobileMenuOpen(false); window.history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
     { label: 'VOYAGES', action: () => scrollToSection('voyages-section') },
   ];
 
@@ -88,7 +88,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <button onClick={() => { window.location.hash = '#/'; }} className="shrink-0">
+            <button onClick={() => { window.history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }} className="shrink-0">
               <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-10 md:h-11 object-contain" />
             </button>
 
@@ -410,7 +410,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-5">Navigation</h4>
               <ul className="space-y-2.5">
                 {[
-                  { label: 'Accueil', action: () => { window.location.hash = '#/'; window.scrollTo({ top: 0 }); } },
+                  { label: 'Accueil', action: () => { window.history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); window.scrollTo({ top: 0 }); } },
                   { label: 'Nos voyages', action: () => scrollToSection('voyages-section') },
                   { label: 'Mes voyages', action: onMesVoyages },
                   ...(isAdmin ? [{ label: 'Administration', action: onAdminLogin }] : []),

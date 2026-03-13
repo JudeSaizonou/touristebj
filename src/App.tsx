@@ -17,13 +17,14 @@ import { Auth, AuthMode } from './pages/Auth';
 import { MesVoyages } from './pages/MesVoyages';
 import { MonEpargne } from './pages/MonEpargne';
 import { useAuth } from './context/AuthContext';
-import { useHashRouter } from './hooks/useHashRouter';
+import { useRouter } from './hooks/useRouter';
+import { SEO, buildOrganizationJsonLd } from './components/SEO';
 import { StorageService } from './utils/storage';
 import { PageView } from './types';
 
 function App() {
   const { user, isAdmin, logout: authLogout } = useAuth();
-  const { route, navigate } = useHashRouter();
+  const { route, navigate } = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('connexion');
@@ -94,16 +95,26 @@ function App() {
 
   if (route.path === '/auth') {
     return (
+      <>
+      <SEO title="Connexion" noindex />
       <Auth
         initialMode={authMode}
         onBack={() => navigate('/')}
         onSuccess={handleAuthSuccess}
       />
+      </>
     );
   }
 
   if (route.path === '/') {
     return (
+      <>
+      <SEO
+        title="Voyages au Bénin"
+        description="Découvrez et réservez les meilleurs voyages au Bénin. Épargne progressive, paiement flexible par Mobile Money, expériences authentiques."
+        url="/"
+        jsonLd={buildOrganizationJsonLd()}
+      />
       <Catalog
         onViewDetails={(id) => navigate(`/voyage/${id}`)}
         onAdminLogin={handleAdminLogin}
@@ -111,6 +122,7 @@ function App() {
         onMesVoyages={() => navigate('/mes-voyages')}
         onLogout={handleLogout}
       />
+      </>
     );
   }
 

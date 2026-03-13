@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /voyage/
+Disallow: /admin/
+Disallow: /auth
+Disallow: /epargne/
+Disallow: /mes-voyages
+
+Sitemap: https://letouriste.bj/sitemap.xml

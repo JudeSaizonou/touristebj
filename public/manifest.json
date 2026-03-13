@@ -1,0 +1,22 @@
+{
+  "name": "Le Touriste.bj",
+  "short_name": "Touriste.bj",
+  "description": "Découvrez et réservez les meilleurs voyages au Bénin. Épargne progressive, paiement flexible, expériences authentiques.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#FF7F2A",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

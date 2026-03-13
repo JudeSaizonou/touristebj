@@ -284,7 +284,7 @@ export const Dashboard: React.FC = () => {
         {/* Quick actions */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <a
-            href="#/admin/voyages/new"
+            href="/admin/voyages/new"
             className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-primary-200 transition-all group"
           >
             <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center group-hover:bg-primary-100 transition-colors">
@@ -296,7 +296,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </a>
           <a
-            href="#/admin/reservations"
+            href="/admin/reservations"
             className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-blue-200 transition-all group"
           >
             <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
@@ -308,7 +308,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </a>
           <a
-            href="#/admin/reversements"
+            href="/admin/reversements"
             className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-green-200 transition-all group"
           >
             <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center group-hover:bg-green-100 transition-colors">
@@ -333,7 +333,7 @@ export const Dashboard: React.FC = () => {
               <span>Reverse: {fmtFcfa(payoutBalance.totalPayouts)}</span>
             </div>
             <a
-              href="#/admin/reversements"
+              href="/admin/reversements"
               className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg text-xs font-medium text-white transition-colors"
             >
               <Wallet className="w-3.5 h-3.5" /> Voir details

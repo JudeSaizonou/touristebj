@@ -27,8 +27,8 @@ export class ErrorBoundary extends React.Component<
   };
 
   handleGoHome = () => {
-    window.location.hash = '#/';
-    this.setState({ hasError: false, error: null });
+    window.history.pushState(null, '', '/');
+    window.location.reload();
   };
 
   render() {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PublicLayout } from '../components/PublicLayout';
 import { ToastContainer, useToast } from '../components/Toast';
 import { ReservationModal } from '../components/ReservationModal';
+import { SEO, buildVoyageJsonLd } from '../components/SEO';
 import { getVoyageById } from '../api/trips';
 import LogoZepargn from '../assets/LogoZepargn.png';
 import { useAuth } from '../context/AuthContext';
@@ -120,6 +121,23 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
 
   return (
     <PublicLayout onAdminLogin={onAdminLogin} onOpenAuth={onOpenAuth} onMesVoyages={onMesVoyages} onLogout={onLogout}>
+      <SEO
+        title={voyage.titre || voyage.destination}
+        description={voyage.description?.slice(0, 160) || `Voyage à ${voyage.destination || voyage.pays} — ${basePrice?.toLocaleString('fr-FR')} FCFA`}
+        image={voyage.photos?.[0]}
+        url={`/voyage/${voyageId}`}
+        type="product"
+        jsonLd={buildVoyageJsonLd({
+          titre: voyage.titre,
+          destination: voyage.destination,
+          description: voyage.description,
+          totalPrice: basePrice,
+          dateDebut: voyage.dateDebut || voyage.rawDepartureDate,
+          dateFin: voyage.dateFin || voyage.returnDate,
+          photos: voyage.photos,
+          id: voyageId,
+        })}
+      />
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <ReservationModal
