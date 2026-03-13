@@ -424,49 +424,68 @@ export async function createVoyageur(
     phoneNumber?: string;
   }
 ): Promise<any> {
-  const res = await apiRequest<{ success: boolean; data?: VoyageurBackend }>(
-    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs`,
-    { method: 'POST', body: JSON.stringify(body) }
+  const res = await apiRequest<{ success: boolean; booking?: any }>(
+    `${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/travelers`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        contactInfo: {
+          email: body.email,
+          phoneNumber: body.phoneNumber,
+        },
+        specialRequests: undefined,
+      }),
+    }
   );
-  const v = res.data;
-  if (!v) return {};
+  const b = res.booking;
+  if (!b) return {};
+  const u = b.userId || {};
   return {
-    id: v._id,
-    nom: [v.firstName, v.lastName].filter(Boolean).join(' ') || 'Sans nom',
-    date: v.dateOfBirth ? new Date(v.dateOfBirth).toLocaleDateString('fr-FR') : '',
-    telephone: v.phoneNumber || '',
-    statutPaiement: 'acompte-paye',
-    moyenUtilise: 'une-fois',
-    acomptesRecus: '0 FCFA',
-    montantsRestants: '0 FCFA',
+    id: b._id,
+    nom: [u.prenom, u.nom].filter(Boolean).join(' ') || [body.firstName, body.lastName].filter(Boolean).join(' ') || 'Sans nom',
+    date: b.createdAt ? new Date(b.createdAt).toLocaleDateString('fr-FR') : '',
+    telephone: u.phoneNumber || body.phoneNumber || '',
+    statutPaiement: mapBookingStatus(b.status),
+    moyenUtilise: 'une-fois' as const,
+    acomptesRecus: fmtFCFA(b.amountPaid || 0),
+    montantsRestants: fmtFCFA(b.remainingAmount || b.totalAmount || 0),
   };
 }
 
 export async function updateVoyageur(
   voyageId: string,
   voyageurId: string,
-  body: Partial<Parameters<typeof createVoyageur>[1]>
+  body: {
+    contactInfo?: { email?: string; phoneNumber?: string };
+    specialRequests?: string;
+    notes?: string;
+    numberOfParticipants?: number;
+  }
 ): Promise<any> {
-  const res = await apiRequest<{ success: boolean; data?: VoyageurBackend }>(
-    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs/${voyageurId}`,
+  const res = await apiRequest<{ success: boolean; booking?: any }>(
+    `${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/travelers/${voyageurId}`,
     { method: 'PUT', body: JSON.stringify(body) }
   );
-  const v = res.data;
-  if (!v) return {};
+  const b = res.booking;
+  if (!b) return {};
+  const u = b.userId || {};
   return {
-    id: v._id,
-    nom: [v.firstName, v.lastName].filter(Boolean).join(' ') || 'Sans nom',
-    date: v.dateOfBirth ? new Date(v.dateOfBirth).toLocaleDateString('fr-FR') : '',
-    telephone: v.phoneNumber || '',
-    statutPaiement: 'acompte-paye',
-    moyenUtilise: 'une-fois',
-    acomptesRecus: '0 FCFA',
-    montantsRestants: '0 FCFA',
+    id: b._id,
+    nom: [u.prenom, u.nom].filter(Boolean).join(' ') || 'Sans nom',
+    date: b.createdAt ? new Date(b.createdAt).toLocaleDateString('fr-FR') : '',
+    telephone: u.phoneNumber || '',
+    statutPaiement: mapBookingStatus(b.status),
+    moyenUtilise: mapPaymentMethod(b),
+    acomptesRecus: fmtFCFA(b.amountPaid || 0),
+    montantsRestants: fmtFCFA(b.remainingAmount || 0),
   };
 }
 
-export async function deleteVoyageur(voyageId: string, voyageurId: string): Promise<void> {
-  await apiRequest(`${TRIPS_PREFIX}/trips/${voyageId}/voyageurs/${voyageurId}`, { method: 'DELETE' });
+export async function deleteVoyageur(voyageId: string, voyageurId: string, reason?: string): Promise<void> {
+  await apiRequest(
+    `${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/travelers/${voyageurId}`,
+    { method: 'DELETE', body: JSON.stringify({ reason }) }
+  );
 }
 
 export async function requestVoyageurDocuments(
@@ -475,11 +494,11 @@ export async function requestVoyageurDocuments(
   documentTypes: string[],
   notes?: string
 ): Promise<any> {
-  const res = await apiRequest<{ success: boolean; data?: VoyageurBackend }>(
-    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs/${voyageurId}/documents/request`,
+  const res = await apiRequest<{ success: boolean; documentRequests?: any[] }>(
+    `${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/travelers/${voyageurId}/documents/request`,
     { method: 'POST', body: JSON.stringify({ documentTypes, notes }) }
   );
-  return res.data;
+  return res.documentRequests;
 }
 
 export async function getAllVoyageurs(params?: {
