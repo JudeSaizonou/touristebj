@@ -426,7 +426,7 @@ export const Auth: React.FC<AuthProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-3 py-6 sm:p-4 relative overflow-hidden">
       {/* Decorative blobs */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-forest-500/10 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
@@ -482,7 +482,7 @@ export const Auth: React.FC<AuthProps> = ({
                 setConnexionOtp('');
                 setConnexionPassword('');
               }}
-              className={`flex-1 py-4 text-sm font-semibold transition-colors ${
+              className={`flex-1 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-colors ${
                 mode === 'inscription'
                   ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
                   : 'text-gray-500 hover:text-gray-700'
@@ -501,7 +501,7 @@ export const Auth: React.FC<AuthProps> = ({
                 setInscriptionStep('phone');
                 setInscriptionOtpSent(false);
               }}
-              className={`flex-1 py-4 text-sm font-semibold transition-colors ${
+              className={`flex-1 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-colors ${
                 mode === 'connexion'
                   ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/50'
                   : 'text-gray-500 hover:text-gray-700'
@@ -511,7 +511,7 @@ export const Auth: React.FC<AuthProps> = ({
             </button>
           </div>
 
-          <div className="p-6 md:p-8">
+          <div className="p-4 sm:p-6 md:p-8">
             {/* ——— Inscription ——— */}
             {mode === 'inscription' && (
               <>

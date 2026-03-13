@@ -115,7 +115,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-dark-800/80" />
-            <div className="relative h-full flex flex-col justify-end pb-8 px-4 max-w-4xl mx-auto">
+            <div className="relative h-full flex flex-col justify-end pb-8 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto">
               <button
                 onClick={onBack}
                 className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-4 self-start"
@@ -139,15 +139,15 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* LEFT: progression + infos */}
               <div className="lg:col-span-2 space-y-5">
                 {/* Carte progression */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-5">
                     <TrendingUp className="w-5 h-5 text-forest-800" />
-                    <h2 className="font-playfair font-bold text-dark-800 text-lg">Progression de l'épargne</h2>
+                    <h2 className="font-playfair font-bold text-dark-800 text-base sm:text-lg">Progression de l'épargne</h2>
                   </div>
 
                   {/* Barre principale */}
@@ -165,18 +165,18 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-3 bg-gray-50 rounded-xl">
-                      <p className="text-xs text-dark-800/50 mb-1">Total voyage</p>
-                      <p className="font-bold text-dark-800 text-sm">{fmtPrice(booking.totalPrice)}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-xl">
+                      <p className="text-[10px] sm:text-xs text-dark-800/50 mb-1">Total voyage</p>
+                      <p className="font-bold text-dark-800 text-xs sm:text-sm">{fmtPrice(booking.totalPrice)}</p>
                     </div>
-                    <div className="text-center p-3 bg-forest-800/5 rounded-xl">
-                      <p className="text-xs text-dark-800/50 mb-1">Épargné</p>
-                      <p className="font-bold text-forest-800 text-sm">{fmtPrice(booking.amountPaid)}</p>
+                    <div className="text-center p-2 sm:p-3 bg-forest-800/5 rounded-xl">
+                      <p className="text-[10px] sm:text-xs text-dark-800/50 mb-1">Épargné</p>
+                      <p className="font-bold text-forest-800 text-xs sm:text-sm">{fmtPrice(booking.amountPaid)}</p>
                     </div>
-                    <div className={`text-center p-3 rounded-xl ${booking.remainingAmount > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
-                      <p className="text-xs text-dark-800/50 mb-1">Restant</p>
-                      <p className={`font-bold text-sm ${booking.remainingAmount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                    <div className={`text-center p-2 sm:p-3 rounded-xl ${booking.remainingAmount > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
+                      <p className="text-[10px] sm:text-xs text-dark-800/50 mb-1">Restant</p>
+                      <p className={`font-bold text-xs sm:text-sm ${booking.remainingAmount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
                         {fmtPrice(booking.remainingAmount)}
                       </p>
                     </div>
@@ -184,10 +184,10 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 </div>
 
                 {/* Historique des paiements */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-5">
                     <CreditCard className="w-5 h-5 text-dark-800" />
-                    <h2 className="font-playfair font-bold text-dark-800 text-lg">Historique des paiements</h2>
+                    <h2 className="font-playfair font-bold text-dark-800 text-base sm:text-lg">Historique des paiements</h2>
                   </div>
 
                   {payments.length === 0 ? (
@@ -197,24 +197,24 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   ) : (
                     <div className="space-y-3">
                       {payments.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-forest-800/10'}`}>
+                        <div key={p.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0 gap-2">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-forest-800/10'}`}>
                               {p.type === 'DEPOSIT'
                                 ? <CheckCircle className="w-4 h-4 text-blue-500" />
                                 : <PiggyBank className="w-4 h-4 text-forest-800" />
                               }
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-dark-800">
+                            <div className="min-w-0">
+                              <p className="text-xs sm:text-sm font-medium text-dark-800 truncate">
                                 {PAYMENT_TYPE_LABELS[p.type] ?? p.type}
                               </p>
-                              <p className="text-xs text-dark-800/50">{p.date}</p>
+                              <p className="text-[10px] sm:text-xs text-dark-800/50">{p.date}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-dark-800 text-sm">{fmtPrice(p.amount)}</p>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-semibold text-dark-800 text-xs sm:text-sm">{fmtPrice(p.amount)}</p>
+                            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${p.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
                               {p.status === 'COMPLETED' ? 'Confirmé' : p.status}
                             </span>
                           </div>
@@ -236,7 +236,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                         Date limite de paiement
                       </p>
                     </div>
-                    <p className={`text-2xl font-bold font-playfair ${daysLeft <= 14 ? 'text-red-700' : 'text-amber-700'}`}>
+                    <p className={`text-xl sm:text-2xl font-bold font-playfair ${daysLeft <= 14 ? 'text-red-700' : 'text-amber-700'}`}>
                       {daysLeft} jours
                     </p>
                     {booking.paymentDeadline && (
@@ -251,7 +251,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 {!['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.remainingAmount ?? 1) > 0 && (
                   <button
                     onClick={() => setEpargneOpen(true)}
-                    className="w-full py-4 bg-forest-800 text-white rounded-2xl font-semibold hover:bg-forest-900 transition-colors flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto py-3 sm:py-4 px-6 bg-forest-800 text-white rounded-2xl font-semibold hover:bg-forest-900 transition-colors flex items-center justify-center gap-2"
                   >
                     <PiggyBank className="w-5 h-5" />
                     Ajouter un versement

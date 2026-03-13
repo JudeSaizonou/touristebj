@@ -356,7 +356,7 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
         {existingPhotos.length + newPhotoFiles.length < 10 && (
           <div
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-gray-200 rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors mb-4"
+            className="border-2 border-dashed border-gray-200 rounded-xl p-4 sm:p-8 flex flex-col items-center justify-center cursor-pointer hover:border-primary-400 hover:bg-primary-50 transition-colors mb-4"
           >
             <Upload className="w-8 h-8 text-gray-400 mb-2" />
             <p className="text-sm font-medium text-gray-700">Cliquez pour ajouter des photos</p>
@@ -398,7 +398,7 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
 
       {mode === 'create' && (
         <div className="flex justify-end pt-4 border-t border-gray-100">
-          <button type="submit" className="px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md">
+          <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md">
             Enregistrer
           </button>
         </div>

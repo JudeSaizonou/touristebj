@@ -228,13 +228,13 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
+    <div className="p-3 sm:p-6 md:p-8 space-y-6 sm:space-y-8">
       {selectedBooking && (
         <BookingDetailModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
       )}
 
       {/* Stats cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         <StatCard
           icon={<MapPin className="w-5 h-5" />}
           label="Voyages"
@@ -280,9 +280,9 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick actions + Payout balance */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Quick actions */}
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <a
             href="/admin/voyages/new"
             className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-primary-200 transition-all group"
@@ -343,10 +343,10 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Revenue chart */}
-        <div className="bg-white rounded-xl p-6 shadow-card border border-gray-100">
-          <h3 className="text-base font-semibold text-gray-900 mb-1">Revenus par mois</h3>
+        <div className="bg-white rounded-xl p-3 sm:p-6 shadow-card border border-gray-100 overflow-hidden">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">Revenus par mois</h3>
           <p className="text-2xl font-bold text-gray-900 mb-4">{fmtFcfa(stats?.revenue.total ?? 0)}</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -374,8 +374,8 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Bookings chart */}
-        <div className="bg-white rounded-xl p-6 shadow-card border border-gray-100">
-          <h3 className="text-base font-semibold text-gray-900 mb-1">Réservations par mois</h3>
+        <div className="bg-white rounded-xl p-3 sm:p-6 shadow-card border border-gray-100 overflow-hidden">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">Réservations par mois</h3>
           <p className="text-2xl font-bold text-gray-900 mb-4">{stats?.bookings.total ?? 0} au total</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
@@ -402,8 +402,8 @@ export const Dashboard: React.FC = () => {
 
       {/* Booking status breakdown */}
       {stats && (stats.bookings.total > 0) && (
-        <div className="bg-white rounded-xl p-6 shadow-card border border-gray-100">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Repartition des reservations</h3>
+        <div className="bg-white rounded-xl p-3 sm:p-6 shadow-card border border-gray-100">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-4">Repartition des reservations</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
             {[
               { label: 'En attente', value: stats.bookings.pendingDeposit, color: 'bg-amber-500' },
@@ -425,8 +425,8 @@ export const Dashboard: React.FC = () => {
 
       {/* Bookings table */}
       <div className="bg-white rounded-xl shadow-card border border-gray-100">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-6 border-b border-gray-100">
-          <h2 className="text-lg font-bold text-gray-900">Toutes les réservations</h2>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 p-3 sm:p-6 border-b border-gray-100">
+          <h2 className="text-base sm:text-lg font-bold text-gray-900">Toutes les réservations</h2>
           <div className="flex gap-3 flex-wrap">
             <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -457,21 +457,21 @@ export const Dashboard: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Voyage</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Pers.</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Acompte</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solde</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-                <th className="px-6 py-3"></th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Client</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Voyage</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Pers.</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Acompte</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solde</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400">Aucune réservation</td>
+                  <td colSpan={9} className="px-2 py-8 sm:px-6 sm:py-12 text-center text-gray-400">Aucune réservation</td>
                 </tr>
               ) : bookings.map(b => (
                 <tr
@@ -481,19 +481,19 @@ export const Dashboard: React.FC = () => {
                   tabIndex={0}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedBooking(b); } }}
                 >
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900 text-sm">{b.client.nom}</p>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
+                    <p className="font-medium text-gray-900 text-xs sm:text-sm">{b.client.nom}</p>
                     {b.client.telephone && <p className="text-xs text-gray-400">{b.client.telephone}</p>}
                   </td>
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900 text-sm">{b.voyage.destination || b.voyage.titre}</p>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
+                    <p className="font-medium text-gray-900 text-xs sm:text-sm">{b.voyage.destination || b.voyage.titre}</p>
                     {b.voyage.departureDate && <p className="text-xs text-gray-400">{b.voyage.departureDate}</p>}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{b.nombrePersonnes}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{fmt(b.totalAmount)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-blue-600">{fmt(b.depositAmount)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-orange-600">{fmt(b.remainingAmount)}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700">{b.nombrePersonnes}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">{fmt(b.totalAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-blue-600">{fmt(b.depositAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-orange-600">{fmt(b.remainingAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[b.status] || STATUS_STYLE['PENDING_DEPOSIT']}`}>
                       {STATUS_LABEL[b.status] || b.status}
                     </span>
@@ -501,8 +501,8 @@ export const Dashboard: React.FC = () => {
                       <span className="ml-1 inline-block w-2 h-2 rounded-full bg-red-500" title="Retard de paiement" />
                     )}
                   </td>
-                  <td className="px-6 py-4 text-xs text-gray-400">{b.createdAt}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs text-gray-400">{b.createdAt}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
                     <button
                       onClick={e => { e.stopPropagation(); setSelectedBooking(b); }}
                       className="text-xs text-primary-600 font-medium hover:underline"
@@ -517,7 +517,7 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-2">
+          <div className="px-3 py-3 sm:px-6 sm:py-4 border-t border-gray-100 flex items-center justify-end gap-2">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
@@ -560,12 +560,12 @@ const colorMap = {
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, sub, color }) => {
   const c = colorMap[color];
   return (
-    <div className="bg-white rounded-xl p-5 shadow-card border border-gray-100">
-      <div className={`w-9 h-9 ${c.bg} ${c.icon} rounded-lg flex items-center justify-center mb-3`}>
+    <div className="bg-white rounded-xl p-3 sm:p-5 shadow-card border border-gray-100">
+      <div className={`w-8 h-8 sm:w-9 sm:h-9 ${c.bg} ${c.icon} rounded-lg flex items-center justify-center mb-2 sm:mb-3`}>
         {icon}
       </div>
       <p className="text-xs text-gray-500 mb-1">{label}</p>
-      <p className={`text-xl font-bold ${c.text} leading-tight`}>{value}</p>
+      <p className={`text-lg sm:text-xl font-bold ${c.text} leading-tight`}>{value}</p>
       <p className="text-xs text-gray-400 mt-1">{sub}</p>
     </div>
   );

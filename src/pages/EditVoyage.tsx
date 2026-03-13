@@ -119,7 +119,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
     <div className="p-4 md:p-8">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">{voyage.titre || voyage.destination}</h1>
+      <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">{voyage.titre || voyage.destination}</h1>
 
       {/* Tabs */}
       <div className="bg-white rounded-t-xl border-b border-gray-200">
@@ -128,7 +128,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-4 font-semibold transition-colors ${
+              className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'text-primary-600 border-b-2 border-primary-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -141,7 +141,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white rounded-b-xl shadow-card p-4 md:p-8 border-x border-b border-gray-100">
+      <div className="bg-white rounded-b-xl shadow-card p-3 sm:p-6 md:p-8 border-x border-b border-gray-100">
         {activeTab === 'details' && (
           <VoyageForm
             ref={formRef}
@@ -199,7 +199,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
         <div className="flex justify-center mt-6">
           <button
             onClick={() => formRef.current?.triggerSubmit()}
-            className="px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md"
+            className="w-full sm:w-auto px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md"
           >
             Enregistrer les modifications
           </button>

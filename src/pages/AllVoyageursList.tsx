@@ -93,7 +93,7 @@ export const AllVoyageursList: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-3 sm:p-6">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <ExportModal
@@ -106,7 +106,7 @@ export const AllVoyageursList: React.FC = () => {
       {/* Detail modal */}
       {selectedTraveler && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900">Détails du voyageur</h2>
               <button onClick={() => setSelectedTraveler(null)} className="p-2 hover:bg-gray-100 rounded-lg">
@@ -179,7 +179,7 @@ export const AllVoyageursList: React.FC = () => {
       )}
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Tous les voyageurs</h1>
+        <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Tous les voyageurs</h1>
         <button
           onClick={() => setShowExportModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors w-fit"
@@ -190,7 +190,7 @@ export const AllVoyageursList: React.FC = () => {
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
         <form onSubmit={handleSearch} className="relative w-full sm:w-80">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -230,13 +230,13 @@ export const AllVoyageursList: React.FC = () => {
           <table className="w-full whitespace-nowrap">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Voyageur</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Voyage</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Téléphone</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Statut</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Payé</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Restant</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Actions</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600">Voyageur</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Voyage</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Téléphone</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600">Statut</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600">Payé</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Restant</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-600">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -254,26 +254,26 @@ export const AllVoyageursList: React.FC = () => {
                 </tr>
               ) : travelers.map(t => (
                 <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="font-semibold text-gray-900 text-sm">{t.nom}</p>
-                    {t.email && <p className="text-xs text-gray-400">{t.email}</p>}
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
+                    <p className="font-semibold text-gray-900 text-xs sm:text-sm">{t.nom}</p>
+                    {t.email && <p className="text-xs text-gray-400 hidden sm:block">{t.email}</p>}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden sm:table-cell">
                     <span className="px-2 py-1 bg-primary-50 text-primary-700 rounded text-xs font-medium">
                       {t.tripDestination || t.tripTitle}
                     </span>
                     {t.tripDepartureDate && <p className="text-xs text-gray-400 mt-0.5">{new Date(t.tripDepartureDate).toLocaleDateString('fr-FR')}</p>}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{t.telephone || '—'}</td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[t.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 hidden sm:table-cell">{t.telephone || '—'}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[t.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
                       {STATUS_LABEL[t.status] || t.status}
                     </span>
                     {t.isOverdue && <span className="ml-1 px-2 py-0.5 bg-red-100 text-red-600 rounded text-xs">Retard</span>}
                   </td>
-                  <td className="px-6 py-4 font-medium text-green-600 text-sm">{fmtPrice(t.amountPaid)}</td>
-                  <td className="px-6 py-4 font-medium text-orange-600 text-sm">{fmtPrice(t.remainingAmount)}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 font-medium text-green-600 text-xs sm:text-sm">{fmtPrice(t.amountPaid)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 font-medium text-orange-600 text-xs sm:text-sm hidden sm:table-cell">{fmtPrice(t.remainingAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
                     <button
                       onClick={() => setSelectedTraveler(t)}
                       className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"

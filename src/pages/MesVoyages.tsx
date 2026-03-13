@@ -137,7 +137,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-10">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-10">
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center py-20 gap-4">
@@ -255,21 +255,21 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                 <div key={booking.id} className="bg-white rounded-2xl border border-gray-100 hover:shadow-lg transition-all duration-300 overflow-hidden">
                   <div className="flex flex-col md:flex-row gap-0">
                     {/* Image */}
-                    <div className="md:w-48 h-44 md:h-auto relative overflow-hidden flex-shrink-0">
+                    <div className="md:w-48 h-36 sm:h-44 md:h-auto relative overflow-hidden flex-shrink-0">
                       <img
                         src={booking.voyage?.images?.[0] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400'}
                         alt={booking.voyage?.titre}
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute top-3 left-3">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.color}`}>
+                        <span className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${status.color}`}>
                           {status.label}
                         </span>
                       </div>
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1 p-5">
+                    <div className="flex-1 p-3 sm:p-5">
                       <div className="flex items-start justify-between mb-3">
                         <div>
                           <h3 className="font-playfair font-bold text-dark-800 text-lg leading-tight">

@@ -148,7 +148,7 @@ export const Catalog: React.FC<CatalogProps> = ({
           <div className="max-w-2xl">
             <p className="text-primary-400 text-sm font-semibold uppercase tracking-widest mb-4">Agence de voyage au Benin</p>
 
-            <h1 className="font-playfair text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
+            <h1 className="font-playfair text-2xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
               Voyagez en groupe,
               <br />
               <span className="text-primary-400">Epargnez</span> en toute
@@ -161,7 +161,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               </span>
             </h1>
 
-            <p className="text-lg text-gray-300 mb-8 max-w-lg leading-relaxed">
+            <p className="text-sm sm:text-lg text-gray-300 mb-8 max-w-lg leading-relaxed">
               Reservez votre place, payez 50% d'acompte puis epargnez le reste a votre rythme avec ZePargn.
             </p>
 
@@ -251,7 +251,7 @@ export const Catalog: React.FC<CatalogProps> = ({
 
       {/* ═══════════════ VOYAGES ═══════════════ */}
       <section id="voyages-section" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
             <div>
               <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Explorez</p>
@@ -308,7 +308,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                 </div>
               </div>
               {/* Placeholder cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 select-none pointer-events-none">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 select-none pointer-events-none">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden opacity-40">
                     <div className="h-52 bg-gray-200 animate-pulse" />
@@ -331,7 +331,7 @@ export const Catalog: React.FC<CatalogProps> = ({
           {!loading && !error && !authRequired && (
             <>
               {/* Search + Filters bar */}
-              <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="flex flex-col sm:flex-row gap-2 mb-6">
                 <div className="relative flex-1 max-w-lg">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -418,14 +418,14 @@ export const Catalog: React.FC<CatalogProps> = ({
               </div>
 
               {/* Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {displayedVoyages.map((voyage) => (
                   <div
                     key={voyage.id}
                     className="bg-white rounded-2xl border border-gray-100 overflow-hidden group hover:shadow-xl hover:shadow-gray-200/60 transition-all duration-300 hover:-translate-y-1"
                   >
                     {/* Image */}
-                    <div className="relative h-56 overflow-hidden">
+                    <div className="relative h-40 sm:h-52 overflow-hidden">
                       <img
                         src={voyage.photos?.[0] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800'}
                         alt={voyage.titre}

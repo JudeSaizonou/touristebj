@@ -98,7 +98,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
@@ -108,7 +108,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
             <ArrowRightLeft className="w-6 h-6 text-forest-700" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Reversements</h1>
+            <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Reversements</h1>
             <p className="text-sm text-gray-500">Historique des demandes de reversement</p>
           </div>
         </div>
@@ -122,7 +122,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
       </div>
 
       {/* Balance Card */}
-      <div className="bg-gradient-to-br from-forest-800 to-forest-900 rounded-2xl p-6 text-white shadow-lg">
+      <div className="bg-gradient-to-br from-forest-800 to-forest-900 rounded-2xl p-4 sm:p-6 text-white shadow-lg">
         {balanceLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 animate-spin text-white/60" />
@@ -202,37 +202,37 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Date</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Montant</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Commission</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Net re\u00e7u</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">M\u00e9thode</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-600">Statut</th>
+                  <th className="text-left px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Date</th>
+                  <th className="text-right px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">Montant</th>
+                  <th className="text-right px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Commission</th>
+                  <th className="text-right px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">Net re\u00e7u</th>
+                  <th className="text-left px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">M\u00e9thode</th>
+                  <th className="text-center px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">Statut</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {payouts.map((p) => (
                   <tr key={p._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 whitespace-nowrap hidden sm:table-cell">
                       {new Date(p.createdAt).toLocaleDateString('fr-FR', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric',
                       })}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-900 whitespace-nowrap">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-right font-medium text-gray-900 whitespace-nowrap text-xs sm:text-sm">
                       {fmtPrice(p.amount)}
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-500 whitespace-nowrap">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-right text-gray-500 whitespace-nowrap text-xs sm:text-sm hidden sm:table-cell">
                       {fmtPrice(p.commission)}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium text-forest-700 whitespace-nowrap">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-right font-medium text-forest-700 whitespace-nowrap text-xs sm:text-sm">
                       {fmtPrice(p.netAmount)}
                     </td>
-                    <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-gray-700 whitespace-nowrap text-xs sm:text-sm hidden sm:table-cell">
                       {METHOD_LABEL[p.paymentMethod] || p.paymentMethod}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-center">
                       <span
                         className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${
                           STATUS_STYLE[p.status] || 'bg-gray-100 text-gray-700 border-gray-200'

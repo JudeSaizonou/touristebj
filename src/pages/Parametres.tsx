@@ -89,10 +89,10 @@ export const Parametres: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-8 max-w-4xl mx-auto space-y-8">
-      <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Paramètres</h1>
 
       {/* ======================= PROFIL ======================= */}
-      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
             <User className="w-5 h-5 text-primary-600" />
@@ -164,7 +164,7 @@ export const Parametres: React.FC = () => {
       </section>
 
       {/* ======================= SECURITE ======================= */}
-      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
             <Shield className="w-5 h-5 text-green-600" />
@@ -175,7 +175,7 @@ export const Parametres: React.FC = () => {
           </div>
         </div>
 
-        <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
+        <form onSubmit={handlePasswordSubmit} className="space-y-4 w-full sm:max-w-md">
           {/* Old password */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">Mot de passe actuel</label>
@@ -244,13 +244,13 @@ export const Parametres: React.FC = () => {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium transition-colors"
           >
             <Save className="w-4 h-4" />
-            Changer le mot de passe
+            <span className="text-xs sm:text-sm">Changer le mot de passe</span>
           </button>
         </form>
       </section>
 
       {/* ======================= NOTIFICATIONS ======================= */}
-      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
             <Bell className="w-5 h-5 text-amber-600" />
@@ -284,7 +284,7 @@ export const Parametres: React.FC = () => {
       </section>
 
       {/* ======================= APPLICATION ======================= */}
-      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-6">
+      <section className="bg-white rounded-xl shadow-card border border-gray-100 p-4 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
             <Smartphone className="w-5 h-5 text-blue-600" />

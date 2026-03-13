@@ -252,12 +252,12 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
 
       {/* Tabs */}
       <div className="bg-white rounded-t-xl border-b border-gray-200">
-        <div className="flex gap-8 px-6">
+        <div className="flex gap-4 sm:gap-8 px-3 sm:px-6 overflow-x-auto">
           {tabItems.map(tab => (
             <button
               key={tab.id}
               onClick={() => { setStatusFilter(tab.id); setCurrentPage(1); }}
-              className={`px-4 py-4 font-semibold transition-colors ${
+              className={`px-3 sm:px-4 py-3 sm:py-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap ${
                 statusFilter === tab.id
                   ? 'text-primary-600 border-b-2 border-primary-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -387,20 +387,20 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           <button
             onClick={() => setShowExportModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Upload className="w-5 h-5 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">Exporter</span>
+            <span className="text-xs sm:text-sm font-medium text-gray-700">Exporter</span>
           </button>
           <button
             onClick={onCreateVoyage}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-md"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors shadow-md"
           >
             <Plus className="w-5 h-5" />
-            <span className="text-sm font-semibold">Créer un voyage</span>
+            <span className="text-xs sm:text-sm font-semibold">Créer un voyage</span>
           </button>
         </div>
       </div>
@@ -513,7 +513,7 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
         </div>
 
         {/* Pagination */}
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <span>Show result:</span>
             <select

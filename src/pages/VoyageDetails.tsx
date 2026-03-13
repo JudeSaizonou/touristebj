@@ -101,12 +101,12 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
             {isAuthError && (
               <button
                 onClick={() => onOpenAuth?.('connexion')}
-                className="px-6 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-semibold"
+                className="w-full sm:w-auto px-6 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-semibold"
               >
                 Se connecter
               </button>
             )}
-            <button onClick={onBack} className="px-6 py-2.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors text-sm font-medium">
+            <button onClick={onBack} className="w-full sm:w-auto px-6 py-2.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors text-sm font-medium">
               Retour au catalogue
             </button>
           </div>
@@ -159,7 +159,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
 
       {/* Hero Image */}
       <div className="relative">
-        <div className="h-[400px] md:h-[480px] overflow-hidden">
+        <div className="h-[250px] sm:h-[400px] md:h-[480px] overflow-hidden">
           <img
             src={voyage.photos?.[selectedImage] || voyage.photos?.[0] || ''}
             alt={voyage.titre}
@@ -213,7 +213,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
 
       {/* Main content */}
       <div className="bg-gray-50 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             {/* Left column */}
@@ -261,7 +261,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
               {/* Inclus / Pas inclus */}
               {(voyage.ceQuiEstInclus?.length > 0 || voyage.ceQuiNestPasInclus?.length > 0) && (
                 <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                  <div className="grid grid-cols-1 md:grid-cols-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2">
                     {voyage.ceQuiEstInclus?.length > 0 && (
                       <div className="p-6 md:p-8 border-b md:border-b-0 md:border-r border-gray-100">
                         <h3 className="flex items-center gap-2 text-sm font-bold text-dark-800 mb-4">
@@ -349,7 +349,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
                   <div className="bg-gradient-to-r from-dark-800 to-dark-700 px-6 py-5 text-center">
                     <p className="text-white/50 text-xs uppercase tracking-widest font-semibold mb-1">Prix par personne</p>
-                    <p className="font-playfair text-3xl font-bold text-white">{fmtPrice(basePrice)}</p>
+                    <p className="font-playfair text-xl sm:text-3xl font-bold text-white">{fmtPrice(basePrice)}</p>
                   </div>
 
                   <div className="p-6 space-y-4">
@@ -451,7 +451,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
           <p className="text-sm text-dark-800/50 mb-8 max-w-md mx-auto">Envie de plus d'aventures ? Parcourez notre catalogue complet de voyages.</p>
           <button
             onClick={onBack}
-            className="inline-flex items-center gap-2 px-8 py-3.5 bg-dark-800 text-white rounded-xl font-semibold text-sm hover:bg-dark-700 transition-all hover:shadow-lg"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-dark-800 text-white rounded-xl font-semibold text-sm hover:bg-dark-700 transition-all hover:shadow-lg"
           >
             Voir tous les voyages
             <ArrowRight className="w-4 h-4" />

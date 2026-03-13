@@ -100,7 +100,7 @@ export const ReservationsList: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-3 sm:p-6">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <ConfirmModal
@@ -121,7 +121,7 @@ export const ReservationsList: React.FC = () => {
 
       {selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Détails réservation</h2>
@@ -176,7 +176,7 @@ export const ReservationsList: React.FC = () => {
       )}
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Réservations</h1>
+        <h1 className="text-lg sm:text-2xl font-bold text-gray-900">Réservations</h1>
         <button
           onClick={() => setShowExportModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors w-fit"
@@ -216,15 +216,15 @@ export const ReservationsList: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Client</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Voyage</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Pers.</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Payé</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solde</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
-                <th className="px-6 py-3"></th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Client</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Voyage</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Pers.</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Payé</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Solde</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Date</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -240,19 +240,19 @@ export const ReservationsList: React.FC = () => {
                 </tr>
               ) : bookings.map(b => (
                 <tr key={b.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900 text-sm">{b.client.nom}</p>
-                    {b.client.telephone && <p className="text-xs text-gray-400">{b.client.telephone}</p>}
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
+                    <p className="font-medium text-gray-900 text-xs sm:text-sm">{b.client.nom}</p>
+                    {b.client.telephone && <p className="text-xs text-gray-400 hidden sm:block">{b.client.telephone}</p>}
                   </td>
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-gray-900 text-sm">{b.voyage.destination || b.voyage.titre}</p>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden sm:table-cell">
+                    <p className="font-medium text-gray-900 text-xs sm:text-sm">{b.voyage.destination || b.voyage.titre}</p>
                     {b.voyage.departureDate && <p className="text-xs text-gray-400">{b.voyage.departureDate}</p>}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-700">{b.nombrePersonnes}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{fmtPrice(b.totalAmount)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-green-600">{fmtPrice(b.amountPaid)}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-orange-600">{fmtPrice(b.remainingAmount)}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 hidden sm:table-cell">{b.nombrePersonnes}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">{fmtPrice(b.totalAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-green-600 hidden sm:table-cell">{fmtPrice(b.amountPaid)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-orange-600 hidden sm:table-cell">{fmtPrice(b.remainingAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[b.status] || STATUS_STYLE['PENDING_DEPOSIT']}`}>
                       {STATUS_LABEL[b.status] || b.status}
                     </span>
@@ -260,8 +260,8 @@ export const ReservationsList: React.FC = () => {
                       <span className="ml-1 inline-block w-2 h-2 rounded-full bg-red-500" title="En retard" />
                     )}
                   </td>
-                  <td className="px-6 py-4 text-xs text-gray-400">{b.createdAt}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs text-gray-400 hidden sm:table-cell">{b.createdAt}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setSelectedBooking(b)}

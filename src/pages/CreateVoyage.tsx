@@ -58,7 +58,7 @@ export const CreateVoyage: React.FC<CreateVoyageProps> = ({ onBack, onCreate }) 
           </div>
         </div>
       )}
-      <div className="bg-white rounded-xl shadow-card p-4 md:p-8 border border-gray-100">
+      <div className="bg-white rounded-xl shadow-card p-3 sm:p-6 md:p-8 border border-gray-100">
         <VoyageForm mode="create" onSubmit={handleSubmit} onCancel={onBack} />
       </div>
     </div>

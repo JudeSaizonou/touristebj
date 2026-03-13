@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({ userName, userRole, greeting, su
         </div>
 
         {/* Center section - Search */}
-        <div className="hidden sm:block flex-1 max-w-xs md:max-w-md mx-2 md:mx-8" ref={searchRef}>
+        <div className="hidden sm:block flex-1 max-w-[10rem] sm:max-w-xs md:max-w-md mx-2 md:mx-8" ref={searchRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
@@ -154,13 +154,13 @@ export const Header: React.FC<HeaderProps> = ({ userName, userRole, greeting, su
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
           </button>
 
-          <div className="flex items-center gap-2 md:gap-3 ml-1 md:ml-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 ml-0.5 sm:ml-1 md:ml-2">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center text-white font-semibold shadow-md text-sm md:text-base">
               J
             </div>
             <div className="hidden md:block text-right">
               <div className="text-sm font-semibold text-gray-900">{userName}</div>
-              <div className="text-xs text-gray-500">{userRole}</div>
+              <div className="hidden sm:block text-xs text-gray-500">{userRole}</div>
             </div>
           </div>
         </div>
