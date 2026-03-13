@@ -140,20 +140,19 @@ export const Catalog: React.FC<CatalogProps> = ({
             alt=""
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-dark-900/90 via-dark-800/70 to-transparent" />
+          <div className="absolute inset-0 bg-dark-900/70" />
           <div className="absolute inset-0 bg-gradient-to-t from-dark-900/60 via-transparent to-transparent" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 w-full">
-          <div className="max-w-2xl">
+          <div className="max-w-3xl mx-auto text-center">
             <p className="text-primary-400 text-sm font-semibold uppercase tracking-widest mb-4">Agence de voyage au Benin</p>
 
             <h1 className="font-playfair text-2xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
               Voyagez en groupe,
               <br />
-              <span className="text-primary-400">Epargnez</span> en toute
-              <br />
-              <span className="relative">
+              <span className="text-primary-400">Epargnez</span> en toute{' '}
+              <span className="relative inline-block">
                 sérénité
                 <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 12" fill="none">
                   <path d="M2 8 C50 2, 150 2, 198 8" stroke="#FF7F2A" strokeWidth="3" strokeLinecap="round" />
@@ -161,11 +160,11 @@ export const Catalog: React.FC<CatalogProps> = ({
               </span>
             </h1>
 
-            <p className="text-sm sm:text-lg text-gray-300 mb-8 max-w-lg leading-relaxed">
+            <p className="text-sm sm:text-lg text-gray-300 mb-8 max-w-lg mx-auto leading-relaxed">
               Reservez votre place, payez 50% d'acompte puis epargnez le reste a votre rythme avec ZePargn.
             </p>
 
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={() => {
                   const el = document.getElementById('voyages-section');
@@ -186,7 +185,7 @@ export const Catalog: React.FC<CatalogProps> = ({
             </div>
 
             {/* Stats */}
-            <div className="flex gap-8 mt-12 pt-8 border-t border-white/10">
+            <div className="flex justify-center gap-8 sm:gap-12 mt-12 pt-8 border-t border-white/10">
               {[
                 { value: '500+', label: 'Voyageurs' },
                 { value: '50+', label: 'Destinations' },
