@@ -8,7 +8,7 @@ export interface MtnInitResponse {
   data?: any;
 }
 
-export type MtnStatus = 'processing' | 'successful' | 'failed' | 'expired' | 'timeout';
+export type MtnStatus = 'processing' | 'successful' | 'success' | 'failed' | 'expired' | 'timeout';
 
 export interface TransactionStatus {
   status: MtnStatus;

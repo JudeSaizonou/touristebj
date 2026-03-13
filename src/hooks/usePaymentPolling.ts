@@ -58,7 +58,7 @@ export function usePaymentPolling({
         }
         try {
           const status = await getTransactionStatus(referenceId);
-          if (status.status === 'successful') {
+          if (status.status === 'successful' || status.status === 'success') {
             clearTimers();
             callbacksRef.current.onSuccess();
           } else if (status.status === 'failed' || status.status === 'expired') {
