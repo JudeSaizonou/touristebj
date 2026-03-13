@@ -21,9 +21,12 @@ interface MonEpargneProps {
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'text-amber-600 bg-amber-50 border-amber-200' },
   DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  IN_PROGRESS:     { label: 'Paiement en cours',   color: 'text-blue-600 bg-blue-50 border-blue-200' },
   SAVING:          { label: 'Épargne en cours',    color: 'text-forest-800 bg-forest-800/5 border-forest-800/20' },
   FULLY_PAID:      { label: 'Voyage payé',         color: 'text-green-600 bg-green-50 border-green-200' },
+  COMPLETED:       { label: 'Voyage payé',         color: 'text-green-600 bg-green-50 border-green-200' },
   CANCELLED:       { label: 'Annulé',              color: 'text-red-600 bg-red-50 border-red-200' },
+  REFUNDED:        { label: 'Remboursé',           color: 'text-gray-600 bg-gray-50 border-gray-200' },
 };
 
 const PAYMENT_TYPE_LABELS: Record<string, string> = {
@@ -225,7 +228,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
               {/* RIGHT: actions + infos voyage */}
               <div className="space-y-5">
                 {/* Deadline card */}
-                {daysLeft !== null && booking.status !== 'FULLY_PAID' && booking.status !== 'CANCELLED' && (
+                {daysLeft !== null && !['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.amountRemaining ?? 1) > 0 && (
                   <div className={`rounded-2xl p-5 border ${daysLeft <= 14 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <Clock className={`w-5 h-5 ${daysLeft <= 14 ? 'text-red-500' : 'text-amber-500'}`} />
@@ -245,7 +248,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 )}
 
                 {/* Bouton épargner */}
-                {booking.status !== 'FULLY_PAID' && booking.status !== 'CANCELLED' && (
+                {!['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.amountRemaining ?? 1) > 0 && (
                   <button
                     onClick={() => setEpargneOpen(true)}
                     className="w-full py-4 bg-forest-800 text-white rounded-2xl font-semibold hover:bg-forest-900 transition-colors flex items-center justify-center gap-2"
@@ -255,7 +258,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   </button>
                 )}
 
-                {booking.status === 'FULLY_PAID' && (
+                {(['FULLY_PAID', 'COMPLETED'].includes(booking.status) || (booking.amountRemaining ?? 1) === 0) && (
                   <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
                     <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
                     <p className="font-bold text-green-700">Voyage intégralement payé !</p>
