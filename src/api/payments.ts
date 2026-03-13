@@ -36,6 +36,7 @@ export async function payBookingMtn(
         amount: params.amount,
         phoneNumber: params.phoneNumber.replace(/\D/g, ''),
         countryCode: params.countryCode || '229',
+        tripBookingId: bookingId,
       }),
     }
   );
@@ -59,7 +60,7 @@ export async function payDepositFedaPay(bookingId: string, amount: number): Prom
     `${TRIPS_PREFIX}/bookings/${bookingId}/pay-deposit`,
     {
       method: 'POST',
-      body: JSON.stringify({ paymentMethod: 'mobile_money', amount }),
+      body: JSON.stringify({ paymentMethod: 'mobile_money', amount, tripBookingId: bookingId }),
     }
   );
 }
@@ -70,7 +71,7 @@ export async function payInstallmentFedaPay(bookingId: string, amount: number): 
     `${TRIPS_PREFIX}/bookings/${bookingId}/pay-installment`,
     {
       method: 'POST',
-      body: JSON.stringify({ paymentMethod: 'mobile_money', amount }),
+      body: JSON.stringify({ paymentMethod: 'mobile_money', amount, tripBookingId: bookingId }),
     }
   );
 }
