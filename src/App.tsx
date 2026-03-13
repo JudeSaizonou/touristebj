@@ -193,6 +193,7 @@ function App() {
           currentPage={sidebarPage}
           onNavigate={handleNavigate}
           onLogout={handleLogout}
+          onRequestRefund={() => setShowRefundModal(true)}
         />
       </div>
 
