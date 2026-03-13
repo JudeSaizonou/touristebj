@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Plane, ChevronRight, CalendarCheck, Users, Settings, LogOut, ArrowRightLeft, Wallet } from 'lucide-react';
+import { LayoutDashboard, Plane, ChevronRight, CalendarCheck, Users, Settings, LogOut, Wallet } from 'lucide-react';
 import { PageView } from '../types';
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
 
@@ -7,10 +7,9 @@ interface SidebarProps {
   currentPage: 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
   onNavigate: (page: PageView) => void;
   onLogout?: () => void;
-  onRequestRefund?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLogout, onRequestRefund }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLogout }) => {
   const menuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'voyages' as const, label: 'Voyages', icon: Plane },
@@ -54,15 +53,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLog
       {/* Logout */}
       {onLogout && (
         <div className="p-4 space-y-2 border-t border-gray-100">
-          {onRequestRefund && (
-            <button
-              onClick={onRequestRefund}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 group"
-            >
-              <ArrowRightLeft className="w-5 h-5 text-gray-400 group-hover:text-primary-500" />
-              <span className="flex-1 text-left font-medium">Reversement</span>
-            </button>
-          )}
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-all duration-200 group"
