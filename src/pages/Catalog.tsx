@@ -148,7 +148,7 @@ export const Catalog: React.FC<CatalogProps> = ({
           <div className="max-w-3xl mx-auto text-center">
             <p className="text-primary-400 text-sm font-semibold uppercase tracking-widest mb-4">Agence de voyage au Benin</p>
 
-            <h1 className="font-playfair text-2xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight mb-6">
+            <h1 className="font-playfair text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
               Voyagez en groupe,
               <br />
               <span className="text-primary-400">Epargnez</span> en toute{' '}
