@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, Clock, PiggyBank, Eye, AlertCircle, Loader2, Plane } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { MapPin, Calendar, Clock, PiggyBank, Eye, AlertCircle, Loader2, Plane, ChevronDown } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
 import { getMyBookings } from '../api/trips';
@@ -19,9 +19,25 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'bg-amber-100 text-amber-700' },
   DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'bg-blue-100 text-blue-700' },
   SAVING:          { label: 'Épargne en cours',    color: 'bg-forest-800/10 text-forest-800' },
+  IN_PROGRESS:     { label: 'En cours',            color: 'bg-indigo-100 text-indigo-700' },
   FULLY_PAID:      { label: 'Voyage payé',         color: 'bg-green-100 text-green-700' },
+  COMPLETED:       { label: 'Terminé',             color: 'bg-emerald-100 text-emerald-700' },
   CANCELLED:       { label: 'Annulé',              color: 'bg-red-100 text-red-600' },
 };
+
+const FILTER_TABS: { key: string; label: string; statuses: string[] }[] = [
+  { key: '',          label: 'Tous',    statuses: [] },
+  { key: 'en_cours',  label: 'En cours', statuses: ['PENDING_DEPOSIT', 'DEPOSIT_PAID', 'SAVING', 'IN_PROGRESS'] },
+  { key: 'payes',     label: 'Payés',    statuses: ['FULLY_PAID', 'COMPLETED'] },
+  { key: 'annules',   label: 'Annulés',  statuses: ['CANCELLED'] },
+];
+
+type SortKey = 'recent' | 'oldest' | 'amount';
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'recent', label: 'Plus récent' },
+  { key: 'oldest', label: 'Plus ancien' },
+  { key: 'amount', label: 'Montant' },
+];
 
 export const MesVoyages: React.FC<MesVoyagesProps> = ({
   onBack,
@@ -35,6 +51,8 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [epargneBooking, setEpargneBooking] = useState<MappedBooking | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('recent');
 
   const loadBookings = async () => {
     setLoading(true);
@@ -54,6 +72,36 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
   }, []);
 
   const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = { '': bookings.length };
+    for (const tab of FILTER_TABS) {
+      if (tab.key) {
+        counts[tab.key] = bookings.filter((b) => tab.statuses.includes(b.status)).length;
+      }
+    }
+    return counts;
+  }, [bookings]);
+
+  const filteredBookings = useMemo(() => {
+    const activeTab = FILTER_TABS.find((t) => t.key === statusFilter);
+    let result = activeTab && activeTab.statuses.length > 0
+      ? bookings.filter((b) => activeTab.statuses.includes(b.status))
+      : [...bookings];
+
+    result.sort((a, b) => {
+      if (sortKey === 'oldest') {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      if (sortKey === 'amount') {
+        return b.totalPrice - a.totalPrice;
+      }
+      // recent (default)
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return result;
+  }, [bookings, statusFilter, sortKey]);
 
   return (
     <PublicLayout
@@ -141,7 +189,59 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
             <p className="text-sm text-dark-800/60">
               {bookings.length} réservation{bookings.length > 1 ? 's' : ''}
             </p>
-            {bookings.map((booking) => {
+
+            {/* Filter tabs + sort */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              {/* Status filter pills */}
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-1">
+                {FILTER_TABS.map((tab) => {
+                  const isActive = statusFilter === tab.key;
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => setStatusFilter(tab.key)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                        isActive
+                          ? 'bg-forest-800 text-white'
+                          : 'bg-gray-100 text-dark-800/70 hover:bg-gray-200'
+                      }`}
+                    >
+                      {tab.label}
+                      <span
+                        className={`text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                          isActive ? 'bg-white/20 text-white' : 'bg-gray-200 text-dark-800/50'
+                        }`}
+                      >
+                        {tabCounts[tab.key] ?? 0}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Sort dropdown */}
+              <div className="relative flex-shrink-0">
+                <select
+                  value={sortKey}
+                  onChange={(e) => setSortKey(e.target.value as SortKey)}
+                  className="appearance-none pl-3 pr-8 py-2 bg-gray-100 rounded-lg text-sm font-medium text-dark-800/70 hover:bg-gray-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-forest-800/20"
+                >
+                  {SORT_OPTIONS.map((opt) => (
+                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-800/40 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* No results for filter */}
+            {filteredBookings.length === 0 && (
+              <div className="text-center py-10 text-dark-800/50 text-sm">
+                Aucune réservation dans cette catégorie.
+              </div>
+            )}
+
+            {filteredBookings.map((booking) => {
               const status = STATUS_LABELS[booking.status] ?? { label: booking.status, color: 'bg-gray-100 text-gray-600' };
               const percent = booking.totalPrice > 0
                 ? Math.min(100, Math.round((booking.amountPaid / booking.totalPrice) * 100))

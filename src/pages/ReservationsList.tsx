@@ -44,8 +44,8 @@ export const ReservationsList: React.FC = () => {
     setLoading(true);
     try {
       const { bookings: list, pagination: pag } = await getDashboardBookings({
-        status: statusFilter || undefined,
         search: searchQuery || undefined,
+        status: statusFilter || undefined,
         page: currentPage,
         limit: itemsPerPage,
       });

@@ -7,7 +7,8 @@ import LogoZepargn from '../assets/LogoZepargn.png';
 import { useAuth } from '../context/AuthContext';
 import {
   MapPin, Clock, Users, Calendar,
-  Check, X, ChevronDown, ChevronLeft, Globe, Loader2, ArrowRight
+  Check, X, ChevronDown, ChevronLeft, Globe, Loader2, ArrowRight,
+  Share2, Copy, MessageCircle
 } from 'lucide-react';
 
 import type { AuthMode } from './Auth';
@@ -36,6 +37,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
   const [selectedImage, setSelectedImage] = useState(0);
   const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const [reservationOpen, setReservationOpen] = useState(false);
+  const [showShareOptions, setShowShareOptions] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
@@ -211,6 +213,25 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                     {item.label}
                   </span>
                 ))}
+                {/* Places restantes pill */}
+                {voyage.availableSpots != null && (
+                  <span className={`inline-flex items-center gap-1.5 text-xs font-semibold rounded-full px-4 py-2 border ${
+                    voyage.availableSpots === 0
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : voyage.availableSpots <= 5
+                        ? 'bg-orange-50 text-orange-600 border-orange-200'
+                        : 'bg-green-50 text-green-600 border-green-200'
+                  }`}>
+                    <span className={`w-2 h-2 rounded-full ${
+                      voyage.availableSpots === 0
+                        ? 'bg-red-500'
+                        : voyage.availableSpots <= 5
+                          ? 'bg-orange-500'
+                          : 'bg-green-500'
+                    }`} />
+                    {voyage.availableSpots === 0 ? 'Complet' : `${voyage.availableSpots} places restantes`}
+                  </span>
+                )}
               </div>
 
               {/* Description */}
@@ -352,6 +373,43 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                         </button>
                       </p>
                     )}
+
+                    {/* Share button */}
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowShareOptions(!showShareOptions)}
+                        className="w-full py-2.5 bg-gray-100 text-dark-800/70 rounded-xl font-medium text-sm hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Partager ce voyage
+                      </button>
+                      {showShareOptions && (
+                        <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(window.location.href);
+                              addToast('success', 'Lien copie dans le presse-papier !');
+                              setShowShareOptions(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-dark-800/70 hover:bg-gray-50 transition-colors"
+                          >
+                            <Copy className="w-4 h-4 text-primary-500" />
+                            Copier le lien
+                          </button>
+                          <button
+                            onClick={() => {
+                              const text = encodeURIComponent(`Decouvrez ce voyage : ${voyage.titre} - ${fmtPrice(basePrice)} !\n${window.location.href}`);
+                              window.open(`https://wa.me/?text=${text}`, '_blank');
+                              setShowShareOptions(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-dark-800/70 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                          >
+                            <MessageCircle className="w-4 h-4 text-green-500" />
+                            Partager via WhatsApp
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -366,6 +424,22 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Voyages similaires */}
+      <section className="py-16 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
+          <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Explorer</p>
+          <h2 className="font-playfair text-2xl md:text-3xl font-bold text-dark-800 mb-4">Decouvrez aussi nos autres destinations</h2>
+          <p className="text-sm text-dark-800/50 mb-8 max-w-md mx-auto">Envie de plus d'aventures ? Parcourez notre catalogue complet de voyages.</p>
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-2 px-8 py-3.5 bg-dark-800 text-white rounded-xl font-semibold text-sm hover:bg-dark-700 transition-all hover:shadow-lg"
+          >
+            Voir tous les voyages
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
 
       {/* Partenaires */}
       <section className="py-16 bg-white">

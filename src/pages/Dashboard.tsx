@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, X, TrendingUp, Users, MapPin, CreditCard, Clock, AlertTriangle, Plus, Wallet, Eye } from 'lucide-react';
-import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip, LineChart, Line, CartesianGrid, YAxis } from 'recharts';
+import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip, LineChart, Line, CartesianGrid, YAxis, PieChart, Pie } from 'recharts';
 import { getDashboardStats, getDashboardBookings, getMonthlyStats, getPayoutBalance } from '../api/trips';
 import type { DashboardStats, DashboardBooking, MonthlyPoint, PayoutBalance } from '../api/trips';
 
@@ -281,8 +281,12 @@ export const Dashboard: React.FC = () => {
 
       {/* Quick actions + Payout balance */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Quick actions */}
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <a href="#/admin/voyages/new" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-primary-200 transition-all group">
+          <a
+            href="#/admin/voyages/new"
+            className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-primary-200 transition-all group"
+          >
             <div className="w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center group-hover:bg-primary-100 transition-colors">
               <Plus className="w-5 h-5 text-primary-500" />
             </div>
@@ -291,7 +295,10 @@ export const Dashboard: React.FC = () => {
               <p className="text-xs text-gray-400">Creer une destination</p>
             </div>
           </a>
-          <a href="#/admin/reservations" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-blue-200 transition-all group">
+          <a
+            href="#/admin/reservations"
+            className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-blue-200 transition-all group"
+          >
             <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center group-hover:bg-blue-100 transition-colors">
               <Eye className="w-5 h-5 text-blue-500" />
             </div>
@@ -300,7 +307,10 @@ export const Dashboard: React.FC = () => {
               <p className="text-xs text-gray-400">{stats?.bookings.pendingDeposit ?? 0} en attente</p>
             </div>
           </a>
-          <a href="#/admin/reversements" className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-green-200 transition-all group">
+          <a
+            href="#/admin/reversements"
+            className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 shadow-card hover:shadow-lg hover:border-green-200 transition-all group"
+          >
             <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center group-hover:bg-green-100 transition-colors">
               <Wallet className="w-5 h-5 text-green-500" />
             </div>
@@ -310,6 +320,8 @@ export const Dashboard: React.FC = () => {
             </div>
           </a>
         </div>
+
+        {/* Payout balance card */}
         {payoutBalance && (
           <div className="bg-gradient-to-br from-forest-800 to-forest-800/80 rounded-xl p-5 text-white">
             <p className="text-xs text-white/60 mb-1">Solde disponible</p>
@@ -320,7 +332,10 @@ export const Dashboard: React.FC = () => {
             <div className="flex gap-3 text-xs text-white/50 mt-1">
               <span>Reverse: {fmtFcfa(payoutBalance.totalPayouts)}</span>
             </div>
-            <a href="#/admin/reversements" className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg text-xs font-medium text-white transition-colors">
+            <a
+              href="#/admin/reversements"
+              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/15 hover:bg-white/25 rounded-lg text-xs font-medium text-white transition-colors"
+            >
               <Wallet className="w-3.5 h-3.5" /> Voir details
             </a>
           </div>
