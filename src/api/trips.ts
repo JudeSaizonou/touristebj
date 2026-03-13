@@ -53,10 +53,26 @@ export interface VoyageurBackend {
 export interface TripStatsResponse {
   success: boolean;
   data: {
-    voyage: { _id: string; title?: string; destination?: string; status?: string };
-    bookings?: { total?: number; byStatus?: Record<string, number> };
-    voyageurs?: number;
-    revenue?: { total?: number; transactions?: number };
+    trip: { _id: string; title?: string; destination?: string; status?: string; maxParticipants?: number };
+    stats: {
+      totalBookings: number;
+      bookingsByStatus: Record<string, number>;
+      totalRevenue: number;
+      totalDeposits: number;
+      totalPending: number;
+      occupancyRate: number;
+      averageBookingValue: number;
+    };
+    travelers: Array<{
+      odooBookingId?: string;
+      odooInvoiceId?: string;
+      userId: { firstName?: string; lastName?: string; phoneNumber?: string; email?: string };
+      status: string;
+      totalAmount: number;
+      depositAmount: number;
+      paidAmount: number;
+      remainingAmount: number;
+    }>;
   };
 }
 
@@ -287,36 +303,112 @@ export async function getVoyageStats(voyageId: string): Promise<{
   montantAttente: string;
   totalPaiements: string;
 }> {
-  const res = await apiRequest<TripStatsResponse>(`${TRIPS_PREFIX}/trips/${voyageId}/stats`);
+  const res = await apiRequest<TripStatsResponse>(`${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/stats`);
   const d = res.data;
-  const totalReservations = d.bookings?.total ?? d.voyageurs ?? 0;
-  const totalAcomptes = (d.revenue?.total ?? 0) >= 1000000 ? (d.revenue!.total! / 1e6).toFixed(1) + 'M' : String(d.revenue?.total ?? 0);
-  const montantAttente = '0';
+  const s = d.stats;
+  const fmt = (v: number) => v >= 1000000 ? (v / 1e6).toFixed(1) + 'M' : String(v);
   return {
-    totalReservations,
-    totalAcomptes,
-    utilisateursEpargne: 0,
-    utilisateursFinances: 0,
-    montantAttente,
-    totalPaiements: totalAcomptes,
+    totalReservations: s.totalBookings,
+    totalAcomptes: fmt(s.totalDeposits),
+    utilisateursEpargne: s.bookingsByStatus?.['IN_PROGRESS'] ?? 0,
+    utilisateursFinances: s.bookingsByStatus?.['COMPLETED'] ?? 0,
+    montantAttente: fmt(s.totalPending),
+    totalPaiements: fmt(s.totalRevenue),
   };
 }
 
-export async function getVoyageursByVoyage(voyageId: string): Promise<any[]> {
-  const res = await apiRequest<{ success: boolean; data?: VoyageurBackend[] }>(
-    `${TRIPS_PREFIX}/trips/${voyageId}/voyageurs`
+function mapBookingStatus(status: string): 'acompte-paye' | 'epargne-en-cours' | 'solde' | 'financement-accorde' | 'reservation-annulee' {
+  switch (status) {
+    case 'DEPOSIT_PAID': return 'acompte-paye';
+    case 'IN_PROGRESS': return 'epargne-en-cours';
+    case 'COMPLETED': return 'solde';
+    case 'CANCELLED': return 'reservation-annulee';
+    default: return 'acompte-paye';
+  }
+}
+
+function mapPaymentMethod(b: any): 'epargne' | 'financement' | 'une-fois' | 'annule' {
+  if (b.status === 'CANCELLED') return 'annule';
+  if (b.isFullyPaid) return 'une-fois';
+  if (b.payments && b.payments.length > 1) return 'epargne';
+  return 'une-fois';
+}
+
+const fmtFCFA = (v: number) => v.toLocaleString('fr-FR') + ' FCFA';
+
+interface TravelersResponse {
+  success: boolean;
+  trip?: any;
+  travelers: Array<{
+    _id: string;
+    bookingNumber?: string;
+    user: { _id?: string; prenom?: string; nom?: string; email?: string; phoneNumber?: string; countryCode?: string; profilePhoto?: string };
+    numberOfParticipants?: number;
+    contactInfo?: { email?: string; phoneNumber?: string; emergencyContact?: any };
+    specialRequests?: string;
+    status: string;
+    totalAmount: number;
+    depositAmount: number;
+    depositPaid?: boolean;
+    depositPaidAt?: string;
+    amountPaid: number;
+    remainingAmount: number;
+    isFullyPaid?: boolean;
+    isOverdue?: boolean;
+    paymentDeadline?: string;
+    createdAt?: string;
+    payments?: Array<{ _id?: string; amount: number; paymentType?: string; paymentMethod?: string; transactionId?: string; createdAt?: string }>;
+    pendingPayments?: any[];
+  }>;
+  pagination?: { page: number; limit: number; total: number; pages: number };
+}
+
+export async function getVoyageursByVoyage(voyageId: string, params?: {
+  status?: string;
+  paymentStatus?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}): Promise<any[]> {
+  const q = new URLSearchParams();
+  if (params?.status) q.set('status', params.status);
+  if (params?.paymentStatus) q.set('paymentStatus', params.paymentStatus);
+  if (params?.search) q.set('search', params.search);
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.sortBy) q.set('sortBy', params.sortBy);
+  if (params?.sortOrder) q.set('sortOrder', params.sortOrder);
+  const qs = q.toString();
+  const res = await apiRequest<TravelersResponse>(
+    `${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/travelers${qs ? '?' + qs : ''}`
   );
-  const list = res.data || [];
-  return list.map((v) => ({
-    id: v._id,
-    nom: [v.firstName, v.lastName].filter(Boolean).join(' ') || 'Sans nom',
-    date: v.dateOfBirth ? new Date(v.dateOfBirth).toLocaleDateString('fr-FR') : '',
-    telephone: v.phoneNumber || '',
-    statutPaiement: 'acompte-paye',
-    moyenUtilise: 'une-fois',
-    acomptesRecus: '0 FCFA',
-    montantsRestants: '0 FCFA',
+  const list = res.travelers || [];
+  return list.map((t) => ({
+    id: t._id,
+    nom: [t.user?.prenom, t.user?.nom].filter(Boolean).join(' ') || 'Sans nom',
+    date: t.createdAt ? new Date(t.createdAt).toLocaleDateString('fr-FR') : '',
+    telephone: t.user?.phoneNumber ? (t.user.countryCode ? `+${t.user.countryCode}` : '') + t.user.phoneNumber : t.contactInfo?.phoneNumber || '',
+    statutPaiement: mapBookingStatus(t.status),
+    moyenUtilise: mapPaymentMethod(t),
+    acomptesRecus: fmtFCFA(t.amountPaid),
+    montantsRestants: fmtFCFA(t.remainingAmount),
     documents: {},
+    // Extra fields for details modal
+    email: t.user?.email || t.contactInfo?.email || '',
+    bookingNumber: t.bookingNumber || '',
+    totalAmount: t.totalAmount,
+    depositAmount: t.depositAmount,
+    amountPaid: t.amountPaid,
+    remainingAmount: t.remainingAmount,
+    isFullyPaid: t.isFullyPaid,
+    isOverdue: t.isOverdue,
+    paymentDeadline: t.paymentDeadline,
+    numberOfParticipants: t.numberOfParticipants || 1,
+    specialRequests: t.specialRequests,
+    payments: t.payments || [],
+    rawStatus: t.status,
   }));
 }
 
@@ -390,24 +482,77 @@ export async function requestVoyageurDocuments(
   return res.data;
 }
 
-export async function getAllVoyageurs(): Promise<{ voyageur: any; voyageId: string; voyageDestination: string }[]> {
-  const res = await apiRequest<{ success: boolean; data?: Array<{ _id: string; tripId?: string; voyageDestination?: string; firstName?: string; lastName?: string; [k: string]: unknown }> }>(
-    `${TRIPS_PREFIX}/voyageurs`
-  );
-  const list = res.data || [];
-  return list.map((row) => ({
-    voyageur: {
-      id: row._id,
-      nom: [row.firstName, row.lastName].filter(Boolean).join(' ') || 'Sans nom',
-      telephone: (row as any).phoneNumber || '',
-      statutPaiement: 'acompte-paye',
-      moyenUtilise: 'une-fois',
-      acomptesRecus: '0 FCFA',
-      montantsRestants: '0 FCFA',
-    },
-    voyageId: row.tripId || '',
-    voyageDestination: row.voyageDestination || '',
-  }));
+export async function getAllVoyageurs(params?: {
+  tripId?: string;
+  status?: string;
+  paymentStatus?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
+}): Promise<{ travelers: any[]; pagination: any }> {
+  const q = new URLSearchParams();
+  if (params?.tripId) q.set('tripId', params.tripId);
+  if (params?.status) q.set('status', params.status);
+  if (params?.paymentStatus) q.set('paymentStatus', params.paymentStatus);
+  if (params?.search) q.set('search', params.search);
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.sortBy) q.set('sortBy', params.sortBy);
+  if (params?.sortOrder) q.set('sortOrder', params.sortOrder);
+  const qs = q.toString();
+  const res = await apiRequest<{
+    success: boolean;
+    travelers: Array<{
+      _id: string;
+      bookingNumber?: string;
+      user: { prenom?: string; nom?: string; email?: string; phoneNumber?: string; countryCode?: string; profilePhoto?: string };
+      trip: { _id: string; title?: string; destination?: string; departureDate?: string; totalPrice?: number; depositAmount?: number };
+      numberOfParticipants?: number;
+      status: string;
+      totalAmount: number;
+      depositAmount: number;
+      depositPaid?: boolean;
+      depositPaidAt?: string;
+      amountPaid: number;
+      remainingAmount: number;
+      isFullyPaid?: boolean;
+      isOverdue?: boolean;
+      paymentDeadline?: string;
+      payments?: any[];
+    }>;
+    pagination: any;
+  }>(`${TRIPS_PREFIX}/partner/dashboard/travelers${qs ? '?' + qs : ''}`);
+  return {
+    travelers: (res.travelers || []).map((t) => ({
+      id: t._id,
+      bookingNumber: t.bookingNumber || '',
+      nom: [t.user?.prenom, t.user?.nom].filter(Boolean).join(' ') || 'Sans nom',
+      telephone: t.user?.phoneNumber ? (t.user.countryCode ? `+${t.user.countryCode}` : '') + t.user.phoneNumber : '',
+      email: t.user?.email || '',
+      profilePhoto: t.user?.profilePhoto || '',
+      tripId: t.trip?._id || '',
+      tripTitle: t.trip?.title || '',
+      tripDestination: t.trip?.destination || '',
+      tripDepartureDate: t.trip?.departureDate || '',
+      status: t.status,
+      statutPaiement: mapBookingStatus(t.status),
+      moyenUtilise: mapPaymentMethod(t),
+      totalAmount: t.totalAmount,
+      depositAmount: t.depositAmount,
+      amountPaid: t.amountPaid,
+      remainingAmount: t.remainingAmount,
+      acomptesRecus: fmtFCFA(t.amountPaid),
+      montantsRestants: fmtFCFA(t.remainingAmount),
+      isFullyPaid: t.isFullyPaid,
+      isOverdue: t.isOverdue,
+      paymentDeadline: t.paymentDeadline,
+      numberOfParticipants: t.numberOfParticipants || 1,
+      payments: t.payments || [],
+    })),
+    pagination: res.pagination || { page: 1, limit: 20, total: 0, pages: 1 },
+  };
 }
 
 export async function getReservations(params?: {
