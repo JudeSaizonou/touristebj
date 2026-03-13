@@ -228,7 +228,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
               {/* RIGHT: actions + infos voyage */}
               <div className="space-y-5">
                 {/* Deadline card */}
-                {daysLeft !== null && !['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.amountRemaining ?? 1) > 0 && (
+                {daysLeft !== null && !['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.remainingAmount ?? 1) > 0 && (
                   <div className={`rounded-2xl p-5 border ${daysLeft <= 14 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <Clock className={`w-5 h-5 ${daysLeft <= 14 ? 'text-red-500' : 'text-amber-500'}`} />
@@ -248,7 +248,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 )}
 
                 {/* Bouton épargner */}
-                {!['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.amountRemaining ?? 1) > 0 && (
+                {!['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.remainingAmount ?? 1) > 0 && (
                   <button
                     onClick={() => setEpargneOpen(true)}
                     className="w-full py-4 bg-forest-800 text-white rounded-2xl font-semibold hover:bg-forest-900 transition-colors flex items-center justify-center gap-2"
@@ -258,7 +258,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   </button>
                 )}
 
-                {(['FULLY_PAID', 'COMPLETED'].includes(booking.status) || (booking.amountRemaining ?? 1) === 0) && (
+                {(['FULLY_PAID', 'COMPLETED'].includes(booking.status) || (booking.remainingAmount ?? 1) === 0) && (
                   <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
                     <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
                     <p className="font-bold text-green-700">Voyage intégralement payé !</p>
