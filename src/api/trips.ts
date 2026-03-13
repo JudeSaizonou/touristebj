@@ -63,9 +63,11 @@ export interface TripStatsResponse {
 export interface DashboardStatsResponse {
   success: boolean;
   stats: {
-    trips?: { total?: number; active?: number; completed?: number; cancelled?: number };
-    bookings?: { total?: number; pending?: number; confirmed?: number; cancelled?: number };
-    revenue?: { total?: number; collected?: number; pending?: number };
+    trips?: { total?: number; active?: number; draft?: number; completed?: number; cancelled?: number };
+    bookings?: { total?: number; pendingDeposit?: number; depositPaid?: number; inProgress?: number; completed?: number; cancelled?: number };
+    revenue?: { total?: number; deposits?: number; installments?: number; transactions?: number };
+    pending?: { amount?: number; count?: number };
+    overdue?: { amount?: number; bookings?: number };
     clients?: { total?: number };
   };
 }
@@ -442,9 +444,11 @@ export async function getReservations(params?: {
 }
 
 export interface DashboardStats {
-  trips: { total: number; active: number; completed: number; cancelled: number };
-  bookings: { total: number; pending: number; confirmed: number; cancelled: number };
-  revenue: { total: number; collected: number; pending: number };
+  trips: { total: number; active: number; draft: number; completed: number; cancelled: number };
+  bookings: { total: number; pendingDeposit: number; depositPaid: number; inProgress: number; completed: number; cancelled: number };
+  revenue: { total: number; deposits: number; installments: number; transactions: number };
+  pending: { amount: number; count: number };
+  overdue: { amount: number; bookings: number };
   clients: { total: number };
 }
 
@@ -455,19 +459,31 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     trips: {
       total: s.trips?.total ?? 0,
       active: s.trips?.active ?? 0,
+      draft: s.trips?.draft ?? 0,
       completed: s.trips?.completed ?? 0,
       cancelled: s.trips?.cancelled ?? 0,
     },
     bookings: {
       total: s.bookings?.total ?? 0,
-      pending: s.bookings?.pending ?? 0,
-      confirmed: s.bookings?.confirmed ?? 0,
+      pendingDeposit: s.bookings?.pendingDeposit ?? 0,
+      depositPaid: s.bookings?.depositPaid ?? 0,
+      inProgress: s.bookings?.inProgress ?? 0,
+      completed: s.bookings?.completed ?? 0,
       cancelled: s.bookings?.cancelled ?? 0,
     },
     revenue: {
       total: s.revenue?.total ?? 0,
-      collected: s.revenue?.collected ?? 0,
-      pending: s.revenue?.pending ?? 0,
+      deposits: s.revenue?.deposits ?? 0,
+      installments: s.revenue?.installments ?? 0,
+      transactions: s.revenue?.transactions ?? 0,
+    },
+    pending: {
+      amount: s.pending?.amount ?? 0,
+      count: s.pending?.count ?? 0,
+    },
+    overdue: {
+      amount: s.overdue?.amount ?? 0,
+      bookings: s.overdue?.bookings ?? 0,
     },
     clients: { total: s.clients?.total ?? 0 },
   };
@@ -750,6 +766,113 @@ export async function getBookingPayments(bookingId: string): Promise<MappedPayme
     `${TRIPS_PREFIX}/bookings/${bookingId}`
   );
   return (res.booking.payments || []).map(mapPayment);
+}
+
+// ─── Payout (Reversement) ──────────────────────────────────────────────────
+
+export interface PayoutBalance {
+  totalRevenue: number;
+  commission: number;
+  commissionRate: number;
+  totalPayouts: number;
+  availableBalance: number;
+}
+
+export interface PayoutRequest {
+  _id: string;
+  amount: number;
+  commission: number;
+  netAmount: number;
+  paymentMethod: string;
+  status: string;
+  transactionId?: string;
+  approvedAt?: string;
+  processedAt?: string;
+  createdAt: string;
+}
+
+export async function getPayoutBalance(): Promise<PayoutBalance> {
+  const res = await apiRequest<{ success: boolean; balance: PayoutBalance }>(
+    `${TRIPS_PREFIX}/partner/payout/balance`
+  );
+  return res.balance;
+}
+
+export async function requestPayout(body: {
+  amount: number;
+  paymentMethod: string;
+  phoneNumber?: string;
+  countryCode?: string;
+  notes?: string;
+}): Promise<PayoutRequest> {
+  const res = await apiRequest<{ success: boolean; message: string; payout: PayoutRequest }>(
+    `${TRIPS_PREFIX}/partner/payout/request`,
+    { method: 'POST', body: JSON.stringify(body) }
+  );
+  return res.payout;
+}
+
+export async function getPayoutHistory(params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{ payouts: PayoutRequest[]; pagination?: any }> {
+  const q = new URLSearchParams();
+  if (params?.status) q.set('status', params.status);
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  const query = q.toString();
+  const res = await apiRequest<{ success: boolean; payouts: PayoutRequest[]; pagination?: any }>(
+    `${TRIPS_PREFIX}/partner/payout/history${query ? `?${query}` : ''}`
+  );
+  return { payouts: res.payouts || [], pagination: res.pagination };
+}
+
+// ─── Overdue & Pending ─────────────────────────────────────────────────────
+
+export async function getOverdueBookings(params?: { page?: number; limit?: number }): Promise<{ bookings: DashboardBooking[]; pagination?: any }> {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  const query = q.toString();
+  const res = await apiRequest<{ success: boolean; bookings?: any[]; data?: any[]; pagination?: any }>(
+    `${TRIPS_PREFIX}/partner/dashboard/overdue-bookings${query ? `?${query}` : ''}`
+  );
+  const list = res.bookings || res.data || [];
+  return {
+    bookings: list.map((r: any) => {
+      const trip = typeof r.tripId === 'object' ? r.tripId : null;
+      const user = typeof r.userId === 'object' ? r.userId : null;
+      return {
+        id: r._id || r.id || '',
+        bookingNumber: r.bookingNumber || '',
+        client: {
+          nom: user ? [user.prenom, user.nom].filter(Boolean).join(' ') || user.username || user.phoneNumber || 'Client' : 'Client',
+          telephone: user?.phoneNumber || '',
+          email: user?.email || '',
+        },
+        voyage: {
+          id: trip?._id || (typeof r.tripId === 'string' ? r.tripId : ''),
+          titre: trip?.title || '',
+          destination: trip?.destination || trip?.title || '',
+          departureDate: trip?.departureDate ? new Date(trip.departureDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+        },
+        nombrePersonnes: r.numberOfParticipants ?? r.nombrePersonnes ?? 1,
+        totalAmount: r.totalAmount ?? 0,
+        depositAmount: r.depositAmount ?? 0,
+        amountPaid: r.amountPaid ?? 0,
+        remainingAmount: r.remainingAmount ?? 0,
+        depositPaid: r.depositPaid ?? false,
+        isFullyPaid: r.isFullyPaid ?? false,
+        isPaymentOverdue: r.isPaymentOverdue ?? true,
+        paymentDeadline: r.paymentDeadline ? new Date(r.paymentDeadline).toLocaleDateString('fr-FR') : '',
+        status: r.status || 'IN_PROGRESS',
+        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '',
+        daysOverdue: r.daysOverdue,
+      } as DashboardBooking & { daysOverdue?: number };
+    }),
+    pagination: res.pagination,
+  };
 }
 
 export async function getChartsData(): Promise<{ month: string; value: number }[]> {
