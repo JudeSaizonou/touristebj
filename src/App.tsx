@@ -84,10 +84,8 @@ function App() {
     setSidebarOpen(false);
   };
 
-  const handleRequestRefund = (method: 'mobile-money' | 'bancaire', montant: string) => {
-    setShowRefundModal(false);
-    const methodLabel = method === 'mobile-money' ? 'Mobile Money' : 'Virement Bancaire';
-    addToast('success', `Demande de reversement de ${montant} FCFA par ${methodLabel} enregistrée`);
+  const handleRefundSuccess = () => {
+    addToast('success', 'Demande de reversement enregistrée');
   };
 
   // --- Public routes ---
@@ -177,7 +175,7 @@ function App() {
       <RequestRefundModal
         isOpen={showRefundModal}
         onClose={() => setShowRefundModal(false)}
-        onSubmit={handleRequestRefund}
+        onSuccess={handleRefundSuccess}
       />
 
       {sidebarOpen && (
