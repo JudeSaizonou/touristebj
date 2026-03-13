@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
+    { "source": "/v2/api/:path*", "destination": "https://staging.zepargn.com/v2/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
