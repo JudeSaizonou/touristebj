@@ -1,4 +1,4 @@
-# 🌍 Le touriste.bj - Plateforme Complète de Gestion de Voyages
+# 🌍 Le touriste.bj - Gestion de Voyages
 
 Application full-stack React TypeScript + Tailwind CSS avec gestion locale des données (localStorage) pour une agence de voyages moderne et professionnelle.
 
