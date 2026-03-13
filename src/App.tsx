@@ -169,7 +169,7 @@ function App() {
   const currentAdminPage = adminRouteToPage[route.path] || 'dashboard';
   const sidebarPage = (currentAdminPage === 'create-voyage' || currentAdminPage === 'edit-voyage')
     ? 'voyages'
-    : (currentAdminPage as 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres');
+    : (currentAdminPage as 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'parametres');
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
