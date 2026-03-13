@@ -78,8 +78,9 @@ export async function payInstallmentFedaPay(bookingId: string, amount: number): 
 
 /** Récupère le statut d'une transaction MTN. */
 export async function getTransactionStatus(referenceId: string): Promise<TransactionStatus> {
-  const res = await apiRequest<{ success: boolean; data: TransactionStatus }>(
+  const res = await apiRequest<TransactionStatus & { success: boolean; data?: TransactionStatus }>(
     `${API_BASE}/payment/transaction/status?paymentMethod=mtn&referenceId=${encodeURIComponent(referenceId)}`
   );
-  return res.data;
+  // Backend returns status at top level, not nested in data
+  return res.data || res;
 }
