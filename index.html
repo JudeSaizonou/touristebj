@@ -34,10 +34,15 @@
     <meta name="robots" content="index, follow" />
     <meta name="author" content="Le Touriste.bj" />
     <meta name="keywords" content="voyage Bénin, tourisme Bénin, réservation voyage, épargne voyage, safari Pendjari, Ouidah, Ganvié, Cotonou, agence voyage Bénin" />
+
+    <!-- Security headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.fedapay.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://prodapi.zepargn.com https://*.fedapay.com; frame-src https://*.fedapay.com;" />
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdn.fedapay.com/checkout.js?v=1.1.7" async></script>
+    <script src="https://cdn.fedapay.com/checkout.js?v=1.1.7" integrity="sha384-E9lU89D8jHruyCNyk28mrPLRMG4ytMWpCz1BTSJWJsq1mvqg9/XVgAZolfzt64lD" crossorigin="anonymous" async></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -104,18 +104,39 @@ export function buildOrganizationJsonLd() {
   return {
     '@context': 'https://schema.org',
     '@type': 'TravelAgency',
-    name: 'Le Touriste.bj',
-    url: 'https://letouriste.bj',
-    description: 'Plateforme de réservation et d\'épargne voyage au Bénin.',
-    areaServed: {
-      '@type': 'Country',
-      name: 'Bénin',
-    },
-    logo: 'https://letouriste.bj/splash_screen.png',
+    name: 'Le Touriste.bj & Zepargn Voyage',
+    url: 'https://voyage.zepargn.com',
+    description: 'Réservez votre voyage de groupe avec 30% d\'acompte. Épargnez le solde progressivement avec Zepargn.',
+    areaServed: [
+      { '@type': 'Country', name: 'Bénin' },
+      { '@type': 'Country', name: 'France' },
+      { '@type': 'Country', name: 'Togo' },
+    ],
+    logo: 'https://voyage.zepargn.com/icon.png',
     contactPoint: {
       '@type': 'ContactPoint',
+      telephone: '+229-01-61-38-28-69',
       contactType: 'customer service',
       availableLanguage: 'French',
     },
+    sameAs: [
+      'https://www.instagram.com/letouriste.bj',
+      'https://www.tiktok.com/@letouriste.bj',
+    ],
+  };
+}
+
+export function buildFAQJsonLd(faqs: { q: string; a: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(faq => ({
+      '@type': 'Question',
+      name: faq.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.a,
+      },
+    })),
   };
 }

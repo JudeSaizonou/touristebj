@@ -6,8 +6,18 @@ import { useAuth } from '../context/AuthContext';
 import LogoZepargn from '../assets/LogoZepargn.png';
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
 import { useDebounce } from '../hooks/useDebounce';
+import { SEO, buildFAQJsonLd } from '../components/SEO';
 
 import type { AuthMode } from './Auth';
+
+const FAQ_DATA = [
+  { q: "C'est quoi exactement l'acompte de 30% ?", a: "C'est le montant minimum pour confirmer votre place dans le groupe. Il est non remboursable mais garantit votre réservation. Le solde est dû 10 jours avant le départ." },
+  { q: "Et si je n'ai pas Zepargn ?", a: "Téléchargez l'app (iOS/Android), créez un compte en 3 minutes avec votre numéro de téléphone. Disponible dans 18 pays UEMOA. Après réservation, un objectif d'épargne est créé automatiquement pour votre voyage." },
+  { q: "Je suis en Europe — ça marche pour moi ?", a: "Oui. Inscription avec numéro international, paiement par carte. Vous rejoignez le groupe depuis où vous êtes." },
+  { q: "Combien de personnes par voyage ?", a: "Entre 10 et 30. La taille est affichée sur chaque fiche voyage. Les places disponibles aussi — en temps réel." },
+  { q: "Que se passe-t-il si je ne complète pas l'épargne à temps ?", a: "Vous recevez des notifications de rappel dans Zepargn. Si le solde n'est pas atteint 10 jours avant, nous vous contactons pour trouver une solution (report, transfert de place, remboursement partiel)." },
+  { q: "Comment vous joindre ?", a: "WhatsApp : +229 01 61 38 28 69 | Email : voyage@zepargn.com | Lundi–Vendredi, 8h30 à 17h30." },
+];
 
 interface CatalogProps {
   onViewDetails: (voyageId: string) => void;
@@ -139,8 +149,14 @@ export const Catalog: React.FC<CatalogProps> = ({
         {/* Background */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920&q=80"
-            alt=""
+            srcSet="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=640&q=70&fm=webp 640w, https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1280&q=75&fm=webp 1280w, https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920&q=80&fm=webp 1920w"
+            sizes="100vw"
+            src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1280&q=75"
+            alt="Voyageurs sur une route de voyage"
+            width={1920}
+            height={1080}
+            fetchPriority="high"
+            loading="eager"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#031927]/55 to-[#031927]/75" />
@@ -416,6 +432,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                     )}
                   </button>
                   <select
+                    aria-label="Trier les voyages"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
                     className="px-4 py-3 border border-gray-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm text-gray-600 font-sans"
@@ -793,6 +810,7 @@ export const Catalog: React.FC<CatalogProps> = ({
       </section>
 
       {/* ═══════════════ FAQ ═══════════════ */}
+      <SEO jsonLd={buildFAQJsonLd(FAQ_DATA)} />
       <section id="faq-section" className="py-20 bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
@@ -808,32 +826,7 @@ export const Catalog: React.FC<CatalogProps> = ({
           </div>
 
           <div className="space-y-3">
-            {[
-              {
-                q: "C'est quoi exactement l'acompte de 30% ?",
-                a: "C'est le montant minimum pour confirmer votre place dans le groupe. Il est non remboursable mais garantit votre réservation. Le solde est dû 10 jours avant le départ.",
-              },
-              {
-                q: "Et si je n'ai pas Zepargn ?",
-                a: "Téléchargez l'app (iOS/Android), créez un compte en 3 minutes avec votre numéro de téléphone. Disponible dans 18 pays UEMOA. Après réservation, un objectif d'épargne est créé automatiquement pour votre voyage.",
-              },
-              {
-                q: "Je suis en Europe — ça marche pour moi ?",
-                a: "Oui. Inscription avec numéro international, paiement par carte. Vous rejoignez le groupe depuis où vous êtes.",
-              },
-              {
-                q: 'Combien de personnes par voyage ?',
-                a: "Entre 10 et 30. La taille est affichée sur chaque fiche voyage. Les places disponibles aussi — en temps réel.",
-              },
-              {
-                q: "Que se passe-t-il si je ne complète pas l'épargne à temps ?",
-                a: "Vous recevez des notifications de rappel dans Zepargn. Si le solde n'est pas atteint 10 jours avant, nous vous contactons pour trouver une solution (report, transfert de place, remboursement partiel).",
-              },
-              {
-                q: 'Comment vous joindre ?',
-                a: 'WhatsApp : +229 01 61 38 28 69 | Email : voyage@zepargn.com | Lundi–Vendredi, 8h30 à 17h30.',
-              },
-            ].map((faq, index) => (
+            {FAQ_DATA.map((faq, index) => (
               <div
                 key={index}
                 className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden hover:border-gray-200 transition-colors"

@@ -9,6 +9,43 @@ function getToken(): string | null {
   return localStorage.getItem('touriste_token');
 }
 
+function getRefreshToken(): string | null {
+  return localStorage.getItem('touriste_refresh');
+}
+
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (isRefreshing && refreshPromise) return refreshPromise;
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    const rt = getRefreshToken();
+    if (!rt) return false;
+    try {
+      const res = await fetch('/v2/api/auth/refresh-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      });
+      if (!res.ok) return false;
+      const body = await res.json();
+      if (body?.token) {
+        localStorage.setItem('touriste_token', body.token);
+        if (body.refreshToken) localStorage.setItem('touriste_refresh', body.refreshToken);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+  return refreshPromise;
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit & { skipAuth?: boolean } = {}
@@ -38,8 +75,25 @@ export async function apiRequest<T>(
   }
 
   if (!res.ok) {
-    if (res.status === 401) {
+    // On 401, try to refresh token once before giving up
+    if (res.status === 401 && !skipAuth) {
+      const refreshed = await tryRefreshToken();
+      if (refreshed) {
+        // Retry the original request with new token
+        const newToken = getToken();
+        if (newToken) {
+          (headers as Record<string, string>)['Authorization'] = `Bearer ${newToken}`;
+          const retryRes = await fetch(url, { ...fetchOptions, headers: { ...headers, ...(fetchOptions.headers || {}) } });
+          const retryCt = retryRes.headers.get('content-type');
+          const retryBody = retryCt && retryCt.includes('application/json')
+            ? await retryRes.json().catch(() => ({}))
+            : {};
+          if (retryRes.ok) return retryBody as T;
+        }
+      }
+      // Refresh failed — clear auth
       localStorage.removeItem('touriste_token');
+      localStorage.removeItem('touriste_refresh');
       localStorage.removeItem('touriste_user');
     }
     const err: ApiError = {

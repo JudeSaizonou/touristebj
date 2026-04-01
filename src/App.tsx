@@ -34,12 +34,12 @@ function App() {
     StorageService.initialize();
   }, []);
 
-  // Redirect to catalog if not authenticated and trying to access admin routes
+  // Redirect to catalog if not authenticated or not admin when accessing admin routes
   useEffect(() => {
-    if (!user && route.path.startsWith('/admin')) {
+    if (route.path.startsWith('/admin') && (!user || !isAdmin)) {
       navigate('/');
     }
-  }, [user, route.path, navigate]);
+  }, [user, isAdmin, route.path, navigate]);
 
   const handleAdminLogin = () => {
     if (isAdmin) {
@@ -165,7 +165,12 @@ function App() {
     );
   }
 
-  // --- Admin routes ---
+  // --- Admin routes (role-gated) ---
+
+  if (!user || !isAdmin) {
+    navigate('/');
+    return null;
+  }
 
   const adminRouteToPage: Record<string, string> = {
     '/admin/dashboard': 'dashboard',

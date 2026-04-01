@@ -488,14 +488,14 @@ export const Auth: React.FC<AuthProps> = ({
         // Stocker les infos de login pour après la migration
         setMigrateLoginData({ token: res.token, user: res.user });
         setMigrateOldPassword(connexionPassword);
-        setAuth(res.token, res.user);
+        setAuth(res.token, res.user, res.refreshToken);
         setConnexionStep('migrate-pin');
         addToast('info', 'Veuillez migrer vers un code PIN à 4 chiffres.');
       } else {
-        setAuth(res.token, res.user);
+        setAuth(res.token, res.user, res.refreshToken);
         try {
           const me = await authApi.getMe();
-          setAuth(res.token, { ...res.user, ...me });
+          setAuth(res.token, { ...res.user, ...me }, res.refreshToken);
           addToast('success', 'Connexion réussie !');
           const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
           onSuccess?.(isAdmin);

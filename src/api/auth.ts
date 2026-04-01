@@ -46,6 +46,7 @@ export interface SignupResponse {
 export interface LoginResponse {
   success: true;
   token: string;
+  refreshToken?: string;
   user: AuthUser;
   tokenInfo?: { expiresIn?: number; expiresAt?: string };
 }
@@ -265,5 +266,6 @@ export async function login(
     skipAuth: true,
   });
   const { token, user } = normalizeAuthResponse(body);
-  return { success: true, token, user, tokenInfo: body?.tokenInfo ?? body?.data?.tokenInfo };
+  const refreshToken = body?.refreshToken ?? body?.data?.refreshToken;
+  return { success: true, token, refreshToken, user, tokenInfo: body?.tokenInfo ?? body?.data?.tokenInfo };
 }

@@ -6,4 +6,4 @@ Disallow: /auth
 Disallow: /epargne/
 Disallow: /mes-voyages
 
-Sitemap: https://letouriste.bj/sitemap.xml
+Sitemap: https://voyage.zepargn.com/sitemap.xml
