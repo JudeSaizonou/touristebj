@@ -6,6 +6,7 @@ import {
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
 import { getBookingById, getBookingPayments } from '../api/trips';
+import { useAuth } from '../context/AuthContext';
 import type { MappedBooking, MappedPayment } from '../types';
 import type { AuthMode } from './Auth';
 
@@ -37,13 +38,22 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
   onMesVoyages,
   onLogout,
 }) => {
+  const { user } = useAuth();
   const [booking, setBooking] = useState<MappedBooking | null>(null);
   const [payments, setPayments] = useState<MappedPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [epargneOpen, setEpargneOpen] = useState(false);
 
+  useEffect(() => {
+    if (!user) {
+      onOpenAuth?.('connexion');
+      onBack();
+    }
+  }, [user]);
+
   const loadData = async () => {
+    if (!user) return;
     setLoading(true);
     setError('');
     try {
@@ -54,13 +64,20 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
       setBooking(b);
       setPayments(p);
     } catch (err: any) {
-      setError(err?.message || 'Impossible de charger les détails.');
+      const msg: string = err?.message || '';
+      const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
+      if (is401) {
+        onOpenAuth?.('connexion');
+        onBack();
+        return;
+      }
+      setError(msg || 'Impossible de charger les détails.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { if (bookingId) loadData(); }, [bookingId]);
+  useEffect(() => { if (bookingId && user) loadData(); }, [bookingId, user]);
 
   const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 

@@ -4,6 +4,7 @@ import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
 import LogoZepargn from '../assets/LogoZepargn.png';
+import LogoTouristeBj from '../assets/LogoTouristeBj.png';
 import { useDebounce } from '../hooks/useDebounce';
 
 import type { AuthMode } from './Auth';
@@ -41,6 +42,7 @@ export const Catalog: React.FC<CatalogProps> = ({
   const [showFilters, setShowFilters] = useState(false);
 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
   const activeFilterCount = [priceMin, priceMax, dateFrom, dateTo].filter(Boolean).length;
 
   const resetFilters = () => {
@@ -187,17 +189,58 @@ export const Catalog: React.FC<CatalogProps> = ({
               >
                 Voir les départs disponibles <ArrowRight className="w-5 h-5" />
               </button>
-              <a
-                href="https://apps.apple.com/app/zepargn/id6478744058"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => setShowDownloadPopup(true)}
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-transparent text-white border border-white/30 rounded-xl font-semibold hover:bg-white/10 transition-all text-base font-sans"
               >
                 Télécharger Zepargn
-              </a>
+              </button>
             </div>
           </div>
         </div>
+
+        {/* Download popup */}
+        {showDownloadPopup && (
+          <>
+            <div className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm" onClick={() => setShowDownloadPopup(false)} />
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-[90%] max-w-sm animate-scale-in">
+              <button onClick={() => setShowDownloadPopup(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+              <div className="text-center mb-6">
+                <img src={LogoZepargn} alt="Zepargn" className="h-10 mx-auto mb-3" />
+                <h3 className="font-bold text-dark-800 text-lg">Télécharger Zepargn</h3>
+                <p className="text-sm text-dark-800/50 mt-1">Épargnez pour vos voyages, automatiquement.</p>
+              </div>
+              <div className="space-y-3">
+                <a
+                  href="https://apps.apple.com/us/app/zepargn/id6474701827"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 w-full px-5 py-3.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors font-semibold text-sm"
+                >
+                  <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                  <div>
+                    <p className="text-[10px] text-white/50 leading-none">Télécharger sur</p>
+                    <p className="text-base font-bold leading-tight">App Store</p>
+                  </div>
+                </a>
+                <a
+                  href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 w-full px-5 py-3.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors font-semibold text-sm"
+                >
+                  <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.04c.17.3.44.54.77.67.1.04.2.06.31.08l.13.01h.04c.11 0 .22-.02.33-.05.05-.02.09-.03.14-.05l8.05-4.56-3.32-3.32-6.45 7.22zm-.81-1.38L13.3 10.73 10.9 8.33 2.09 20.3c-.15.24-.22.52-.22.79 0 .2.04.39.12.57h-.01l.39-.01zM21.81 11.06l-3.37-1.91-3.63 3.18 3.47 3.47 3.53-2c.57-.32.94-.87.94-1.37 0-.51-.36-1.05-.94-1.37zM13.3 10.73L17.37 7 5.76.42c-.12-.07-.25-.12-.39-.16C5.22.2 5.07.17 4.92.18c-.08 0-.16.01-.24.03-.33.06-.63.23-.84.48l.05-.04 9.41 10.08z"/></svg>
+                  <div>
+                    <p className="text-[10px] text-white/50 leading-none">Disponible sur</p>
+                    <p className="text-base font-bold leading-tight">Google Play</p>
+                  </div>
+                </a>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Bottom wave */}
         <div className="absolute bottom-0 left-0 right-0">
@@ -728,7 +771,7 @@ export const Catalog: React.FC<CatalogProps> = ({
           </div>
           <div className="flex flex-wrap justify-center gap-4">
             <a
-              href="https://apps.apple.com/app/zepargn/id6478744058"
+              href="https://apps.apple.com/us/app/zepargn/id6474701827"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-white/15 backdrop-blur-sm text-white border border-white/30 rounded-xl font-semibold text-sm hover:bg-white/25 transition-all font-sans"
@@ -737,7 +780,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               App Store
             </a>
             <a
-              href="https://play.google.com/store/apps/details?id=com.zepargn.mobile"
+              href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-white/15 backdrop-blur-sm text-white border border-white/30 rounded-xl font-semibold text-sm hover:bg-white/25 transition-all font-sans"
@@ -835,22 +878,14 @@ export const Catalog: React.FC<CatalogProps> = ({
           <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-10">
             Ils rendent le voyage possible
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-4xl mx-auto gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 max-w-lg mx-auto gap-5">
             <div className="bg-gradient-to-br from-forest-800 to-forest-700 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-md hover:shadow-lg transition-shadow">
-              <img src={LogoZepargn} alt="ZePargn" className="h-12 object-contain brightness-0 invert" />
+              <img src={LogoZepargn} alt="Zepargn" className="h-12 object-contain brightness-0 invert" />
               <p className="text-white/70 text-xs font-sans">Épargne & paiement échelonné</p>
             </div>
-            <div className="bg-amber-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-amber-200 shadow-md hover:shadow-lg transition-shadow">
-              <span className="text-amber-800 font-bold text-xl tracking-wide font-sans">Miwakpon</span>
-              <p className="text-amber-700 text-xs font-sans">Tourisme & découverte</p>
-            </div>
-            <div className="bg-yellow-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-yellow-300 shadow-md hover:shadow-lg transition-shadow">
-              <span className="text-yellow-700 font-bold text-xl tracking-wide font-sans">MTN MoMo</span>
-              <p className="text-yellow-600 text-xs font-sans">Paiement mobile sécurisé</p>
-            </div>
-            <div className="bg-green-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-green-200 shadow-md hover:shadow-lg transition-shadow">
-              <span className="text-green-700 font-bold text-xl tracking-wide font-sans">FedaPay</span>
-              <p className="text-green-600 text-xs font-sans">Paiement carte bancaire</p>
+            <div className="bg-primary-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-primary-200 shadow-md hover:shadow-lg transition-shadow">
+              <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-10 object-contain" />
+              <p className="text-dark-800/60 text-xs font-sans">Voyages de groupe au Bénin</p>
             </div>
           </div>
         </div>
