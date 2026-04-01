@@ -392,7 +392,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                 </li>
                 <li className="flex items-center gap-2.5 text-white/50">
                   <Clock className="w-3.5 h-3.5 text-primary-400 shrink-0" />
-                  Lun - Ven : 08h30 - 17h00
+                  Lun–Ven, 8h30–17h30
                 </li>
               </ul>
               <div className="flex items-center gap-2.5 mt-6">

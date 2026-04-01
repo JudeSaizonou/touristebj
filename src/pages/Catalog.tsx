@@ -148,26 +148,26 @@ export const Catalog: React.FC<CatalogProps> = ({
           <div className="max-w-3xl mx-auto text-center">
             {/* Badge pill */}
             <span className="inline-block bg-white/15 backdrop-blur-sm text-white text-xs font-semibold uppercase tracking-widest px-5 py-2 rounded-full mb-6 border border-white/20">
-              Le Touriste.bj &times; Zepargn
+              Réservez aujourd'hui. Payez à votre rythme.
             </span>
 
             <h1 className="font-playfair text-[40px] sm:text-[52px] lg:text-[64px] font-extrabold text-white leading-[1.1] mb-6">
-              Partez en voyage
+              Voyager, c'est pas
               <br />
-              sans stress financier
+              une question de budget.
             </h1>
 
             <p className="text-base sm:text-lg text-gray-300 mb-10 max-w-xl mx-auto leading-relaxed font-sans">
-              R&eacute;servez votre place avec 50% d'acompte et &eacute;pargnez le reste &agrave; votre rythme avec Zepargn.
+              Réservez votre place avec 50% d'acompte. Zepargn s'occupe du reste : versements automatiques, solde complété avant le départ.
             </p>
 
             {/* Stats */}
             <div className="flex flex-wrap justify-center gap-6 sm:gap-10 mb-10">
               {[
-                { value: '500+', label: 'Voyageurs' },
-                { value: '50+', label: 'Destinations' },
-                { value: '100%', label: 'Sécurisé' },
-                { value: '0 stress', label: 'Financement' },
+                { value: '500+', label: 'voyageurs partis' },
+                { value: '50+', label: 'destinations' },
+                { value: '0', label: 'blocage financier' },
+                { value: '18', label: 'pays disponibles' },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
                   <p className="text-2xl sm:text-3xl font-bold text-white font-sans">{stat.value}</p>
@@ -185,7 +185,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                 }}
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 text-base font-sans"
               >
-                Voir les voyages <ArrowRight className="w-5 h-5" />
+                Voir les départs disponibles <ArrowRight className="w-5 h-5" />
               </button>
               <a
                 href="https://apps.apple.com/app/zepargn/id6478744058"
@@ -215,10 +215,10 @@ export const Catalog: React.FC<CatalogProps> = ({
               COMMENT CA MARCHE
             </span>
             <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
-              Comment ça marche ?
+              Le voyage de groupe, enfin accessible.
             </h2>
             <p className="text-dark-800/60 max-w-2xl mx-auto text-sm leading-relaxed font-sans">
-              Réservez votre voyage en payant un acompte, puis épargnez le solde progressivement avec Zepargn avant le départ.
+              Vous n'attendez plus d'avoir tout l'argent pour réserver. Vous réservez, vous épargnez, vous partez.
             </p>
           </div>
 
@@ -226,23 +226,23 @@ export const Catalog: React.FC<CatalogProps> = ({
             {[
               {
                 num: '1',
-                title: 'Choisissez votre voyage',
-                desc: 'Parcourez nos destinations et trouvez le voyage qui vous correspond.',
+                title: 'Choisissez votre destination',
+                desc: 'Consultez les prochains départs et trouvez le voyage qui vous attire.',
               },
               {
                 num: '2',
-                title: "Payez l'acompte",
-                desc: 'Payez 50% du prix via MTN MoMo ou FedaPay pour confirmer votre place.',
+                title: 'Payez 30% pour confirmer',
+                desc: 'Acompte via Zepargn. Votre place est bloquée immédiatement.',
               },
               {
                 num: '3',
-                title: 'Épargnez le solde',
-                desc: 'Programmez vos versements dans Zepargn et complétez le paiement avant le départ.',
+                title: 'Zepargn complète le reste',
+                desc: "Créez un objectif d'épargne dans l'app. Versements au quotidien, à la semaine, au mois — comme vous voulez.",
               },
               {
                 num: '4',
-                title: 'Partez sereinement',
-                desc: "Votre place est confirmée, vos paiements sont faits. Plus qu'à profiter.",
+                title: 'Partez sans stress',
+                desc: 'Solde atteint, départ confirmé. Il ne reste plus qu\'à faire vos valises.',
               },
             ].map((item) => (
               <div key={item.num} className="text-center">
@@ -550,13 +550,13 @@ export const Catalog: React.FC<CatalogProps> = ({
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
             <span className="inline-block bg-primary-100 text-primary-500 text-xs font-bold uppercase tracking-[0.1em] px-4 py-1.5 rounded-full mb-4">
-              POURQUOI NOUS
+              POURQUOI LE TOURISTE.BJ
             </span>
             <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
-              Le voyage de groupe réinventé
+              La différence ? Ici, le voyage n'attend pas l'argent.
             </h2>
             <p className="text-dark-800/60 max-w-2xl mx-auto text-sm leading-relaxed font-sans">
-              Le Touriste.bj combine l'énergie du voyage en groupe avec la flexibilité financière de Zepargn. Voyagez sans attendre d'avoir tout l'argent.
+              Zepargn vous aide à épargner pour un objectif concret. Ce partenariat est né de cette logique : voyager maintenant, financer progressivement.
             </p>
           </div>
 
@@ -564,23 +564,23 @@ export const Catalog: React.FC<CatalogProps> = ({
             {[
               {
                 emoji: '\uD83D\uDD12',
-                title: 'Paiement sécurisé',
-                desc: 'MTN MoMo et FedaPay pour des transactions fiables et traçables.',
+                title: 'Acompte à 30%',
+                desc: "Plus besoin d'attendre. 30% suffit pour bloquer votre place. Le solde se constitue dans Zepargn avant le départ.",
               },
               {
                 emoji: '\uD83D\uDCB0',
-                title: 'Épargne flexible',
-                desc: 'Versements libres dans Zepargn — quotidien, hebdomadaire ou mensuel, selon vous.',
+                title: 'Épargne automatisée',
+                desc: 'Définissez votre montant quotidien ou hebdomadaire. Zepargn débite, calcule, notifie. Vous suivez votre progression en temps réel.',
               },
               {
                 emoji: '\uD83D\uDC65',
-                title: 'Voyages de groupe',
-                desc: "Des groupes de 10 à 30 personnes, sélectionnés pour une ambiance garantie.",
+                title: 'Groupes sélectionnés',
+                desc: "Entre 10 et 30 personnes par voyage. Des profils vérifiés, des ambiances garanties. Pas de mauvaises surprises.",
               },
               {
                 emoji: '\uD83C\uDF0D',
-                title: 'Ouvert à la diaspora',
-                desc: "Inscription par téléphone, 18 pays disponibles. Au Bénin ou en France — ça marche pareil.",
+                title: 'Ouvert à tout le monde',
+                desc: "Inscription par numéro de téléphone. Bénin, Maroc, Sénégal, France, USA, Togo, Côte d'Ivoire — vous êtes où vous êtes, vous partez quand même.",
               },
             ].map((item) => (
               <div
@@ -651,7 +651,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               Ce que disent nos voyageurs
             </h2>
             <p className="text-dark-800/60 max-w-2xl mx-auto text-sm leading-relaxed font-sans">
-              Ils ont voyagé avec Le Touriste.bj et payé avec Zepargn. Voici ce qu'ils en pensent.
+              Ils ont réservé avec 30% d'acompte, épargné le reste avec Zepargn, et sont partis.
             </p>
           </div>
 
@@ -660,23 +660,23 @@ export const Catalog: React.FC<CatalogProps> = ({
               {
                 name: 'Amina K.',
                 location: 'Cotonou, Bénin',
-                text: "J'ai pu partir à Zanzibar en payant 50% à la réservation. En 3 mois d'épargne dans Zepargn, j'avais le solde. Organisation impeccable.",
+                text: "J'avais le budget pour l'acompte, pas pour le tout. En 3 mois d'épargne dans Zepargn, j'avais tout réglé. Je suis partie à Zanzibar avec LeTouriste.bj sans avoir détruit mes économies.",
                 rating: 5,
                 trip: 'Zanzibar, Août 2025',
               },
               {
                 name: 'Roméo D.',
                 location: 'Paris, France',
-                text: "En diaspora, je cherchais un moyen de voyager au Bénin sans tout payer en une fois. Le système marche parfaitement depuis Paris.",
+                text: "Depuis Paris, je cherchais un moyen de voyager au Bénin en organisant le paiement à l'avance. Le Touriste.bj est la seule option qui marche pour la diaspora.",
                 rating: 5,
-                trip: 'Grand-Popo, Décembre 2025',
+                trip: 'Grand-Popo-Ouidah, Décembre 2025',
               },
               {
                 name: 'Farid S.',
                 location: 'Lomé, Togo',
-                text: "Le paiement échelonné avec Zepargn m'a permis de voyager sans me mettre dans le rouge. Je recommande à 100%.",
+                text: "Le système m'a permis de voyager sans me mettre dans le rouge. J'ai mis de côté 60 000 FCFA par semaine pendant 7 mois. C'est tout.",
                 rating: 4,
-                trip: 'Ouidah, Mars 2026',
+                trip: 'Ouidah, Mars 2025',
               },
             ].map((testimonial) => (
               <div
@@ -710,10 +710,10 @@ export const Catalog: React.FC<CatalogProps> = ({
       <section className="py-24 bg-primary-500">
         <div className="max-w-3xl mx-auto text-center px-4">
           <h2 className="font-playfair text-3xl md:text-5xl font-extrabold text-white mb-4">
-            Prêt pour votre prochain voyage ?
+            Votre prochaine destination attend.
           </h2>
           <p className="text-white/80 mb-8 max-w-xl mx-auto font-sans">
-            Rejoignez des centaines de voyageurs qui ont choisi Le Touriste.bj pour explorer le monde autrement.
+            Des dizaines de voyageurs ont déjà réservé leur prochaine aventure sans attendre d'avoir tout l'argent. Pourquoi pas vous ?
           </p>
           <div className="flex flex-wrap justify-center gap-4 mb-8">
             <button
@@ -723,7 +723,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               }}
               className="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary-500 rounded-xl font-semibold hover:bg-gray-100 transition-all text-base shadow-lg hover:shadow-xl font-sans"
             >
-              Voir les voyages <ArrowRight className="w-5 h-5" />
+              Voir les départs disponibles <ArrowRight className="w-5 h-5" />
             </button>
           </div>
           <div className="flex flex-wrap justify-center gap-4">
@@ -757,7 +757,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               FAQ
             </span>
             <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
-              Tout savoir avant de partir
+              Tout savoir avant de réserver
             </h2>
             <p className="text-dark-800/60 max-w-xl mx-auto text-sm leading-relaxed font-sans">
               Vous avez des questions sur le fonctionnement du paiement ou de l'épargne ? On répond à tout.
@@ -767,32 +767,28 @@ export const Catalog: React.FC<CatalogProps> = ({
           <div className="space-y-3">
             {[
               {
-                q: 'Comment fonctionne le paiement en deux fois ?',
-                a: "C'est simple : vous réservez votre place en payant 50% du prix total via MTN MoMo ou FedaPay. Le solde restant est épargné à votre rythme sur Zepargn, notre partenaire d'épargne. Vous devez compléter le paiement avant la date de départ du voyage.",
+                q: "C'est quoi exactement l'acompte de 30% ?",
+                a: "C'est le montant minimum pour confirmer votre place dans le groupe. Il est non remboursable mais garantit votre réservation. Le solde est dû 10 jours avant le départ.",
               },
               {
-                q: "Qu'est-ce que Zepargn et comment ça marche ?",
-                a: "Zepargn est une application d'épargne mobile agréée BCEAO, disponible dans 10 pays UEMOA. Après réservation, un objectif d'épargne est créé automatiquement pour votre solde. Vous choisissez la fréquence de vos versements.",
+                q: "Et si je n'ai pas Zepargn ?",
+                a: "Téléchargez l'app (iOS/Android), créez un compte en 3 minutes avec votre numéro de téléphone. Disponible dans 18 pays UEMOA. Après réservation, un objectif d'épargne est créé automatiquement pour votre voyage.",
               },
               {
-                q: 'Quels moyens de paiement acceptez-vous ?',
-                a: 'Nous acceptons MTN Mobile Money (MoMo) et FedaPay (cartes bancaires Visa/Mastercard). Ces deux méthodes sont 100% sécurisées et adaptées au marché ouest-africain.',
+                q: "Je suis en Europe — ça marche pour moi ?",
+                a: "Oui. Inscription avec numéro international, paiement par carte. Vous rejoignez le groupe depuis où vous êtes.",
               },
               {
-                q: 'Puis-je annuler ma réservation ?',
-                a: "Oui, l'annulation est possible. Les conditions de remboursement varient selon le voyage et le délai avant le départ. Consultez la politique de remboursement sur la page de chaque voyage pour les détails.",
+                q: 'Combien de personnes par voyage ?',
+                a: "Entre 10 et 30. La taille est affichée sur chaque fiche voyage. Les places disponibles aussi — en temps réel.",
               },
               {
-                q: 'Les voyages sont-ils ouverts à la diaspora ?',
-                a: "Absolument ! Nos voyages sont ouverts à tous, que vous soyez au Bénin, en France, au Togo, au Niger ou ailleurs. L'inscription se fait par numéro de téléphone avec un sélecteur de pays pour votre indicatif.",
+                q: "Que se passe-t-il si je ne complète pas l'épargne à temps ?",
+                a: "Vous recevez des notifications de rappel dans Zepargn. Si le solde n'est pas atteint 10 jours avant, nous vous contactons pour trouver une solution (report, transfert de place, remboursement partiel).",
               },
               {
-                q: 'Combien de personnes participent aux voyages de groupe ?',
-                a: 'Le nombre de participants varie selon chaque voyage (généralement entre 10 et 30 personnes). Le nombre de places disponibles est affiché sur chaque voyage. Réservez tôt pour garantir votre place !',
-              },
-              {
-                q: "Comment vous contacter si j'ai d'autres questions ?",
-                a: 'Vous pouvez nous joindre par téléphone au +229 01 61 38 28 69, par e-mail à contact@letouriste.bj, ou via nos réseaux sociaux (Instagram, TikTok, Facebook). Nous répondons généralement sous 24h.',
+                q: 'Comment vous joindre ?',
+                a: 'WhatsApp : +229 01 61 38 28 69 | Email : voyage@zepargn.com | Lundi–Vendredi, 8h30 à 17h30.',
               },
             ].map((faq, index) => (
               <div
