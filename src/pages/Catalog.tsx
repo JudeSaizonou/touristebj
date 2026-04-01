@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Star, Search, Loader2, SlidersHorizontal, X, ArrowRight, Clock, Users, Calendar, ChevronRight } from 'lucide-react';
+import { MapPin, Star, Search, Loader2, SlidersHorizontal, X, ArrowRight, Clock, Users, Calendar, ChevronRight, ChevronDown, Quote, MessageSquare } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
@@ -40,6 +40,7 @@ export const Catalog: React.FC<CatalogProps> = ({
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const activeFilterCount = [priceMin, priceMax, dateFrom, dateTo].filter(Boolean).length;
 
   const resetFilters = () => {
@@ -146,12 +147,12 @@ export const Catalog: React.FC<CatalogProps> = ({
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 w-full">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="text-primary-400 text-sm font-semibold uppercase tracking-widest mb-4">Agence de voyage au Benin</p>
+            <p className="text-primary-400 text-sm font-semibold uppercase tracking-widest mb-4">Agence de voyage au Bénin</p>
 
             <h1 className="font-playfair text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
               Voyagez en groupe,
               <br />
-              <span className="text-primary-400">Epargnez</span> en toute{' '}
+              <span className="text-primary-400">Épargnez</span> en toute{' '}
               <span className="relative inline-block">
                 sérénité
                 <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 12" fill="none">
@@ -161,7 +162,7 @@ export const Catalog: React.FC<CatalogProps> = ({
             </h1>
 
             <p className="text-sm sm:text-lg text-gray-300 mb-8 max-w-lg mx-auto leading-relaxed">
-              Reservez votre place, payez 50% d'acompte puis epargnez le reste a votre rythme avec ZePargn.
+              Réservez votre place, payez 50% d'acompte puis épargnez le reste à votre rythme avec ZePargn.
             </p>
 
             <div className="flex flex-wrap justify-center gap-4">
@@ -179,7 +180,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                   onClick={() => onOpenAuth?.('inscription')}
                   className="inline-flex items-center gap-2 px-7 py-3.5 bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-xl font-semibold hover:bg-white/20 transition-all text-base"
                 >
-                  Creer un compte
+                  Créer un compte
                 </button>
               )}
             </div>
@@ -189,7 +190,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               {[
                 { value: '500+', label: 'Voyageurs' },
                 { value: '50+', label: 'Destinations' },
-                { value: '100%', label: 'Securise' },
+                { value: '100%', label: 'Sécurisé' },
               ].map((stat) => (
                 <div key={stat.label}>
                   <p className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</p>
@@ -214,7 +215,7 @@ export const Catalog: React.FC<CatalogProps> = ({
           <div className="text-center mb-14">
             <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Simple et rapide</p>
             <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
-              Comment ca marche ?
+              Comment ça marche ?
             </h2>
           </div>
 
@@ -227,13 +228,13 @@ export const Catalog: React.FC<CatalogProps> = ({
               },
               {
                 num: '2',
-                title: 'Reservez avec 50%',
+                title: 'Réservez avec 50%',
                 desc: 'Payez un acompte de 50% via MTN MoMo ou FedaPay pour confirmer votre place.',
               },
               {
                 num: '3',
-                title: 'Epargnez le reste',
-                desc: 'Payez le solde a votre rythme avec ZePargn avant la date du voyage.',
+                title: 'Épargnez le reste',
+                desc: 'Payez le solde à votre rythme avec ZePargn avant la date du voyage.',
               },
             ].map((item) => (
               <div key={item.num} className="text-center">
@@ -255,11 +256,11 @@ export const Catalog: React.FC<CatalogProps> = ({
             <div>
               <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Explorez</p>
               <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
-                Nos prochains departs
+                Nos prochains départs
               </h2>
             </div>
             <p className="text-dark-800/50 text-sm max-w-sm">
-              Decouvrez nos voyages de groupe soigneusement organises pour une experience inoubliable.
+              Découvrez nos voyages de groupe soigneusement organisés pour une expérience inoubliable.
             </p>
           </div>
 
@@ -276,7 +277,7 @@ export const Catalog: React.FC<CatalogProps> = ({
             <div className="flex flex-col items-center py-16 gap-4">
               <p className="text-red-500 font-medium">{error}</p>
               <button onClick={loadVoyages} className="px-6 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-semibold">
-                Reessayer
+                Réessayer
               </button>
             </div>
           )}
@@ -287,7 +288,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               <div className="flex flex-col sm:flex-row items-center justify-between bg-gradient-to-r from-dark-800 to-dark-700 text-white rounded-2xl px-6 py-5 mb-8 gap-4">
                 <div className="flex items-center gap-3">
                   <div>
-                    <p className="font-semibold text-sm">Connectez-vous pour decouvrir nos voyages</p>
+                    <p className="font-semibold text-sm">Connectez-vous pour découvrir nos voyages</p>
                     <p className="text-xs text-white/60">Inscription gratuite en 2 minutes</p>
                   </div>
                 </div>
@@ -370,7 +371,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                   >
                     <option value="default">Trier par</option>
                     <option value="price-low">Prix croissant</option>
-                    <option value="price-high">Prix decroissant</option>
+                    <option value="price-high">Prix décroissant</option>
                     <option value="name">Nom A-Z</option>
                   </select>
                   {activeFilterCount > 0 && (
@@ -395,12 +396,12 @@ export const Catalog: React.FC<CatalogProps> = ({
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Depart apres</label>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Départ après</label>
                     <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Depart avant</label>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Départ avant</label>
                     <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
@@ -411,7 +412,7 @@ export const Catalog: React.FC<CatalogProps> = ({
               <div className="flex items-center justify-between mb-6">
                 <p className="text-dark-800/50 text-sm">
                   {filteredVoyages.length === 0
-                    ? 'Aucun resultat'
+                    ? 'Aucun résultat'
                     : `${startIndex + 1}-${endIndex} de ${filteredVoyages.length} voyages`}
                 </p>
               </div>
@@ -447,7 +448,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                             ? 'bg-red-500 text-white'
                             : 'bg-gray-500 text-white'
                         }`}>
-                          {voyage.statut === 'en-cours' ? 'Disponible' : voyage.statut === 'complet' ? 'Complet' : 'Bientot'}
+                          {voyage.statut === 'en-cours' ? 'Disponible' : voyage.statut === 'complet' ? 'Complet' : 'Bientôt'}
                         </span>
                       </div>
                       {/* Bottom overlay info */}
@@ -486,7 +487,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                       {/* Price + CTA */}
                       <div className="flex items-end justify-between pt-3 border-t border-gray-100">
                         <div>
-                          <p className="text-[10px] text-dark-800/40 uppercase font-medium tracking-wider">A partir de</p>
+                          <p className="text-[10px] text-dark-800/40 uppercase font-medium tracking-wider">À partir de</p>
                           <p className="text-xl font-bold text-dark-800">
                             {voyage.prix?.replace(/,/g, '.')}
                             <span className="text-xs font-medium text-dark-800/40 ml-1">FCFA</span>
@@ -496,7 +497,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                           onClick={() => onViewDetails(voyage.id)}
                           className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm"
                         >
-                          Details <ChevronRight className="w-4 h-4" />
+                          Détails <ChevronRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -509,9 +510,9 @@ export const Catalog: React.FC<CatalogProps> = ({
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="w-7 h-7 text-gray-400" />
                   </div>
-                  <p className="text-dark-800/50 text-lg mb-2">Aucun voyage trouve</p>
+                  <p className="text-dark-800/50 text-lg mb-2">Aucun voyage trouvé</p>
                   <button onClick={resetFilters} className="text-primary-500 hover:text-primary-600 font-semibold text-sm">
-                    Reinitialiser les filtres
+                    Réinitialiser les filtres
                   </button>
                 </div>
               )}
@@ -539,18 +540,18 @@ export const Catalog: React.FC<CatalogProps> = ({
               <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Pourquoi nous</p>
               <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-6">
                 Le voyage de groupe<br />
-                <span className="text-primary-500">reinvente</span>
+                <span className="text-primary-500">réinventé</span>
               </h2>
               <p className="text-dark-800/60 mb-8 leading-relaxed">
-                Le Touriste.bj vous permet de voyager en groupe tout en etalant vos paiements.
-                Grace a notre partenariat avec ZePargn, payez 50% a la reservation puis epargnez le reste a votre rythme.
+                Le Touriste.bj vous permet de voyager en groupe tout en étalant vos paiements.
+                Grâce à notre partenariat avec ZePargn, payez 50% à la réservation puis épargnez le reste à votre rythme.
               </p>
 
               <ul className="space-y-4">
                 {[
-                  { title: 'Paiement securise', desc: 'MTN MoMo et FedaPay pour des transactions fiables' },
-                  { title: 'Epargne flexible', desc: 'Payez le solde en plusieurs fois avant le depart' },
-                  { title: 'Voyages de groupe', desc: 'Partagez des moments uniques avec d\'autres passionnes' },
+                  { title: 'Paiement sécurisé', desc: 'MTN MoMo et FedaPay pour des transactions fiables' },
+                  { title: 'Épargne flexible', desc: 'Payez le solde en plusieurs fois avant le départ' },
+                  { title: 'Voyages de groupe', desc: 'Partagez des moments uniques avec d\'autres passionnés' },
                 ].map((item) => (
                   <li key={item.title} className="flex gap-3">
                     <span className="w-2 h-2 bg-primary-500 rounded-full mt-2 shrink-0" />
@@ -574,9 +575,70 @@ export const Catalog: React.FC<CatalogProps> = ({
               {/* Floating card */}
               <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 max-w-[200px]">
                 <p className="text-2xl font-bold text-primary-500 mb-0.5">100%</p>
-                <p className="text-xs text-dark-800/50">Paiements securises</p>
+                <p className="text-xs text-dark-800/50">Paiements sécurisés</p>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════ TÉMOIGNAGES ═══════════════ */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-14">
+            <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Ils nous font confiance</p>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
+              Ce que disent nos voyageurs
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                name: 'Amina K.',
+                location: 'Cotonou, Bénin',
+                text: 'J\'ai pu partir à Zanzibar en payant 50% puis en épargnant le reste. Le concept est génial et l\'organisation était impeccable !',
+                rating: 5,
+                trip: 'Zanzibar — Août 2025',
+              },
+              {
+                name: 'Roméo D.',
+                location: 'Paris, France',
+                text: 'En tant que membre de la diaspora, c\'est exactement ce qu\'il me fallait. Réservation simple, paiement via MoMo, et un groupe super sympa.',
+                rating: 5,
+                trip: 'Grand-Popo — Décembre 2025',
+              },
+              {
+                name: 'Farid S.',
+                location: 'Lomé, Togo',
+                text: 'Le paiement échelonné avec ZePargn m\'a permis de voyager sans me ruiner. Je recommande à 100% pour les voyages de groupe.',
+                rating: 4,
+                trip: 'Ouidah — Mars 2026',
+              },
+            ].map((testimonial) => (
+              <div
+                key={testimonial.name}
+                className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-lg transition-shadow relative"
+              >
+                <Quote className="w-8 h-8 text-primary-500/15 absolute top-5 right-5" />
+                <div className="flex items-center gap-1 mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${i < testimonial.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`}
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-dark-800/70 leading-relaxed mb-5">
+                  "{testimonial.text}"
+                </p>
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="font-semibold text-dark-800 text-sm">{testimonial.name}</p>
+                  <p className="text-xs text-dark-800/40">{testimonial.location}</p>
+                  <p className="text-xs text-primary-500 font-medium mt-1">{testimonial.trip}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -593,7 +655,7 @@ export const Catalog: React.FC<CatalogProps> = ({
         </div>
         <div className="relative max-w-3xl mx-auto text-center px-4">
           <h2 className="font-playfair text-3xl md:text-5xl font-bold text-white mb-4">
-            Pret pour votre prochain
+            Prêt pour votre prochain
             <span className="text-primary-400"> voyage ?</span>
           </h2>
           <p className="text-gray-300 mb-8 max-w-xl mx-auto">
@@ -613,6 +675,82 @@ export const Catalog: React.FC<CatalogProps> = ({
         </div>
       </section>
 
+      {/* ═══════════════ FAQ ═══════════════ */}
+      <section id="faq-section" className="py-20 bg-gray-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-14">
+            <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Questions fréquentes</p>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
+              Tout savoir avant de partir
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {[
+              {
+                q: 'Comment fonctionne le paiement en deux fois ?',
+                a: 'C\'est simple : vous réservez votre place en payant 50% du prix total via MTN MoMo ou FedaPay. Le solde restant est épargné à votre rythme sur ZePargn, notre partenaire d\'épargne. Vous devez compléter le paiement avant la date de départ du voyage.',
+              },
+              {
+                q: 'Qu\'est-ce que ZePargn et comment ça marche ?',
+                a: 'ZePargn est une application d\'épargne qui vous permet de mettre de l\'argent de côté progressivement. Après votre réservation, un objectif d\'épargne est créé automatiquement pour le solde restant. Vous choisissez la fréquence de vos versements (quotidien, hebdomadaire, mensuel).',
+              },
+              {
+                q: 'Quels moyens de paiement acceptez-vous ?',
+                a: 'Nous acceptons MTN Mobile Money (MoMo) et FedaPay (cartes bancaires Visa/Mastercard). Ces deux méthodes sont 100% sécurisées et adaptées au marché ouest-africain.',
+              },
+              {
+                q: 'Puis-je annuler ma réservation ?',
+                a: 'Oui, l\'annulation est possible. Les conditions de remboursement varient selon le voyage et le délai avant le départ. Consultez la politique de remboursement sur la page de chaque voyage pour les détails.',
+              },
+              {
+                q: 'Les voyages sont-ils ouverts à la diaspora ?',
+                a: 'Absolument ! Nos voyages sont ouverts à tous, que vous soyez au Bénin, en France, au Togo, au Niger ou ailleurs. L\'inscription se fait par numéro de téléphone avec un sélecteur de pays pour votre indicatif.',
+              },
+              {
+                q: 'Combien de personnes participent aux voyages de groupe ?',
+                a: 'Le nombre de participants varie selon chaque voyage (généralement entre 10 et 30 personnes). Le nombre de places disponibles est affiché sur chaque voyage. Réservez tôt pour garantir votre place !',
+              },
+              {
+                q: 'Comment vous contacter si j\'ai d\'autres questions ?',
+                a: 'Vous pouvez nous joindre par téléphone au +229 01 61 38 28 69, par e-mail à contact@letouriste.bj, ou via nos réseaux sociaux (Instagram, TikTok, Facebook). Nous répondons généralement sous 24h.',
+              },
+            ].map((faq, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-gray-200 transition-colors"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50/50 transition-colors"
+                >
+                  <span className="font-semibold text-dark-800 text-sm pr-4">{faq.q}</span>
+                  <ChevronDown className={`w-5 h-5 text-dark-800/30 shrink-0 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
+                </button>
+                {openFaq === index && (
+                  <div className="px-5 pb-5 pt-0">
+                    <p className="text-sm text-dark-800/60 leading-relaxed">{faq.a}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <p className="text-dark-800/40 text-sm mb-3">Vous ne trouvez pas la réponse ?</p>
+            <a
+              href="https://wa.me/22901613828269"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl"
+            >
+              <MessageSquare className="w-4 h-4" />
+              Contactez-nous sur WhatsApp
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ═══════════════ PARTENAIRES ═══════════════ */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
@@ -621,16 +759,16 @@ export const Catalog: React.FC<CatalogProps> = ({
             Nos partenaires
           </h2>
           <p className="text-dark-800/50 mb-10 max-w-lg mx-auto text-sm">
-            Des partenaires de confiance pour garantir la qualite de vos voyages et la securite de vos paiements.
+            Des partenaires de confiance pour garantir la qualité de vos voyages et la sécurité de vos paiements.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 max-w-lg mx-auto gap-5">
             <div className="bg-gradient-to-br from-forest-800 to-forest-700 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-md hover:shadow-lg transition-shadow">
               <img src={LogoZepargn} alt="ZePargn" className="h-12 object-contain brightness-0 invert" />
-              <p className="text-white/70 text-xs">Epargne & paiement echelonne</p>
+              <p className="text-white/70 text-xs">Épargne & paiement échelonné</p>
             </div>
             <div className="bg-amber-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-amber-200 shadow-md hover:shadow-lg transition-shadow">
               <span className="text-amber-800 font-bold text-xl tracking-wide">Miwakpon</span>
-              <p className="text-amber-700 text-xs">Tourisme & decouverte</p>
+              <p className="text-amber-700 text-xs">Tourisme & découverte</p>
             </div>
           </div>
         </div>

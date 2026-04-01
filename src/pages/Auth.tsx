@@ -10,7 +10,7 @@ import type { ApiError } from '../api/client';
 export type AuthMode = 'inscription' | 'connexion';
 
 type InscriptionStep = 'phone' | 'otp' | 'form';
-type ConnexionStep = 'phone' | 'otp' | 'password' | 'password-only' | 'forgot-send' | 'forgot-reset';
+type ConnexionStep = 'phone' | 'otp' | 'password' | 'password-only' | 'forgot-send' | 'forgot-reset' | 'migrate-pin';
 
 interface AuthProps {
   initialMode?: AuthMode;
@@ -44,19 +44,18 @@ function getApiMessage(err: unknown): string {
   return (err as ApiError)?.message || 'Une erreur est survenue';
 }
 
-// ──── Password strength ────
-function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
-  let score = 0;
-  if (pw.length >= 8) score++;
-  if (/[A-Z]/.test(pw)) score++;
-  if (/[a-z]/.test(pw)) score++;
-  if (/\d/.test(pw)) score++;
-  if (/[^A-Za-z0-9]/.test(pw)) score++;
-  if (score <= 1) return { score, label: 'Très faible', color: 'bg-red-500' };
-  if (score === 2) return { score, label: 'Faible', color: 'bg-orange-500' };
-  if (score === 3) return { score, label: 'Moyen', color: 'bg-yellow-500' };
-  if (score === 4) return { score, label: 'Fort', color: 'bg-green-500' };
-  return { score, label: 'Très fort', color: 'bg-emerald-500' };
+/** Détecte si la valeur saisie est un PIN (4-6 chiffres uniquement) ou un mot de passe classique. */
+function isPin(value: string): boolean {
+  return /^\d{4,6}$/.test(value);
+}
+
+/** Valide un PIN : 4 chiffres, pas de séquence triviale. */
+function validatePin(pin: string): { valid: boolean; error?: string } {
+  if (pin.length !== 4) return { valid: false, error: 'Le PIN doit contenir 4 chiffres.' };
+  if (!/^\d{4}$/.test(pin)) return { valid: false, error: 'Le PIN ne doit contenir que des chiffres.' };
+  if (/^(\d)\1{3}$/.test(pin)) return { valid: false, error: 'Évitez les PIN trop simples (ex: 1111).' };
+  if (['1234', '4321', '0000'].includes(pin)) return { valid: false, error: 'Ce PIN est trop courant. Choisissez-en un autre.' };
+  return { valid: true };
 }
 
 // ──── OTP Input Component ────
@@ -183,42 +182,67 @@ const PasswordInput: React.FC<{
   );
 };
 
-// ──── Password Strength Bar ────
-const PasswordStrengthBar: React.FC<{ password: string }> = ({ password }) => {
-  if (!password) return null;
-  const { score, label, color } = getPasswordStrength(password);
-  const checks = [
-    { ok: password.length >= 8, text: '8 caractères min.' },
-    { ok: /[A-Z]/.test(password), text: 'Majuscule' },
-    { ok: /[a-z]/.test(password), text: 'Minuscule' },
-    { ok: /\d/.test(password), text: 'Chiffre' },
-    { ok: /[^A-Za-z0-9]/.test(password), text: 'Spécial (!@#...)' },
-  ];
+// ──── PIN Input (4 boxes) ────
+const PinInput: React.FC<{
+  value: string;
+  onChange: (val: string) => void;
+  disabled?: boolean;
+  autoFocus?: boolean;
+}> = ({ value, onChange, disabled, autoFocus }) => {
+  const refs = useRef<(HTMLInputElement | null)[]>([]);
+
+  useEffect(() => {
+    if (autoFocus && value.length < 4) refs.current[value.length]?.focus();
+  }, []);
+
+  const handleChange = (i: number, char: string) => {
+    if (!/^\d?$/.test(char)) return;
+    const arr = value.split('');
+    arr[i] = char;
+    const next = arr.join('').replace(/undefined/g, '');
+    onChange(next.slice(0, 4));
+    if (char && i < 3) refs.current[i + 1]?.focus();
+  };
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !value[i] && i > 0) {
+      refs.current[i - 1]?.focus();
+      const arr = value.split('');
+      arr[i - 1] = '';
+      onChange(arr.join(''));
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 4);
+    onChange(pasted);
+    const idx = Math.min(pasted.length, 3);
+    refs.current[idx]?.focus();
+  };
+
   return (
-    <div className="space-y-2 mt-2 animate-in fade-in duration-300">
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden flex gap-0.5">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <div
-              key={n}
-              className={`flex-1 h-full rounded-full transition-all duration-300 ${
-                n <= score ? color : 'bg-gray-200'
-              }`}
-            />
-          ))}
-        </div>
-        <span className={`text-xs font-medium ${
-          score <= 2 ? 'text-red-600' : score <= 3 ? 'text-yellow-600' : 'text-green-600'
-        }`}>{label}</span>
-      </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1">
-        {checks.map(({ ok, text }) => (
-          <span key={text} className={`flex items-center gap-1 text-[11px] transition-colors ${ok ? 'text-green-600' : 'text-gray-400'}`}>
-            {ok ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
-            {text}
-          </span>
-        ))}
-      </div>
+    <div className="flex justify-center gap-3">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <input
+          key={i}
+          ref={(el) => { refs.current[i] = el; }}
+          type="password"
+          inputMode="numeric"
+          maxLength={1}
+          value={value[i] ? '•' : ''}
+          onChange={(e) => {
+            const v = e.target.value.replace(/[^0-9]/g, '');
+            handleChange(i, v);
+          }}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={i === 0 ? handlePaste : undefined}
+          disabled={disabled}
+          className="w-14 h-14 text-center text-2xl font-bold border-2 border-gray-200 rounded-xl
+                     focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none
+                     transition-all duration-200 disabled:opacity-50 disabled:bg-gray-50"
+        />
+      ))}
     </div>
   );
 };
@@ -241,8 +265,8 @@ export const Auth: React.FC<AuthProps> = ({
   const [inscriptionOtpSent, setInscriptionOtpSent] = useState(false);
   const [inscriptionForm, setInscriptionForm] = useState({
     username: '',
-    password: '',
-    confirmPassword: '',
+    pin: '',
+    confirmPin: '',
     codeParrainage: '',
   });
   const [inscriptionLoading, setInscriptionLoading] = useState(false);
@@ -257,10 +281,17 @@ export const Auth: React.FC<AuthProps> = ({
   const [connexionPassword, setConnexionPassword] = useState('');
   const [connexionLoading, setConnexionLoading] = useState(false);
 
-  // Mot de passe oublié
+  // Migration PIN (après login avec mot de passe)
+  const [migrateOldPassword, setMigrateOldPassword] = useState('');
+  const [migrateNewPin, setMigrateNewPin] = useState('');
+  const [migrateConfirmPin, setMigrateConfirmPin] = useState('');
+  const [migrateLoading, setMigrateLoading] = useState(false);
+  const [migrateLoginData, setMigrateLoginData] = useState<{ token: string; user: any } | null>(null);
+
+  // PIN oublié
   const [forgotToken, setForgotToken] = useState('');
-  const [forgotNewPassword, setForgotNewPassword] = useState('');
-  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [forgotNewPin, setForgotNewPin] = useState('');
+  const [forgotConfirmPin, setForgotConfirmPin] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotOtpTimer, setForgotOtpTimer] = useState(0);
   const forgotTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -383,18 +414,18 @@ export const Auth: React.FC<AuthProps> = ({
 
   const handleInscriptionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { username, password, confirmPassword, codeParrainage } = inscriptionForm;
+    const { username, pin, confirmPin, codeParrainage } = inscriptionForm;
     if (!username.trim()) {
       addToast('error', 'Nom d\'utilisateur requis');
       return;
     }
-    const strength = getPasswordStrength(password);
-    if (strength.score < 3) {
-      addToast('error', 'Mot de passe trop faible. Ajoutez majuscules, chiffres et caractères spéciaux.');
+    const pinCheck = validatePin(pin);
+    if (!pinCheck.valid) {
+      addToast('error', pinCheck.error!);
       return;
     }
-    if (password !== confirmPassword) {
-      addToast('error', 'Les mots de passe ne correspondent pas');
+    if (pin !== confirmPin) {
+      addToast('error', 'Les codes PIN ne correspondent pas');
       return;
     }
     setInscriptionLoading(true);
@@ -402,7 +433,7 @@ export const Auth: React.FC<AuthProps> = ({
       const res = await authApi.signup({
         countryCode: inscriptionCountry,
         phoneNumber: inscriptionPhone,
-        password,
+        password: pin,
         username: username.trim(),
         referralCode: codeParrainage.trim() || undefined,
       });
@@ -477,7 +508,7 @@ export const Auth: React.FC<AuthProps> = ({
   const handleConnexionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!connexionPassword) {
-      addToast('error', 'Mot de passe requis');
+      addToast('error', 'Mot de passe ou PIN requis');
       return;
     }
     setConnexionLoading(true);
@@ -488,17 +519,30 @@ export const Auth: React.FC<AuthProps> = ({
         addToast('error', 'Réponse serveur invalide.');
         return;
       }
-      setAuth(res.token, res.user);
-      try {
-        const me = await authApi.getMe();
-        setAuth(res.token, { ...res.user, ...me });
-        addToast('success', 'Connexion réussie !');
-        const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
-        onSuccess?.(isAdmin);
-      } catch {
-        addToast('success', 'Connexion réussie !');
-        const isAdmin = res.user?.role === 'ADMIN' || res.user?.role === 'PARTNER';
-        onSuccess?.(isAdmin);
+
+      // Détecte si l'utilisateur s'est connecté avec un mot de passe (pas un PIN)
+      const usedPassword = !isPin(connexionPassword);
+
+      if (usedPassword) {
+        // Stocker les infos de login pour après la migration
+        setMigrateLoginData({ token: res.token, user: res.user });
+        setMigrateOldPassword(connexionPassword);
+        setAuth(res.token, res.user);
+        setConnexionStep('migrate-pin');
+        addToast('info', 'Veuillez migrer vers un code PIN à 4 chiffres.');
+      } else {
+        setAuth(res.token, res.user);
+        try {
+          const me = await authApi.getMe();
+          setAuth(res.token, { ...res.user, ...me });
+          addToast('success', 'Connexion réussie !');
+          const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        } catch {
+          addToast('success', 'Connexion réussie !');
+          const isAdmin = res.user?.role === 'ADMIN' || res.user?.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        }
       }
     } catch (err) {
       const msg = getApiMessage(err);
@@ -553,19 +597,20 @@ export const Auth: React.FC<AuthProps> = ({
     }
   };
 
-  const handleForgotResetPassword = async (e: React.FormEvent) => {
+  const handleForgotResetPin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotToken.trim()) { addToast('error', 'Entrez le code reçu par SMS.'); return; }
-    if (forgotNewPassword.length < 8) { addToast('error', 'Le mot de passe doit contenir au moins 8 caractères.'); return; }
-    if (forgotNewPassword !== forgotConfirmPassword) { addToast('error', 'Les mots de passe ne correspondent pas.'); return; }
+    const pinCheck = validatePin(forgotNewPin);
+    if (!pinCheck.valid) { addToast('error', pinCheck.error!); return; }
+    if (forgotNewPin !== forgotConfirmPin) { addToast('error', 'Les codes PIN ne correspondent pas.'); return; }
     setForgotLoading(true);
     try {
-      await authApi.resetPassword(forgotToken.trim(), forgotNewPassword);
-      addToast('success', 'Mot de passe réinitialisé ! Connectez-vous.');
+      await authApi.resetPassword(forgotToken.trim(), forgotNewPin);
+      addToast('success', 'PIN réinitialisé ! Connectez-vous.');
       setConnexionStep('password-only');
       setForgotToken('');
-      setForgotNewPassword('');
-      setForgotConfirmPassword('');
+      setForgotNewPin('');
+      setForgotConfirmPin('');
       setConnexionPassword('');
     } catch (err) {
       addToast('error', getApiMessage(err));
@@ -574,12 +619,47 @@ export const Auth: React.FC<AuthProps> = ({
     }
   };
 
+  const handleMigratePin = async () => {
+    const pinCheck = validatePin(migrateNewPin);
+    if (!pinCheck.valid) { addToast('error', pinCheck.error!); return; }
+    if (migrateNewPin !== migrateConfirmPin) { addToast('error', 'Les codes PIN ne correspondent pas.'); return; }
+    setMigrateLoading(true);
+    try {
+      const national = connexionPhone.replace(/\D/g, '');
+      await authApi.changePassword(national, migrateOldPassword, migrateNewPin);
+      addToast('success', 'PIN mis à jour ! Bienvenue.');
+      if (migrateLoginData) {
+        try {
+          const me = await authApi.getMe();
+          setAuth(migrateLoginData.token, { ...migrateLoginData.user, ...me });
+          const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        } catch {
+          const isAdmin = migrateLoginData.user?.role === 'ADMIN' || migrateLoginData.user?.role === 'PARTNER';
+          onSuccess?.(isAdmin);
+        }
+      }
+    } catch (err) {
+      addToast('error', getApiMessage(err));
+    } finally {
+      setMigrateLoading(false);
+    }
+  };
+
+  const handleSkipMigration = () => {
+    if (migrateLoginData) {
+      addToast('success', 'Connexion réussie !');
+      const isAdmin = migrateLoginData.user?.role === 'ADMIN' || migrateLoginData.user?.role === 'PARTNER';
+      onSuccess?.(isAdmin);
+    }
+  };
+
   // ——— Navigation ———
   const canGoBackInscription =
     mode === 'inscription' && (inscriptionStep === 'otp' || inscriptionStep === 'form');
   const canGoBackConnexion =
     mode === 'connexion' &&
-    (connexionStep === 'otp' || connexionStep === 'password' || connexionStep === 'password-only' || connexionStep === 'forgot-send' || connexionStep === 'forgot-reset');
+    (connexionStep === 'otp' || connexionStep === 'password' || connexionStep === 'password-only' || connexionStep === 'forgot-send' || connexionStep === 'forgot-reset' || connexionStep === 'migrate-pin');
 
   const goBackInscription = () => {
     if (inscriptionStep === 'form') setInscriptionStep('otp');
@@ -591,7 +671,10 @@ export const Auth: React.FC<AuthProps> = ({
   };
 
   const goBackConnexion = () => {
-    if (connexionStep === 'forgot-reset') {
+    if (connexionStep === 'migrate-pin') {
+      handleSkipMigration();
+      return;
+    } else if (connexionStep === 'forgot-reset') {
       setConnexionStep('forgot-send');
       setForgotToken('');
     } else if (connexionStep === 'forgot-send') {
@@ -724,7 +807,7 @@ export const Auth: React.FC<AuthProps> = ({
                         <input
                           type="tel"
                           inputMode="numeric"
-                          placeholder={inscriptionCountry === '229' ? '01 23 45 67 89' : '6 12 34 56 78'}
+                          placeholder={inscriptionCountry === '229' ? '97 12 34 56' : '6 12 34 56 78'}
                           value={inscriptionPhone}
                           onChange={(e) => setInscriptionPhone(e.target.value.replace(/\D/g, ' ').trim().replace(/\s+/g, ' '))}
                           autoFocus
@@ -807,7 +890,7 @@ export const Auth: React.FC<AuthProps> = ({
                     <div>
                       <h2 className="text-xl font-bold text-gray-900">Finalisez votre profil</h2>
                       <p className="text-sm text-gray-500 mt-1">
-                        Dernière étape ! Choisissez votre nom d'utilisateur et un mot de passe.
+                        Dernière étape ! Choisissez votre nom d'utilisateur et un code PIN.
                       </p>
                     </div>
 
@@ -827,26 +910,26 @@ export const Auth: React.FC<AuthProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe</label>
-                      <PasswordInput
-                        value={inscriptionForm.password}
-                        onChange={(v) => setInscriptionForm((p) => ({ ...p, password: v }))}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Code PIN (4 chiffres)</label>
+                      <PinInput
+                        value={inscriptionForm.pin}
+                        onChange={(v) => setInscriptionForm((p) => ({ ...p, pin: v }))}
+                        autoFocus={false}
                       />
-                      <PasswordStrengthBar password={inscriptionForm.password} />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirmer le mot de passe</label>
-                      <PasswordInput
-                        value={inscriptionForm.confirmPassword}
-                        onChange={(v) => setInscriptionForm((p) => ({ ...p, confirmPassword: v }))}
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Confirmer le PIN</label>
+                      <PinInput
+                        value={inscriptionForm.confirmPin}
+                        onChange={(v) => setInscriptionForm((p) => ({ ...p, confirmPin: v }))}
                       />
-                      {inscriptionForm.confirmPassword && inscriptionForm.password !== inscriptionForm.confirmPassword && (
-                        <p className="text-xs text-red-500 mt-1">Les mots de passe ne correspondent pas</p>
+                      {inscriptionForm.confirmPin.length === 4 && inscriptionForm.pin !== inscriptionForm.confirmPin && (
+                        <p className="text-xs text-red-500 mt-2 text-center">Les codes PIN ne correspondent pas</p>
                       )}
-                      {inscriptionForm.confirmPassword && inscriptionForm.password === inscriptionForm.confirmPassword && inscriptionForm.confirmPassword.length > 0 && (
-                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Mots de passe identiques
+                      {inscriptionForm.confirmPin.length === 4 && inscriptionForm.pin === inscriptionForm.confirmPin && (
+                        <p className="text-xs text-green-600 mt-2 text-center flex items-center justify-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> PIN identiques
                         </p>
                       )}
                     </div>
@@ -870,7 +953,7 @@ export const Auth: React.FC<AuthProps> = ({
                     <Button
                       type="submit"
                       className="w-full rounded-xl py-3 bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all"
-                      disabled={inscriptionLoading || !inscriptionForm.username.trim() || getPasswordStrength(inscriptionForm.password).score < 3}
+                      disabled={inscriptionLoading || !inscriptionForm.username.trim() || inscriptionForm.pin.length !== 4}
                     >
                       {inscriptionLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -897,7 +980,7 @@ export const Auth: React.FC<AuthProps> = ({
 
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl px-4 py-3">
                       <p className="text-xs text-blue-700 leading-relaxed">
-                        Utilisez vos identifiants <strong>Zepargn</strong> (même numéro et mot de passe).
+                        Utilisez vos identifiants <strong>Zepargn</strong> (même numéro et PIN).
                       </p>
                     </div>
 
@@ -926,7 +1009,7 @@ export const Auth: React.FC<AuthProps> = ({
                         <input
                           type="tel"
                           inputMode="numeric"
-                          placeholder={connexionCountry === '229' ? '01 23 45 67 89' : '6 12 34 56 78'}
+                          placeholder={connexionCountry === '229' ? '97 12 34 56' : '6 12 34 56 78'}
                           value={connexionPhone}
                           onChange={(e) => setConnexionPhone(e.target.value.replace(/\D/g, ' ').trim().replace(/\s+/g, ' '))}
                           autoFocus
@@ -1001,7 +1084,7 @@ export const Auth: React.FC<AuthProps> = ({
                 {(connexionStep === 'password' || connexionStep === 'password-only') && (
                   <form onSubmit={handleConnexionSubmit} className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">Mot de passe</h2>
+                      <h2 className="text-xl font-bold text-gray-900">Code PIN</h2>
                       <p className="text-sm text-gray-500 mt-1">
                         Connectez-vous au{' '}
                         <span className="font-medium text-gray-700">{formatFullPhone(connexionCountry, connexionPhone)}</span>
@@ -1009,10 +1092,11 @@ export const Auth: React.FC<AuthProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">PIN ou mot de passe</label>
                       <PasswordInput
                         value={connexionPassword}
                         onChange={setConnexionPassword}
+                        placeholder="••••"
                         autoFocus
                       />
                     </div>
@@ -1030,9 +1114,66 @@ export const Auth: React.FC<AuthProps> = ({
                       onClick={() => setConnexionStep('forgot-send')}
                       className="w-full text-center text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
                     >
-                      Mot de passe oublié ?
+                      PIN oublié ?
                     </button>
                   </form>
+                )}
+
+                {/* Migration PIN */}
+                {connexionStep === 'migrate-pin' && (
+                  <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <KeyRound className="w-7 h-7 text-orange-500" />
+                      </div>
+                      <h2 className="text-xl font-bold text-gray-900">Passez au code PIN</h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Pour plus de simplicité, remplacez votre mot de passe par un code PIN à 4 chiffres.
+                      </p>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                      <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                        Obligatoire avant le 30 avril 2026. Les mots de passe ne seront plus acceptés après cette date.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Nouveau code PIN</label>
+                      <PinInput
+                        value={migrateNewPin}
+                        onChange={setMigrateNewPin}
+                        autoFocus
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Confirmer le PIN</label>
+                      <PinInput
+                        value={migrateConfirmPin}
+                        onChange={setMigrateConfirmPin}
+                      />
+                      {migrateConfirmPin.length === 4 && migrateNewPin !== migrateConfirmPin && (
+                        <p className="text-xs text-red-500 mt-2 text-center">Les codes PIN ne correspondent pas</p>
+                      )}
+                    </div>
+
+                    <Button
+                      className="w-full rounded-xl py-3 bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all"
+                      onClick={handleMigratePin}
+                      disabled={migrateLoading || migrateNewPin.length !== 4 || migrateNewPin !== migrateConfirmPin}
+                    >
+                      {migrateLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Mettre à jour mon PIN'}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={handleSkipMigration}
+                      className="w-full text-center text-sm text-gray-400 hover:text-gray-600 font-medium transition-colors"
+                    >
+                      Passer pour l'instant
+                    </button>
+                  </div>
                 )}
 
                 {/* Forgot — send token */}
@@ -1042,7 +1183,7 @@ export const Auth: React.FC<AuthProps> = ({
                       <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                         <ShieldCheck className="w-7 h-7 text-orange-500" />
                       </div>
-                      <h2 className="text-xl font-bold text-gray-900">Réinitialiser</h2>
+                      <h2 className="text-xl font-bold text-gray-900">Réinitialiser le PIN</h2>
                       <p className="text-sm text-gray-500 mt-2">
                         Un code de réinitialisation sera envoyé au{' '}
                         <strong className="text-gray-700">+{connexionCountry} {connexionPhone}</strong>
@@ -1058,13 +1199,13 @@ export const Auth: React.FC<AuthProps> = ({
                   </div>
                 )}
 
-                {/* Forgot — reset */}
+                {/* Forgot — reset with PIN */}
                 {connexionStep === 'forgot-reset' && (
-                  <form onSubmit={handleForgotResetPassword} className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                  <form onSubmit={handleForgotResetPin} className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">Nouveau mot de passe</h2>
+                      <h2 className="text-xl font-bold text-gray-900">Nouveau code PIN</h2>
                       <p className="text-sm text-gray-500 mt-1">
-                        Entrez le code reçu par SMS et choisissez un nouveau mot de passe.
+                        Entrez le code reçu par SMS et choisissez un nouveau PIN à 4 chiffres.
                       </p>
                     </div>
 
@@ -1081,31 +1222,30 @@ export const Auth: React.FC<AuthProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Nouveau mot de passe</label>
-                      <PasswordInput
-                        value={forgotNewPassword}
-                        onChange={setForgotNewPassword}
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Nouveau PIN</label>
+                      <PinInput
+                        value={forgotNewPin}
+                        onChange={setForgotNewPin}
                       />
-                      <PasswordStrengthBar password={forgotNewPassword} />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirmer le mot de passe</label>
-                      <PasswordInput
-                        value={forgotConfirmPassword}
-                        onChange={setForgotConfirmPassword}
+                      <label className="block text-sm font-medium text-gray-700 mb-2 text-center">Confirmer le PIN</label>
+                      <PinInput
+                        value={forgotConfirmPin}
+                        onChange={setForgotConfirmPin}
                       />
-                      {forgotConfirmPassword && forgotNewPassword !== forgotConfirmPassword && (
-                        <p className="text-xs text-red-500 mt-1">Les mots de passe ne correspondent pas</p>
+                      {forgotConfirmPin.length === 4 && forgotNewPin !== forgotConfirmPin && (
+                        <p className="text-xs text-red-500 mt-2 text-center">Les codes PIN ne correspondent pas</p>
                       )}
                     </div>
 
                     <Button
                       type="submit"
                       className="w-full rounded-xl py-3 bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all"
-                      disabled={forgotLoading}
+                      disabled={forgotLoading || forgotNewPin.length !== 4}
                     >
-                      {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Réinitialiser le mot de passe'}
+                      {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Réinitialiser le PIN'}
                     </Button>
 
                     {forgotOtpTimer > 0 ? (

@@ -215,6 +215,39 @@ export async function getMe(): Promise<AuthUser> {
   };
 }
 
+/** Changement de mot de passe / PIN (auth requise). */
+export async function changePassword(
+  phoneNumber: string,
+  oldPassword: string,
+  newPassword: string
+): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>(`${AUTH_PREFIX}/change-password`, {
+    method: 'POST',
+    body: JSON.stringify({
+      phoneNumber: phoneNumber.replace(/\D/g, ''),
+      oldPassword,
+      newPassword,
+    }),
+  });
+}
+
+/** Vérifie si le mot de passe de l'utilisateur doit être changé (auth requise). */
+export async function checkPasswordStatus(): Promise<{
+  requiresChange: boolean;
+  isExpired: boolean;
+  forceChange: boolean;
+  daysUntilExpiration: number;
+}> {
+  const body = await apiRequest<any>(`${AUTH_PREFIX}/check-password-status`);
+  const ps = body?.passwordStatus ?? body?.data?.passwordStatus ?? body;
+  return {
+    requiresChange: ps?.requiresChange ?? false,
+    isExpired: ps?.isExpired ?? false,
+    forceChange: ps?.forceChange ?? false,
+    daysUntilExpiration: ps?.daysUntilExpiration ?? 0,
+  };
+}
+
 /** Login : envoie le numéro national uniquement (sans indicatif), comme attendu par la plupart des APIs. */
 export async function login(
   nationalPhoneNumber: string,

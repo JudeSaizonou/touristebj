@@ -51,7 +51,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
       } catch (err: any) {
         const msg: string = err?.message || '';
         const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
-        setError(is401 ? 'Connectez-vous pour acceder aux details de ce voyage.' : msg || 'Impossible de charger ce voyage.');
+        setError(is401 ? 'Connectez-vous pour accéder aux détails de ce voyage.' : msg || 'Impossible de charger ce voyage.');
       } finally {
         setLoading(false);
       }
@@ -71,7 +71,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
 
   const handleReservationSuccess = (_bookingId: string) => {
     setReservationOpen(false);
-    addToast('success', 'Reservation creee ! Retrouvez-la dans "Mes Voyages".');
+    addToast('success', 'Réservation créée ! Retrouvez-la dans "Mes Voyages".');
     setTimeout(() => onMesVoyages?.(), 1500);
   };
 
@@ -224,7 +224,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                   { icon: <Clock className="w-3.5 h-3.5" />, label: `${voyage.nombreJours || '?'} jours` },
                   { icon: <Users className="w-3.5 h-3.5" />, label: `${voyage.nombrePersonnes} places` },
                   { icon: <Calendar className="w-3.5 h-3.5" />, label: voyage.dateDebut },
-                  { icon: <Globe className="w-3.5 h-3.5" />, label: 'Francais' },
+                  { icon: <Globe className="w-3.5 h-3.5" />, label: 'Français' },
                 ].map((item, i) => (
                   <span key={i} className="inline-flex items-center gap-1.5 text-xs font-medium text-dark-800/60 bg-white rounded-full px-4 py-2 border border-gray-100">
                     <span className="text-primary-500">{item.icon}</span>
@@ -305,7 +305,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
               {/* Itineraire */}
               {voyage.itineraire?.length > 0 && (
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 md:p-8">
-                  <h2 className="font-playfair text-xl font-bold text-dark-800 mb-6">Itineraire</h2>
+                  <h2 className="font-playfair text-xl font-bold text-dark-800 mb-6">Itinéraire</h2>
                   <div className="space-y-3">
                     {voyage.itineraire.map((day: any) => (
                       <div key={day.jour} className="border border-gray-100 rounded-xl overflow-hidden hover:border-gray-200 transition-colors">
@@ -359,11 +359,11 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                         <span className="font-bold text-primary-500">{fmtPrice(acompte)}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-dark-800/50">Solde a epargner</span>
+                        <span className="text-dark-800/50">Solde à épargner</span>
                         <span className="font-semibold text-dark-800">{fmtPrice(solde)}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-dark-800/50">Delai paiement</span>
+                        <span className="text-dark-800/50">Délai paiement</span>
                         <span className="font-semibold text-dark-800">{voyage.paymentDeadlineDays || 14} jours</span>
                       </div>
                     </div>
@@ -379,15 +379,15 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                       onClick={handleReservationClick}
                       className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold text-base hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 flex items-center justify-center gap-2"
                     >
-                      {user ? 'Reservez Maintenant' : 'Se connecter pour reserver'}
+                      {user ? 'Réservez Maintenant' : 'Se connecter pour réserver'}
                       <ArrowRight className="w-4 h-4" />
                     </button>
 
                     {!user && (
                       <p className="text-center text-xs text-dark-800/40">
-                        Vous devez etre connecte.{' '}
+                        Vous devez être connecté.{' '}
                         <button onClick={() => onOpenAuth?.('inscription')} className="text-primary-500 hover:underline font-medium">
-                          Creer un compte
+                          Créer un compte
                         </button>
                       </p>
                     )}
@@ -406,7 +406,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                           <button
                             onClick={() => {
                               navigator.clipboard.writeText(window.location.href);
-                              addToast('success', 'Lien copie dans le presse-papier !');
+                              addToast('success', 'Lien copié dans le presse-papier !');
                               setShowShareOptions(false);
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-dark-800/70 hover:bg-gray-50 transition-colors"
@@ -416,7 +416,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                           </button>
                           <button
                             onClick={() => {
-                              const text = encodeURIComponent(`Decouvrez ce voyage : ${voyage.titre} - ${fmtPrice(basePrice)} !\n${window.location.href}`);
+                              const text = encodeURIComponent(`Découvrez ce voyage : ${voyage.titre} - ${fmtPrice(basePrice)} !\n${window.location.href}`);
                               window.open(`https://wa.me/?text=${text}`, '_blank');
                               setShowShareOptions(false);
                             }}
@@ -433,9 +433,9 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
 
                 {/* Trust info */}
                 <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5 space-y-2 text-xs text-dark-800/50">
-                  <p>Paiement 100% securise via MTN MoMo et FedaPay</p>
-                  <p>Epargne flexible avec ZePargn</p>
-                  <p>Voyage de groupe organise</p>
+                  <p>Paiement 100% sécurisé via MTN MoMo et FedaPay</p>
+                  <p>Épargne flexible avec ZePargn</p>
+                  <p>Voyage de groupe organisé</p>
                 </div>
               </div>
             </div>
@@ -447,7 +447,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
       <section className="py-16 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Explorer</p>
-          <h2 className="font-playfair text-2xl md:text-3xl font-bold text-dark-800 mb-4">Decouvrez aussi nos autres destinations</h2>
+          <h2 className="font-playfair text-2xl md:text-3xl font-bold text-dark-800 mb-4">Découvrez aussi nos autres destinations</h2>
           <p className="text-sm text-dark-800/50 mb-8 max-w-md mx-auto">Envie de plus d'aventures ? Parcourez notre catalogue complet de voyages.</p>
           <button
             onClick={onBack}
@@ -467,11 +467,11 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 max-w-lg mx-auto gap-5">
             <div className="bg-gradient-to-br from-forest-800 to-forest-700 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 shadow-md">
               <img src={LogoZepargn} alt="ZePargn" className="h-10 object-contain brightness-0 invert" />
-              <p className="text-white/60 text-xs">Epargne & paiement echelonne</p>
+              <p className="text-white/60 text-xs">Épargne & paiement échelonné</p>
             </div>
             <div className="bg-amber-50 rounded-2xl p-5 flex flex-col items-center justify-center gap-2 border border-amber-200 shadow-md">
               <span className="text-amber-800 font-bold text-lg tracking-wide">Miwakpon</span>
-              <p className="text-amber-700 text-xs">Tourisme & decouverte</p>
+              <p className="text-amber-700 text-xs">Tourisme & découverte</p>
             </div>
           </div>
         </div>

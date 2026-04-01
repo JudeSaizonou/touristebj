@@ -14,7 +14,7 @@ export default defineConfig({
     proxy: {
       // En dev : éviter CORS en faisant passer les appels API par le serveur Vite
       '/v2/api': {
-        target: 'http://localhost:5121',
+        target: 'https://prodapi.zepargn.com',
         changeOrigin: true,
       },
     },
