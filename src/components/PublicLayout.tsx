@@ -47,7 +47,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-sans">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:bg-white focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-lg focus:text-primary-500 focus:font-semibold">
         Aller au contenu principal
       </a>
@@ -64,20 +64,24 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               <Mail className="w-3 h-3 text-primary-400" />
               contact@letouriste.bj
             </span>
+            <span className="hidden md:flex items-center gap-1.5">
+              <MapPin className="w-3 h-3 text-primary-400" />
+              Cotonou, Benin
+            </span>
             <span className="flex md:hidden items-center gap-1.5">
               <MapPin className="w-3 h-3 text-primary-400" />
-              Cotonou, Bénin
+              Cotonou, Benin
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <a href="#" aria-label="Facebook" className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors">
-              <Facebook className="w-3 h-3" />
-            </a>
             <a href="https://www.tiktok.com/@letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="TikTok" className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors">
               <TikTokIcon className="w-3 h-3" />
             </a>
             <a href="https://www.instagram.com/letouriste.bj" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors">
               <Instagram className="w-3 h-3" />
+            </a>
+            <a href="#" aria-label="Facebook" className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary-500 transition-colors">
+              <Facebook className="w-3 h-3" />
             </a>
           </div>
         </div>
@@ -143,7 +147,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                         <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
                         <div className="absolute right-0 top-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-20 min-w-[200px] py-2 overflow-hidden">
                           <div className="px-4 py-2.5 border-b border-gray-100">
-                            <p className="text-xs text-dark-800/40">Connecté en tant que</p>
+                            <p className="text-xs text-dark-800/40">Connect&#233; en tant que</p>
                             <p className="text-sm font-semibold text-dark-800 truncate">{user.username || user.phoneNumber}</p>
                           </div>
                           {!isAdmin && onMesVoyages && (
@@ -160,7 +164,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <LogOut className="w-4 h-4" />
-                            Se déconnecter
+                            Se d&#233;connecter
                           </button>
                         </div>
                       </>
@@ -236,7 +240,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                 {user ? (
                   <>
                     <div className="px-4 py-3 bg-gradient-to-r from-primary-50 to-orange-50 rounded-xl">
-                      <p className="text-[10px] text-dark-800/40 uppercase tracking-wider font-semibold">Connecté</p>
+                      <p className="text-[10px] text-dark-800/40 uppercase tracking-wider font-semibold">Connect&#233;</p>
                       <p className="font-semibold text-dark-800 text-sm truncate">{user.username || user.phoneNumber}</p>
                     </div>
                     {!isAdmin && onMesVoyages && (
@@ -259,7 +263,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm transition-colors text-left"
                     >
-                      <LogOut className="w-4 h-4" /> Se déconnecter
+                      <LogOut className="w-4 h-4" /> Se d&#233;connecter
                     </button>
                   </>
                 ) : (
@@ -326,8 +330,8 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
             <div className="bg-gradient-to-r from-primary-500/10 to-primary-500/5 border border-primary-500/20 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
-                <h3 className="text-xl font-bold text-white mb-1">Ne manquez aucun départ</h3>
-                <p className="text-white/50 text-sm">Recevez nos offres et nouveaux voyages en avant-première.</p>
+                <h3 className="text-xl font-bold text-white mb-1 font-sans">Ne manquez aucun d&#233;part</h3>
+                <p className="text-white/50 text-sm">Recevez nos offres et nouveaux voyages en avant-premi&#232;re.</p>
               </div>
               <div className="flex flex-col w-full md:w-auto max-w-md gap-2">
                 <div className="flex w-full gap-2">
@@ -342,7 +346,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                     onClick={() => {
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                       if (emailRegex.test(newsletterEmail.trim())) {
-                        setNewsletterMsg({ text: 'Merci ! Vous êtes inscrit.', type: 'success' });
+                        setNewsletterMsg({ text: 'Merci ! Vous \u00eates inscrit.', type: 'success' });
                         setNewsletterEmail('');
                       } else {
                         setNewsletterMsg({ text: 'Email invalide', type: 'error' });
@@ -371,12 +375,12 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
             <div>
               <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-11 object-contain brightness-0 invert mb-5" />
               <p className="text-white/40 text-sm leading-relaxed mb-6">
-                Votre partenaire voyage au Bénin. Réservez en groupe, épargnez progressivement avec ZePargn.
+                Votre partenaire voyage au B&#233;nin. R&#233;servez en groupe, &#233;pargnez progressivement avec Zepargn.
               </p>
               <ul className="space-y-2.5 text-sm">
                 <li className="flex items-center gap-2.5 text-white/50">
                   <MapPin className="w-3.5 h-3.5 text-primary-400 shrink-0" />
-                  Cotonou, Bénin
+                  Cotonou, B&#233;nin
                 </li>
                 <li className="flex items-center gap-2.5 text-white/50">
                   <Phone className="w-3.5 h-3.5 text-primary-400 shrink-0" />
@@ -384,7 +388,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                 </li>
                 <li className="flex items-center gap-2.5 text-white/50">
                   <Mail className="w-3.5 h-3.5 text-primary-400 shrink-0" />
-                  contact@letouriste.bj
+                  voyage@zepargn.com
                 </li>
                 <li className="flex items-center gap-2.5 text-white/50">
                   <Clock className="w-3.5 h-3.5 text-primary-400 shrink-0" />
@@ -434,15 +438,15 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               <div className="space-y-3 mb-8">
                 <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors">
                   <img src={LogoZepargn} alt="ZePargn" className="h-7 object-contain brightness-0 invert" />
-                  <p className="text-white/40 text-xs">Épargne & paiement échelonné</p>
+                  <p className="text-white/40 text-xs">&#201;pargne &amp; paiement &#233;chelonn&#233;</p>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 hover:bg-white/10 transition-colors">
                   <p className="text-amber-400 font-bold text-sm">Miwakpon</p>
-                  <p className="text-white/40 text-xs">Tourisme & découverte</p>
+                  <p className="text-white/40 text-xs">Tourisme &amp; d&#233;couverte</p>
                 </div>
               </div>
 
-              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Paiement sécurisé</h4>
+              <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Paiement s&#233;curis&#233;</h4>
               <div className="flex items-center gap-2.5">
                 <div className="bg-yellow-400 text-yellow-900 rounded-lg px-3 py-1.5 text-xs font-bold">MTN MoMo</div>
                 <div className="bg-green-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold">FedaPay</div>
@@ -454,10 +458,10 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
         {/* Bottom */}
         <div className="relative border-t border-white/10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/30">
-            <p>&copy; {new Date().getFullYear()} Le Touriste.bj - Tous droits réservés.</p>
+            <p>&copy; 2026 Le Touriste.bj &mdash; Partenaire Zepargn. Tous droits r&#233;serv&#233;s.</p>
             <div className="flex items-center gap-5">
-              <a href="#" className="hover:text-white/60 transition-colors">Politique de confidentialité</a>
-              <a href="#" className="hover:text-white/60 transition-colors">Conditions d'utilisation</a>
+              <a href="https://zepargn.com/politiq" className="hover:text-white/60 transition-colors">Politique de confidentialit&#233;</a>
+              <a href="https://zepargn.com/cgu" className="hover:text-white/60 transition-colors">Conditions d'utilisation</a>
             </div>
           </div>
         </div>

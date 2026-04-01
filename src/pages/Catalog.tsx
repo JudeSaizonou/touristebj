@@ -141,62 +141,60 @@ export const Catalog: React.FC<CatalogProps> = ({
             alt=""
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-dark-900/70" />
-          <div className="absolute inset-0 bg-gradient-to-t from-dark-900/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#031927]/55 to-[#031927]/75" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 w-full">
           <div className="max-w-3xl mx-auto text-center">
-            <p className="text-primary-400 text-sm font-semibold uppercase tracking-widest mb-4">Agence de voyage au Bénin</p>
+            {/* Badge pill */}
+            <span className="inline-block bg-white/15 backdrop-blur-sm text-white text-xs font-semibold uppercase tracking-widest px-5 py-2 rounded-full mb-6 border border-white/20">
+              Le Touriste.bj &times; Zepargn
+            </span>
 
-            <h1 className="font-playfair text-3xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight mb-6">
-              Voyagez en groupe,
+            <h1 className="font-playfair text-[40px] sm:text-[52px] lg:text-[64px] font-extrabold text-white leading-[1.1] mb-6">
+              Partez en voyage
               <br />
-              <span className="text-primary-400">Épargnez</span> en toute{' '}
-              <span className="relative inline-block">
-                sérénité
-                <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 12" fill="none">
-                  <path d="M2 8 C50 2, 150 2, 198 8" stroke="#FF7F2A" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-              </span>
+              sans stress financier
             </h1>
 
-            <p className="text-sm sm:text-lg text-gray-300 mb-8 max-w-lg mx-auto leading-relaxed">
-              Réservez votre place, payez 50% d'acompte puis épargnez le reste à votre rythme avec ZePargn.
+            <p className="text-base sm:text-lg text-gray-300 mb-10 max-w-xl mx-auto leading-relaxed font-sans">
+              R&eacute;servez votre place avec 50% d'acompte et &eacute;pargnez le reste &agrave; votre rythme avec Zepargn.
             </p>
 
+            {/* Stats */}
+            <div className="flex flex-wrap justify-center gap-6 sm:gap-10 mb-10">
+              {[
+                { value: '500+', label: 'Voyageurs' },
+                { value: '50+', label: 'Destinations' },
+                { value: '100%', label: 'Sécurisé' },
+                { value: '0 stress', label: 'Financement' },
+              ].map((stat) => (
+                <div key={stat.label} className="text-center">
+                  <p className="text-2xl sm:text-3xl font-bold text-white font-sans">{stat.value}</p>
+                  <p className="text-sm text-gray-400 font-sans">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTAs */}
             <div className="flex flex-wrap justify-center gap-4">
               <button
                 onClick={() => {
                   const el = document.getElementById('voyages-section');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 text-base"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 text-base font-sans"
               >
                 Voir les voyages <ArrowRight className="w-5 h-5" />
               </button>
-              {!user && (
-                <button
-                  onClick={() => onOpenAuth?.('inscription')}
-                  className="inline-flex items-center gap-2 px-7 py-3.5 bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-xl font-semibold hover:bg-white/20 transition-all text-base"
-                >
-                  Créer un compte
-                </button>
-              )}
-            </div>
-
-            {/* Stats */}
-            <div className="flex justify-center gap-8 sm:gap-12 mt-12 pt-8 border-t border-white/10">
-              {[
-                { value: '500+', label: 'Voyageurs' },
-                { value: '50+', label: 'Destinations' },
-                { value: '100%', label: 'Sécurisé' },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <p className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</p>
-                  <p className="text-sm text-gray-400">{stat.label}</p>
-                </div>
-              ))}
+              <a
+                href="https://apps.apple.com/app/zepargn/id6478744058"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-7 py-3.5 bg-transparent text-white border border-white/30 rounded-xl font-semibold hover:bg-white/10 transition-all text-base font-sans"
+              >
+                Télécharger Zepargn
+              </a>
             </div>
           </div>
         </div>
@@ -213,13 +211,18 @@ export const Catalog: React.FC<CatalogProps> = ({
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
-            <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Simple et rapide</p>
-            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
+            <span className="inline-block bg-primary-100 text-primary-500 text-xs font-bold uppercase tracking-[0.1em] px-4 py-1.5 rounded-full mb-4">
+              COMMENT CA MARCHE
+            </span>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
               Comment ça marche ?
             </h2>
+            <p className="text-dark-800/60 max-w-2xl mx-auto text-sm leading-relaxed font-sans">
+              Réservez votre voyage en payant un acompte, puis épargnez le solde progressivement avec Zepargn avant le départ.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {[
               {
                 num: '1',
@@ -228,21 +231,26 @@ export const Catalog: React.FC<CatalogProps> = ({
               },
               {
                 num: '2',
-                title: 'Réservez avec 50%',
-                desc: 'Payez un acompte de 50% via MTN MoMo ou FedaPay pour confirmer votre place.',
+                title: "Payez l'acompte",
+                desc: 'Payez 50% du prix via MTN MoMo ou FedaPay pour confirmer votre place.',
               },
               {
                 num: '3',
-                title: 'Épargnez le reste',
-                desc: 'Payez le solde à votre rythme avec ZePargn avant la date du voyage.',
+                title: 'Épargnez le solde',
+                desc: 'Programmez vos versements dans Zepargn et complétez le paiement avant le départ.',
+              },
+              {
+                num: '4',
+                title: 'Partez sereinement',
+                desc: "Votre place est confirmée, vos paiements sont faits. Plus qu'à profiter.",
               },
             ].map((item) => (
               <div key={item.num} className="text-center">
-                <div className="w-14 h-14 bg-primary-500 text-white rounded-full flex items-center justify-center mx-auto mb-5 text-xl font-bold">
+                <div className="w-14 h-14 bg-primary-500 text-white rounded-full flex items-center justify-center mx-auto mb-5 text-xl font-bold font-sans">
                   {item.num}
                 </div>
-                <h3 className="text-lg font-bold text-dark-800 mb-2">{item.title}</h3>
-                <p className="text-sm text-dark-800/60 leading-relaxed">{item.desc}</p>
+                <h3 className="text-lg font-bold text-dark-800 mb-2 font-sans">{item.title}</h3>
+                <p className="text-sm text-dark-800/60 leading-relaxed font-sans">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -252,15 +260,15 @@ export const Catalog: React.FC<CatalogProps> = ({
       {/* ═══════════════ VOYAGES ═══════════════ */}
       <section id="voyages-section" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
-            <div>
-              <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Explorez</p>
-              <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
-                Nos prochains départs
-              </h2>
-            </div>
-            <p className="text-dark-800/50 text-sm max-w-sm">
-              Découvrez nos voyages de groupe soigneusement organisés pour une expérience inoubliable.
+          <div className="text-center mb-10">
+            <span className="inline-block bg-primary-100 text-primary-500 text-xs font-bold uppercase tracking-[0.1em] px-4 py-1.5 rounded-full mb-4">
+              NOS DÉPARTS
+            </span>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
+              Nos prochains voyages
+            </h2>
+            <p className="text-dark-800/60 max-w-2xl mx-auto text-sm leading-relaxed font-sans">
+              Découvrez nos voyages de groupe soigneusement organisés. Réservez votre place, les autres paiements suivent à votre rythme.
             </p>
           </div>
 
@@ -268,15 +276,15 @@ export const Catalog: React.FC<CatalogProps> = ({
           {loading && (
             <div className="flex flex-col items-center py-20 gap-4">
               <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
-              <p className="text-dark-800/40">Chargement des voyages...</p>
+              <p className="text-dark-800/40 font-sans">Chargement des voyages...</p>
             </div>
           )}
 
           {/* Error */}
           {!loading && !authRequired && error && (
             <div className="flex flex-col items-center py-16 gap-4">
-              <p className="text-red-500 font-medium">{error}</p>
-              <button onClick={loadVoyages} className="px-6 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-semibold">
+              <p className="text-red-500 font-medium font-sans">{error}</p>
+              <button onClick={loadVoyages} className="px-6 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-semibold font-sans">
                 Réessayer
               </button>
             </div>
@@ -288,20 +296,20 @@ export const Catalog: React.FC<CatalogProps> = ({
               <div className="flex flex-col sm:flex-row items-center justify-between bg-gradient-to-r from-dark-800 to-dark-700 text-white rounded-2xl px-6 py-5 mb-8 gap-4">
                 <div className="flex items-center gap-3">
                   <div>
-                    <p className="font-semibold text-sm">Connectez-vous pour découvrir nos voyages</p>
-                    <p className="text-xs text-white/60">Inscription gratuite en 2 minutes</p>
+                    <p className="font-semibold text-sm font-sans">Connectez-vous pour découvrir nos voyages</p>
+                    <p className="text-xs text-white/60 font-sans">Inscription gratuite en 2 minutes</p>
                   </div>
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <button
                     onClick={() => onOpenAuth?.('connexion')}
-                    className="px-5 py-2.5 bg-white text-dark-800 rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors"
+                    className="px-5 py-2.5 bg-white text-dark-800 rounded-xl text-sm font-semibold hover:bg-gray-100 transition-colors font-sans"
                   >
                     Se connecter
                   </button>
                   <button
                     onClick={() => onOpenAuth?.('inscription')}
-                    className="px-5 py-2.5 border border-white/30 text-white rounded-xl text-sm font-semibold hover:bg-white/10 transition-colors"
+                    className="px-5 py-2.5 border border-white/30 text-white rounded-xl text-sm font-semibold hover:bg-white/10 transition-colors font-sans"
                   >
                     S'inscrire
                   </button>
@@ -339,7 +347,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                     placeholder="Rechercher une destination..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm text-dark-800 placeholder-gray-400 text-sm"
+                    className="w-full pl-12 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 shadow-sm text-dark-800 placeholder-gray-400 text-sm font-sans"
                   />
                   {searchQuery && (
                     <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors">
@@ -350,7 +358,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`inline-flex items-center gap-2 px-4 py-3 border rounded-xl text-sm font-medium transition-colors ${
+                    className={`inline-flex items-center gap-2 px-4 py-3 border rounded-xl text-sm font-medium transition-colors font-sans ${
                       showFilters || activeFilterCount > 0
                         ? 'border-primary-500 bg-primary-50 text-primary-600'
                         : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
@@ -367,7 +375,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="px-4 py-3 border border-gray-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm text-gray-600"
+                    className="px-4 py-3 border border-gray-200 bg-white rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm text-gray-600 font-sans"
                   >
                     <option value="default">Trier par</option>
                     <option value="price-low">Prix croissant</option>
@@ -375,7 +383,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                     <option value="name">Nom A-Z</option>
                   </select>
                   {activeFilterCount > 0 && (
-                    <button onClick={resetFilters} className="inline-flex items-center gap-1 px-3 py-3 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                    <button onClick={resetFilters} className="inline-flex items-center gap-1 px-3 py-3 text-sm text-gray-500 hover:text-gray-700 transition-colors font-sans">
                       <X className="w-3.5 h-3.5" /> Reset
                     </button>
                   )}
@@ -386,31 +394,31 @@ export const Catalog: React.FC<CatalogProps> = ({
               {showFilters && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-6">
                   <div>
-                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Prix min (FCFA)</label>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Prix min (FCFA)</label>
                     <input type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="0"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Prix max (FCFA)</label>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Prix max (FCFA)</label>
                     <input type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} placeholder="1 000 000"
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Départ après</label>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Départ après</label>
                     <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5">Départ avant</label>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Départ avant</label>
                     <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans" />
                   </div>
                 </div>
               )}
 
               {/* Results count */}
               <div className="flex items-center justify-between mb-6">
-                <p className="text-dark-800/50 text-sm">
+                <p className="text-dark-800/50 text-sm font-sans">
                   {filteredVoyages.length === 0
                     ? 'Aucun résultat'
                     : `${startIndex + 1}-${endIndex} de ${filteredVoyages.length} voyages`}
@@ -422,7 +430,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                 {displayedVoyages.map((voyage) => (
                   <div
                     key={voyage.id}
-                    className="bg-white rounded-2xl border border-gray-100 overflow-hidden group hover:shadow-xl hover:shadow-gray-200/60 transition-all duration-300 hover:-translate-y-1"
+                    className="bg-white rounded-2xl shadow-card overflow-hidden group hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
                   >
                     {/* Image */}
                     <div className="relative h-40 sm:h-52 overflow-hidden">
@@ -435,13 +443,13 @@ export const Catalog: React.FC<CatalogProps> = ({
                       {/* Badges */}
                       <div className="absolute top-3 left-3 flex gap-2">
                         {voyage.duree && (
-                          <span className="bg-white/95 backdrop-blur-sm text-xs font-semibold px-3 py-1.5 rounded-lg text-dark-800 flex items-center gap-1">
+                          <span className="bg-white/95 backdrop-blur-sm text-xs font-semibold px-3 py-1.5 rounded-lg text-dark-800 flex items-center gap-1 font-sans">
                             <Clock className="w-3 h-3" /> {voyage.duree}
                           </span>
                         )}
                       </div>
                       <div className="absolute top-3 right-3">
-                        <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
+                        <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg font-sans ${
                           voyage.statut === 'en-cours'
                             ? 'bg-green-500 text-white'
                             : voyage.statut === 'complet'
@@ -455,7 +463,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                       <div className="absolute bottom-3 left-3 right-3">
                         <div className="flex items-center gap-1.5 text-white/90">
                           <MapPin className="w-3.5 h-3.5" />
-                          <span className="text-sm font-medium">{voyage.pays}</span>
+                          <span className="text-sm font-medium font-sans">{voyage.pays}</span>
                         </div>
                       </div>
                     </div>
@@ -466,12 +474,12 @@ export const Catalog: React.FC<CatalogProps> = ({
                         {[...Array(5)].map((_, i) => (
                           <Star key={i} className={`w-3.5 h-3.5 ${i < (voyage.note ?? 4) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'}`} />
                         ))}
-                        <span className="text-xs text-dark-800/40 ml-1">({voyage.nombreAvis || 0})</span>
+                        <span className="text-xs text-dark-800/40 ml-1 font-sans">({voyage.nombreAvis || 0})</span>
                       </div>
                       <h3 className="font-playfair text-lg font-bold text-dark-800 mb-3 line-clamp-1">{voyage.titre}</h3>
 
                       {/* Meta row */}
-                      <div className="flex items-center gap-3 text-xs text-dark-800/50 mb-4">
+                      <div className="flex items-center gap-3 text-xs text-dark-800/50 mb-4 font-sans">
                         {voyage.dateDebut && (
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" /> {voyage.dateDebut}
@@ -484,18 +492,23 @@ export const Catalog: React.FC<CatalogProps> = ({
                         )}
                       </div>
 
+                      {/* Price breakdown */}
+                      <div className="text-xs text-dark-800/50 mb-3 font-sans">
+                        Acompte: {voyage.totalPrice ? fmtPrice(Math.round(voyage.totalPrice * 0.5)) : '—'} | Total: {voyage.totalPrice ? fmtPrice(voyage.totalPrice) : voyage.prix?.replace(/,/g, '.') + ' FCFA'}
+                      </div>
+
                       {/* Price + CTA */}
                       <div className="flex items-end justify-between pt-3 border-t border-gray-100">
                         <div>
-                          <p className="text-[10px] text-dark-800/40 uppercase font-medium tracking-wider">À partir de</p>
-                          <p className="text-xl font-bold text-dark-800">
+                          <p className="text-[10px] text-dark-800/40 uppercase font-medium tracking-wider font-sans">À partir de</p>
+                          <p className="text-xl font-bold text-dark-800 font-sans">
                             {voyage.prix?.replace(/,/g, '.')}
                             <span className="text-xs font-medium text-dark-800/40 ml-1">FCFA</span>
                           </p>
                         </div>
                         <button
                           onClick={() => onViewDetails(voyage.id)}
-                          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm"
+                          className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm font-sans"
                         >
                           Détails <ChevronRight className="w-4 h-4" />
                         </button>
@@ -510,8 +523,8 @@ export const Catalog: React.FC<CatalogProps> = ({
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Search className="w-7 h-7 text-gray-400" />
                   </div>
-                  <p className="text-dark-800/50 text-lg mb-2">Aucun voyage trouvé</p>
-                  <button onClick={resetFilters} className="text-primary-500 hover:text-primary-600 font-semibold text-sm">
+                  <p className="text-dark-800/50 text-lg mb-2 font-sans">Aucun voyage trouvé</p>
+                  <button onClick={resetFilters} className="text-primary-500 hover:text-primary-600 font-semibold text-sm font-sans">
                     Réinitialiser les filtres
                   </button>
                 </div>
@@ -521,7 +534,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                 <div className="flex justify-center mt-12">
                   <button
                     onClick={() => setCurrentPage(currentPage + 1)}
-                    className="inline-flex items-center gap-2 px-8 py-3.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors font-semibold text-sm shadow-lg hover:shadow-xl"
+                    className="inline-flex items-center gap-2 px-8 py-3.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors font-semibold text-sm shadow-lg hover:shadow-xl font-sans"
                   >
                     Voir plus de voyages <ArrowRight className="w-4 h-4" />
                   </button>
@@ -533,51 +546,96 @@ export const Catalog: React.FC<CatalogProps> = ({
       </section>
 
       {/* ═══════════════ POURQUOI NOUS ═══════════════ */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Pourquoi nous</p>
-              <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-6">
-                Le voyage de groupe<br />
-                <span className="text-primary-500">réinventé</span>
-              </h2>
-              <p className="text-dark-800/60 mb-8 leading-relaxed">
-                Le Touriste.bj vous permet de voyager en groupe tout en étalant vos paiements.
-                Grâce à notre partenariat avec ZePargn, payez 50% à la réservation puis épargnez le reste à votre rythme.
-              </p>
+          <div className="text-center mb-14">
+            <span className="inline-block bg-primary-100 text-primary-500 text-xs font-bold uppercase tracking-[0.1em] px-4 py-1.5 rounded-full mb-4">
+              POURQUOI NOUS
+            </span>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
+              Le voyage de groupe réinventé
+            </h2>
+            <p className="text-dark-800/60 max-w-2xl mx-auto text-sm leading-relaxed font-sans">
+              Le Touriste.bj combine l'énergie du voyage en groupe avec la flexibilité financière de Zepargn. Voyagez sans attendre d'avoir tout l'argent.
+            </p>
+          </div>
 
-              <ul className="space-y-4">
-                {[
-                  { title: 'Paiement sécurisé', desc: 'MTN MoMo et FedaPay pour des transactions fiables' },
-                  { title: 'Épargne flexible', desc: 'Payez le solde en plusieurs fois avant le départ' },
-                  { title: 'Voyages de groupe', desc: 'Partagez des moments uniques avec d\'autres passionnés' },
-                ].map((item) => (
-                  <li key={item.title} className="flex gap-3">
-                    <span className="w-2 h-2 bg-primary-500 rounded-full mt-2 shrink-0" />
-                    <div>
-                      <h4 className="font-semibold text-dark-800 mb-0.5">{item.title}</h4>
-                      <p className="text-sm text-dark-800/50">{item.desc}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                emoji: '\uD83D\uDD12',
+                title: 'Paiement sécurisé',
+                desc: 'MTN MoMo et FedaPay pour des transactions fiables et traçables.',
+              },
+              {
+                emoji: '\uD83D\uDCB0',
+                title: 'Épargne flexible',
+                desc: 'Versements libres dans Zepargn — quotidien, hebdomadaire ou mensuel, selon vous.',
+              },
+              {
+                emoji: '\uD83D\uDC65',
+                title: 'Voyages de groupe',
+                desc: "Des groupes de 10 à 30 personnes, sélectionnés pour une ambiance garantie.",
+              },
+              {
+                emoji: '\uD83C\uDF0D',
+                title: 'Ouvert à la diaspora',
+                desc: "Inscription par téléphone, 18 pays disponibles. Au Bénin ou en France — ça marche pareil.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-white rounded-2xl shadow-card p-6 text-center hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
+              >
+                <span className="text-4xl mb-4 block">{item.emoji}</span>
+                <h3 className="text-lg font-bold text-dark-800 mb-2 font-sans">{item.title}</h3>
+                <p className="text-sm text-dark-800/60 leading-relaxed font-sans">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden shadow-2xl">
+      {/* ═══════════════ GALLERY ═══════════════ */}
+      <section className="py-20 bg-dark-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-14">
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-3">
+              Nos destinations
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto text-sm leading-relaxed font-sans">
+              Découvrez les moments inoubliables de nos voyages précédents.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              'https://images.unsplash.com/photo-1523805009345-7448845a9e53?w=600&q=80',
+              'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&q=80',
+              'https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?w=600&q=80',
+              'https://images.unsplash.com/photo-1504150558240-0b4fd8946624?w=600&q=80',
+              'https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=600&q=80',
+              'https://images.unsplash.com/photo-1528543606781-2f6e6857f318?w=600&q=80',
+            ].map((src, i) => (
+              <div key={i} className="rounded-2xl overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1530789253388-582c481c54b0?w=800&q=80"
-                  alt="Voyageurs heureux"
-                  className="w-full h-[450px] object-cover"
+                  src={src}
+                  alt={`Destination ${i + 1}`}
+                  className="w-full h-64 object-cover hover:scale-[1.03] transition-transform duration-500"
                 />
               </div>
-              {/* Floating card */}
-              <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-xl border border-gray-100 p-5 max-w-[200px]">
-                <p className="text-2xl font-bold text-primary-500 mb-0.5">100%</p>
-                <p className="text-xs text-dark-800/50">Paiements sécurisés</p>
-              </div>
-            </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-10">
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-500 font-semibold text-sm hover:text-primary-400 transition-colors font-sans"
+            >
+              Suivez-nous sur Instagram &rarr;
+            </a>
           </div>
         </div>
       </section>
@@ -586,10 +644,15 @@ export const Catalog: React.FC<CatalogProps> = ({
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
-            <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Ils nous font confiance</p>
-            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
+            <span className="inline-block bg-primary-100 text-primary-500 text-xs font-bold uppercase tracking-[0.1em] px-4 py-1.5 rounded-full mb-4">
+              TÉMOIGNAGES
+            </span>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
               Ce que disent nos voyageurs
             </h2>
+            <p className="text-dark-800/60 max-w-2xl mx-auto text-sm leading-relaxed font-sans">
+              Ils ont voyagé avec Le Touriste.bj et payé avec Zepargn. Voici ce qu'ils en pensent.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -597,28 +660,28 @@ export const Catalog: React.FC<CatalogProps> = ({
               {
                 name: 'Amina K.',
                 location: 'Cotonou, Bénin',
-                text: 'J\'ai pu partir à Zanzibar en payant 50% puis en épargnant le reste. Le concept est génial et l\'organisation était impeccable !',
+                text: "J'ai pu partir à Zanzibar en payant 50% à la réservation. En 3 mois d'épargne dans Zepargn, j'avais le solde. Organisation impeccable.",
                 rating: 5,
-                trip: 'Zanzibar — Août 2025',
+                trip: 'Zanzibar, Août 2025',
               },
               {
                 name: 'Roméo D.',
                 location: 'Paris, France',
-                text: 'En tant que membre de la diaspora, c\'est exactement ce qu\'il me fallait. Réservation simple, paiement via MoMo, et un groupe super sympa.',
+                text: "En diaspora, je cherchais un moyen de voyager au Bénin sans tout payer en une fois. Le système marche parfaitement depuis Paris.",
                 rating: 5,
-                trip: 'Grand-Popo — Décembre 2025',
+                trip: 'Grand-Popo, Décembre 2025',
               },
               {
                 name: 'Farid S.',
                 location: 'Lomé, Togo',
-                text: 'Le paiement échelonné avec ZePargn m\'a permis de voyager sans me ruiner. Je recommande à 100% pour les voyages de groupe.',
+                text: "Le paiement échelonné avec Zepargn m'a permis de voyager sans me mettre dans le rouge. Je recommande à 100%.",
                 rating: 4,
-                trip: 'Ouidah — Mars 2026',
+                trip: 'Ouidah, Mars 2026',
               },
             ].map((testimonial) => (
               <div
                 key={testimonial.name}
-                className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-lg transition-shadow relative"
+                className="bg-white rounded-2xl shadow-card p-6 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 relative"
               >
                 <Quote className="w-8 h-8 text-primary-500/15 absolute top-5 right-5" />
                 <div className="flex items-center gap-1 mb-4">
@@ -629,13 +692,13 @@ export const Catalog: React.FC<CatalogProps> = ({
                     />
                   ))}
                 </div>
-                <p className="text-sm text-dark-800/70 leading-relaxed mb-5">
+                <p className="text-sm text-dark-800/70 leading-relaxed mb-5 font-sans">
                   "{testimonial.text}"
                 </p>
                 <div className="border-t border-gray-100 pt-4">
-                  <p className="font-semibold text-dark-800 text-sm">{testimonial.name}</p>
-                  <p className="text-xs text-dark-800/40">{testimonial.location}</p>
-                  <p className="text-xs text-primary-500 font-medium mt-1">{testimonial.trip}</p>
+                  <p className="font-semibold text-dark-800 text-sm font-sans">{testimonial.name}</p>
+                  <p className="text-xs text-dark-800/40 font-sans">{testimonial.location}</p>
+                  <p className="text-xs text-primary-500 font-medium mt-1 font-sans">{testimonial.trip}</p>
                 </div>
               </div>
             ))}
@@ -643,57 +706,73 @@ export const Catalog: React.FC<CatalogProps> = ({
         </div>
       </section>
 
-      {/* ═══════════════ CTA ═══════════════ */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0">
-          <img
-            src="https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1920&q=80"
-            alt=""
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-dark-800/85" />
-        </div>
-        <div className="relative max-w-3xl mx-auto text-center px-4">
-          <h2 className="font-playfair text-3xl md:text-5xl font-bold text-white mb-4">
-            Prêt pour votre prochain
-            <span className="text-primary-400"> voyage ?</span>
+      {/* ═══════════════ CTA FINAL ═══════════════ */}
+      <section className="py-24 bg-primary-500">
+        <div className="max-w-3xl mx-auto text-center px-4">
+          <h2 className="font-playfair text-3xl md:text-5xl font-extrabold text-white mb-4">
+            Prêt pour votre prochain voyage ?
           </h2>
-          <p className="text-gray-300 mb-8 max-w-xl mx-auto">
+          <p className="text-white/80 mb-8 max-w-xl mx-auto font-sans">
             Rejoignez des centaines de voyageurs qui ont choisi Le Touriste.bj pour explorer le monde autrement.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-4 mb-8">
             <button
               onClick={() => {
                 const el = document.getElementById('voyages-section');
                 if (el) el.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="inline-flex items-center gap-2 px-8 py-4 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all text-base shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-primary-500 rounded-xl font-semibold hover:bg-gray-100 transition-all text-base shadow-lg hover:shadow-xl font-sans"
             >
-              Explorer les voyages <ArrowRight className="w-5 h-5" />
+              Voir les voyages <ArrowRight className="w-5 h-5" />
             </button>
+          </div>
+          <div className="flex flex-wrap justify-center gap-4">
+            <a
+              href="https://apps.apple.com/app/zepargn/id6478744058"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white/15 backdrop-blur-sm text-white border border-white/30 rounded-xl font-semibold text-sm hover:bg-white/25 transition-all font-sans"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+              App Store
+            </a>
+            <a
+              href="https://play.google.com/store/apps/details?id=com.zepargn.mobile"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white/15 backdrop-blur-sm text-white border border-white/30 rounded-xl font-semibold text-sm hover:bg-white/25 transition-all font-sans"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.04c.17.3.44.54.77.67.1.04.2.06.31.08l.13.01h.04c.11 0 .22-.02.33-.05.05-.02.09-.03.14-.05l8.05-4.56-3.32-3.32-6.45 7.22zm-.81-1.38L13.3 10.73 10.9 8.33 2.09 20.3c-.15.24-.22.52-.22.79 0 .2.04.39.12.57h-.01l.39-.01zM21.81 11.06l-3.37-1.91-3.63 3.18 3.47 3.47 3.53-2c.57-.32.94-.87.94-1.37 0-.51-.36-1.05-.94-1.37zM13.3 10.73L17.37 7 5.76.42c-.12-.07-.25-.12-.39-.16C5.22.2 5.07.17 4.92.18c-.08 0-.16.01-.24.03-.33.06-.63.23-.84.48l.05-.04 9.41 10.08z"/></svg>
+              Google Play
+            </a>
           </div>
         </div>
       </section>
 
       {/* ═══════════════ FAQ ═══════════════ */}
-      <section id="faq-section" className="py-20 bg-gray-50">
+      <section id="faq-section" className="py-20 bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
-            <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Questions fréquentes</p>
-            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800">
+            <span className="inline-block bg-primary-100 text-primary-500 text-xs font-bold uppercase tracking-[0.1em] px-4 py-1.5 rounded-full mb-4">
+              FAQ
+            </span>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
               Tout savoir avant de partir
             </h2>
+            <p className="text-dark-800/60 max-w-xl mx-auto text-sm leading-relaxed font-sans">
+              Vous avez des questions sur le fonctionnement du paiement ou de l'épargne ? On répond à tout.
+            </p>
           </div>
 
           <div className="space-y-3">
             {[
               {
                 q: 'Comment fonctionne le paiement en deux fois ?',
-                a: 'C\'est simple : vous réservez votre place en payant 50% du prix total via MTN MoMo ou FedaPay. Le solde restant est épargné à votre rythme sur ZePargn, notre partenaire d\'épargne. Vous devez compléter le paiement avant la date de départ du voyage.',
+                a: "C'est simple : vous réservez votre place en payant 50% du prix total via MTN MoMo ou FedaPay. Le solde restant est épargné à votre rythme sur Zepargn, notre partenaire d'épargne. Vous devez compléter le paiement avant la date de départ du voyage.",
               },
               {
-                q: 'Qu\'est-ce que ZePargn et comment ça marche ?',
-                a: 'ZePargn est une application d\'épargne qui vous permet de mettre de l\'argent de côté progressivement. Après votre réservation, un objectif d\'épargne est créé automatiquement pour le solde restant. Vous choisissez la fréquence de vos versements (quotidien, hebdomadaire, mensuel).',
+                q: "Qu'est-ce que Zepargn et comment ça marche ?",
+                a: "Zepargn est une application d'épargne mobile agréée BCEAO, disponible dans 10 pays UEMOA. Après réservation, un objectif d'épargne est créé automatiquement pour votre solde. Vous choisissez la fréquence de vos versements.",
               },
               {
                 q: 'Quels moyens de paiement acceptez-vous ?',
@@ -701,35 +780,35 @@ export const Catalog: React.FC<CatalogProps> = ({
               },
               {
                 q: 'Puis-je annuler ma réservation ?',
-                a: 'Oui, l\'annulation est possible. Les conditions de remboursement varient selon le voyage et le délai avant le départ. Consultez la politique de remboursement sur la page de chaque voyage pour les détails.',
+                a: "Oui, l'annulation est possible. Les conditions de remboursement varient selon le voyage et le délai avant le départ. Consultez la politique de remboursement sur la page de chaque voyage pour les détails.",
               },
               {
                 q: 'Les voyages sont-ils ouverts à la diaspora ?',
-                a: 'Absolument ! Nos voyages sont ouverts à tous, que vous soyez au Bénin, en France, au Togo, au Niger ou ailleurs. L\'inscription se fait par numéro de téléphone avec un sélecteur de pays pour votre indicatif.',
+                a: "Absolument ! Nos voyages sont ouverts à tous, que vous soyez au Bénin, en France, au Togo, au Niger ou ailleurs. L'inscription se fait par numéro de téléphone avec un sélecteur de pays pour votre indicatif.",
               },
               {
                 q: 'Combien de personnes participent aux voyages de groupe ?',
                 a: 'Le nombre de participants varie selon chaque voyage (généralement entre 10 et 30 personnes). Le nombre de places disponibles est affiché sur chaque voyage. Réservez tôt pour garantir votre place !',
               },
               {
-                q: 'Comment vous contacter si j\'ai d\'autres questions ?',
+                q: "Comment vous contacter si j'ai d'autres questions ?",
                 a: 'Vous pouvez nous joindre par téléphone au +229 01 61 38 28 69, par e-mail à contact@letouriste.bj, ou via nos réseaux sociaux (Instagram, TikTok, Facebook). Nous répondons généralement sous 24h.',
               },
             ].map((faq, index) => (
               <div
                 key={index}
-                className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:border-gray-200 transition-colors"
+                className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden hover:border-gray-200 transition-colors"
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === index ? null : index)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50/50 transition-colors"
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-100/50 transition-colors"
                 >
-                  <span className="font-semibold text-dark-800 text-sm pr-4">{faq.q}</span>
+                  <span className="font-semibold text-dark-800 text-sm pr-4 font-sans">{faq.q}</span>
                   <ChevronDown className={`w-5 h-5 text-dark-800/30 shrink-0 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
                 </button>
                 {openFaq === index && (
                   <div className="px-5 pb-5 pt-0">
-                    <p className="text-sm text-dark-800/60 leading-relaxed">{faq.a}</p>
+                    <p className="text-sm text-dark-800/60 leading-relaxed font-sans">{faq.a}</p>
                   </div>
                 )}
               </div>
@@ -737,12 +816,12 @@ export const Catalog: React.FC<CatalogProps> = ({
           </div>
 
           <div className="text-center mt-10">
-            <p className="text-dark-800/40 text-sm mb-3">Vous ne trouvez pas la réponse ?</p>
+            <p className="text-dark-800/40 text-sm mb-3 font-sans">Vous ne trouvez pas la réponse ?</p>
             <a
               href="https://wa.me/22901613828269"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl font-sans"
             >
               <MessageSquare className="w-4 h-4" />
               Contactez-nous sur WhatsApp
@@ -754,21 +833,28 @@ export const Catalog: React.FC<CatalogProps> = ({
       {/* ═══════════════ PARTENAIRES ═══════════════ */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-primary-500 font-semibold text-sm uppercase tracking-widest mb-2">Confiance</p>
-          <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-3">
-            Nos partenaires
+          <span className="inline-block bg-primary-100 text-primary-500 text-xs font-bold uppercase tracking-[0.1em] px-4 py-1.5 rounded-full mb-4">
+            NOS PARTENAIRES
+          </span>
+          <h2 className="font-playfair text-3xl md:text-4xl font-bold text-dark-800 mb-10">
+            Ils rendent le voyage possible
           </h2>
-          <p className="text-dark-800/50 mb-10 max-w-lg mx-auto text-sm">
-            Des partenaires de confiance pour garantir la qualité de vos voyages et la sécurité de vos paiements.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 max-w-lg mx-auto gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 max-w-4xl mx-auto gap-5">
             <div className="bg-gradient-to-br from-forest-800 to-forest-700 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-md hover:shadow-lg transition-shadow">
               <img src={LogoZepargn} alt="ZePargn" className="h-12 object-contain brightness-0 invert" />
-              <p className="text-white/70 text-xs">Épargne & paiement échelonné</p>
+              <p className="text-white/70 text-xs font-sans">Épargne & paiement échelonné</p>
             </div>
             <div className="bg-amber-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-amber-200 shadow-md hover:shadow-lg transition-shadow">
-              <span className="text-amber-800 font-bold text-xl tracking-wide">Miwakpon</span>
-              <p className="text-amber-700 text-xs">Tourisme & découverte</p>
+              <span className="text-amber-800 font-bold text-xl tracking-wide font-sans">Miwakpon</span>
+              <p className="text-amber-700 text-xs font-sans">Tourisme & découverte</p>
+            </div>
+            <div className="bg-yellow-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-yellow-300 shadow-md hover:shadow-lg transition-shadow">
+              <span className="text-yellow-700 font-bold text-xl tracking-wide font-sans">MTN MoMo</span>
+              <p className="text-yellow-600 text-xs font-sans">Paiement mobile sécurisé</p>
+            </div>
+            <div className="bg-green-50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 border border-green-200 shadow-md hover:shadow-lg transition-shadow">
+              <span className="text-green-700 font-bold text-xl tracking-wide font-sans">FedaPay</span>
+              <p className="text-green-600 text-xs font-sans">Paiement carte bancaire</p>
             </div>
           </div>
         </div>

@@ -22,18 +22,31 @@ export default {
   				DEFAULT: '#1a4d3e'
   			},
   			primary: {
-  				'50': '#fff8f3',
-  				'100': '#ffe8d5',
-  				'200': '#ffc999',
-  				'300': '#ffaa66',
-  				'400': '#ff9544',
-  				'500': '#FF7F2A',
-  				'600': '#e66d1e',
-  				'700': '#cc5c14',
-  				'800': '#9a3412',
-  				'900': '#7c2d12',
+  				'50': '#FFF5EE',
+  				'100': '#FFE4D4',
+  				'200': '#FFC49E',
+  				'300': '#FF9A62',
+  				'400': '#F06A1A',
+  				'500': '#F04A00',
+  				'600': '#D94300',
+  				'700': '#B53700',
+  				'800': '#8C2B00',
+  				'900': '#6B2100',
   				DEFAULT: 'hsl(var(--primary))',
   				foreground: 'hsl(var(--primary-foreground))'
+  			},
+  			navy: {
+  				'50': '#e8ecf0',
+  				'100': '#c5cdd8',
+  				'200': '#8a9bb3',
+  				'300': '#5a7190',
+  				'400': '#1e3a54',
+  				'500': '#0a2a3f',
+  				'600': '#072233',
+  				'700': '#051b29',
+  				'800': '#031927',
+  				'900': '#020f18',
+  				DEFAULT: '#031927'
   			},
   			dark: {
   				'50': '#e8eaf0',
@@ -44,9 +57,9 @@ export default {
   				'500': '#3b4878',
   				'600': '#2f3a62',
   				'700': '#232e4e',
-  				'800': '#17233E',
-  				'900': '#0d1527',
-  				DEFAULT: '#17233E'
+  				'800': '#031927',
+  				'900': '#020f18',
+  				DEFAULT: '#031927'
   			},
   			success: {
   				'50': '#f0fdf4',
@@ -112,19 +125,19 @@ export default {
   		},
   		fontFamily: {
   			sans: [
+  				'Urbanist',
   				'Inter',
   				'system-ui',
   				'sans-serif'
   			],
   			display: [
+  				'Urbanist',
   				'Outfit',
-  				'Inter',
   				'sans-serif'
   			],
   			playfair: [
-  				'"Playfair Display"',
-  				'Georgia',
-  				'serif'
+  				'Urbanist',
+  				'sans-serif'
   			]
   		},
   		boxShadow: {
