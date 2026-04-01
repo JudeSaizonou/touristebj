@@ -116,7 +116,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
   }
 
   const basePrice = voyage.totalPrice ?? 0;
-  const acompte = voyage.depositAmount ?? Math.round(basePrice * 0.5);
+  const acompte = voyage.depositAmount ?? Math.round(basePrice * 0.3);
   const solde = basePrice - acompte;
 
   return (
@@ -355,7 +355,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                   <div className="p-6 space-y-4">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-dark-800/50">Acompte (50%)</span>
+                        <span className="text-dark-800/50">Acompte (30%)</span>
                         <span className="font-bold text-primary-500">{fmtPrice(acompte)}</span>
                       </div>
                       <div className="flex justify-between items-center text-sm">

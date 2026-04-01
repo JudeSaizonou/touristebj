@@ -170,15 +170,15 @@ export function mapTripToVoyage(t: TripBackend): any {
     allowInstallments: t.allowInstallments ?? true,
     minInstallmentAmount: t.minInstallmentAmount ?? 5000,
     // Champs calculés / valeurs par défaut pour la vue publique
-    acomptesPourcentage: 50,
+    acomptesPourcentage: 30,
     note: 4,
     nombreAvis: 0,
     nombreJours,
     duree: nombreJours ? `${nombreJours} jours` : '',
     minAge: 18,
     bedrooms: 2,
-    conditionsPaiement: 'Acompte 50% + Solde par épargne',
-    politiqueRemboursement: "L'acompte versé (50%) est non remboursable en cas de désistement. Le solde peut être payé par versements jusqu'à la date limite définie par l'organisateur.",
+    conditionsPaiement: 'Acompte 30% + Solde par épargne',
+    politiqueRemboursement: "L'acompte versé (30%) est non remboursable en cas de désistement. Le solde peut être payé par versements jusqu'à la date limite définie par l'organisateur.",
   };
 }
 

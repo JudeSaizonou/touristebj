@@ -158,7 +158,7 @@ export const Catalog: React.FC<CatalogProps> = ({
             </h1>
 
             <p className="text-base sm:text-lg text-gray-300 mb-10 max-w-xl mx-auto leading-relaxed font-sans">
-              Réservez votre place avec 50% d'acompte. Zepargn s'occupe du reste : versements automatiques, solde complété avant le départ.
+              Réservez votre place avec 30% d'acompte. Zepargn s'occupe du reste : versements automatiques, solde complété avant le départ.
             </p>
 
             {/* Stats */}
@@ -494,7 +494,7 @@ export const Catalog: React.FC<CatalogProps> = ({
 
                       {/* Price breakdown */}
                       <div className="text-xs text-dark-800/50 mb-3 font-sans">
-                        Acompte: {voyage.totalPrice ? fmtPrice(Math.round(voyage.totalPrice * 0.5)) : '—'} | Total: {voyage.totalPrice ? fmtPrice(voyage.totalPrice) : voyage.prix?.replace(/,/g, '.') + ' FCFA'}
+                        Acompte: {voyage.totalPrice ? fmtPrice(Math.round(voyage.totalPrice * 0.3)) : '—'} | Total: {voyage.totalPrice ? fmtPrice(voyage.totalPrice) : voyage.prix?.replace(/,/g, '.') + ' FCFA'}
                       </div>
 
                       {/* Price + CTA */}

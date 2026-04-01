@@ -76,7 +76,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     : parseFloat(String(voyage.prix || '0').replace(/[^\d]/g, '')) || 0;
 
   const sousTotal = basePrice * nombrePersonnes;
-  const depositPerPerson = typeof voyage.depositAmount === 'number' ? voyage.depositAmount : Math.round(basePrice * 0.5);
+  const depositPerPerson = typeof voyage.depositAmount === 'number' ? voyage.depositAmount : Math.round(basePrice * 0.3);
   const acompte = depositPerPerson * nombrePersonnes;
   const soldeRestant = sousTotal - acompte;
 
@@ -226,7 +226,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   <span className="font-semibold text-dark-800">{fmtPrice(sousTotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-dark-800/60">Acompte à payer maintenant (50%)</span>
+                  <span className="text-dark-800/60">Acompte à payer maintenant (30%)</span>
                   <span className="font-bold text-primary-500">{fmtPrice(acompte)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -347,7 +347,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               <div className="bg-dark-800/5 rounded-xl p-4 text-center">
                 <p className="text-xs text-dark-800/50 mb-1">Acompte à régler</p>
                 <p className="font-playfair text-3xl font-bold text-dark-800">{fmtPrice(acompte)}</p>
-                <p className="text-xs text-dark-800/50 mt-0.5">50% du total voyage</p>
+                <p className="text-xs text-dark-800/50 mt-0.5">30% du total voyage</p>
               </div>
 
               {/* Choix du moyen de paiement */}
