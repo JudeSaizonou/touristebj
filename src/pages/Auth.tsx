@@ -9,7 +9,7 @@ import type { ApiError } from '../api/client';
 
 export type AuthMode = 'inscription' | 'connexion';
 
-type InscriptionStep = 'phone' | 'otp' | 'form';
+type InscriptionStep = 'phone' | 'form';
 type ConnexionStep = 'phone' | 'otp' | 'password' | 'password-only' | 'forgot-send' | 'forgot-reset' | 'migrate-pin';
 
 interface AuthProps {
@@ -261,8 +261,6 @@ export const Auth: React.FC<AuthProps> = ({
   const [inscriptionStep, setInscriptionStep] = useState<InscriptionStep>('phone');
   const [inscriptionCountry, setInscriptionCountry] = useState(COUNTRY_OPTIONS[0].indicatif);
   const [inscriptionPhone, setInscriptionPhone] = useState('');
-  const [inscriptionOtp, setInscriptionOtp] = useState('');
-  const [inscriptionOtpSent, setInscriptionOtpSent] = useState(false);
   const [inscriptionForm, setInscriptionForm] = useState({
     username: '',
     pin: '',
@@ -297,8 +295,6 @@ export const Auth: React.FC<AuthProps> = ({
   const forgotTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Timers
-  const [inscriptionOtpTimer, setInscriptionOtpTimer] = useState(0);
-  const inscriptionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [connexionOtpTimer, setConnexionOtpTimer] = useState(0);
   const connexionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -315,7 +311,7 @@ export const Auth: React.FC<AuthProps> = ({
 
   useEffect(() => () => {
     if (forgotTimerRef.current) clearInterval(forgotTimerRef.current);
-    if (inscriptionTimerRef.current) clearInterval(inscriptionTimerRef.current);
+
     if (connexionTimerRef.current) clearInterval(connexionTimerRef.current);
   }, []);
 
@@ -337,10 +333,10 @@ export const Auth: React.FC<AuthProps> = ({
   );
 
   // Step index for progress indicator
-  const inscriptionStepIndex = inscriptionStep === 'phone' ? 0 : inscriptionStep === 'otp' ? 1 : 2;
+  const inscriptionStepIndex = inscriptionStep === 'phone' ? 0 : 1;
 
   // ——— Inscription handlers ———
-  const handleInscriptionSendOtp = async () => {
+  const handleInscriptionContinue = async () => {
     const national = inscriptionPhone.replace(/\D/g, '');
     if (national.length < 6) {
       addToast('error', 'Numéro de téléphone invalide');
@@ -350,67 +346,32 @@ export const Auth: React.FC<AuthProps> = ({
     try {
       const { exists } = await authApi.verifyPhone(inscriptionCountry, inscriptionPhone);
       if (exists) {
-        addToast('info', 'Ce numéro est déjà enregistré. Connexion automatique...');
+        addToast('info', 'Ce numéro est déjà enregistré. Connectez-vous.');
         setConnexionCountry(inscriptionCountry);
         setConnexionPhone(inscriptionPhone);
         setConnexionStep('password-only');
         setMode('connexion');
         setInscriptionStep('phone');
-        setInscriptionOtp('');
         return;
       }
-      await authApi.initiatePhoneVerification(inscriptionCountry, inscriptionPhone);
-      setInscriptionOtpSent(true);
-      setInscriptionStep('otp');
-      startTimer(setInscriptionOtpTimer, inscriptionTimerRef, 60);
-      addToast('success', 'Code envoyé !');
+      setInscriptionStep('form');
     } catch (err) {
       const msg = getApiMessage(err);
-      addToast('error', msg);
       if (msg.toLowerCase().includes('déjà utilisé') || msg.toLowerCase().includes('already')) {
+        addToast('info', 'Ce numéro est déjà enregistré. Connectez-vous.');
         setConnexionCountry(inscriptionCountry);
         setConnexionPhone(inscriptionPhone);
         setConnexionStep('password-only');
         setMode('connexion');
         setInscriptionStep('phone');
-        setInscriptionOtp('');
-      }
-    } finally {
-      setInscriptionLoading(false);
-    }
-  };
-
-  const handleInscriptionVerifyOtp = async () => {
-    const code = inscriptionOtp.replace(/\s/g, '');
-    if (code.length !== 6) {
-      addToast('error', 'Le code doit contenir 6 chiffres');
-      return;
-    }
-    setInscriptionLoading(true);
-    try {
-      const res = await authApi.verifyCode(inscriptionCountry, inscriptionPhone, code);
-      if ('isNewUser' in res && res.isNewUser) {
+      } else {
+        // Si verifyPhone échoue, on laisse quand même passer à l'étape suivante
         setInscriptionStep('form');
-        addToast('success', 'Numéro vérifié ! Plus qu\'une étape.');
-      } else if ('token' in res && res.token && res.user) {
-        setAuth(res.token, res.user);
-        addToast('success', 'Compte existant détecté. Connexion réussie !');
-        const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'PARTNER';
-        onSuccess?.(isAdmin);
       }
-    } catch (err) {
-      addToast('error', getApiMessage(err));
     } finally {
       setInscriptionLoading(false);
     }
   };
-
-  // Auto-verify OTP when 6 digits entered
-  useEffect(() => {
-    if (mode === 'inscription' && inscriptionStep === 'otp' && inscriptionOtp.length === 6 && !inscriptionLoading) {
-      handleInscriptionVerifyOtp();
-    }
-  }, [inscriptionOtp]);
 
   const handleInscriptionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -656,18 +617,13 @@ export const Auth: React.FC<AuthProps> = ({
 
   // ——— Navigation ———
   const canGoBackInscription =
-    mode === 'inscription' && (inscriptionStep === 'otp' || inscriptionStep === 'form');
+    mode === 'inscription' && inscriptionStep === 'form';
   const canGoBackConnexion =
     mode === 'connexion' &&
     (connexionStep === 'otp' || connexionStep === 'password' || connexionStep === 'password-only' || connexionStep === 'forgot-send' || connexionStep === 'forgot-reset' || connexionStep === 'migrate-pin');
 
   const goBackInscription = () => {
-    if (inscriptionStep === 'form') setInscriptionStep('otp');
-    else if (inscriptionStep === 'otp') {
-      setInscriptionStep('phone');
-      setInscriptionOtpSent(false);
-      setInscriptionOtp('');
-    }
+    if (inscriptionStep === 'form') setInscriptionStep('phone');
   };
 
   const goBackConnexion = () => {
@@ -737,8 +693,6 @@ export const Auth: React.FC<AuthProps> = ({
                   setMode(m);
                   if (m === 'inscription') {
                     setInscriptionStep('phone');
-                    setInscriptionOtpSent(false);
-                    setInscriptionOtp('');
                   }
                   setConnexionStep('phone');
                   setConnexionRole(null);
@@ -762,8 +716,8 @@ export const Auth: React.FC<AuthProps> = ({
               <div className="space-y-0">
                 <StepProgress
                   current={inscriptionStepIndex}
-                  total={3}
-                  labels={['Téléphone', 'Vérification', 'Profil']}
+                  total={2}
+                  labels={['Téléphone', 'Profil & PIN']}
                 />
 
                 {/* Step 1: Phone */}
@@ -818,73 +772,19 @@ export const Auth: React.FC<AuthProps> = ({
 
                     <Button
                       className="w-full rounded-xl py-3 bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/20 transition-all"
-                      onClick={handleInscriptionSendOtp}
+                      onClick={handleInscriptionContinue}
                       disabled={inscriptionLoading || inscriptionPhone.replace(/\D/g, '').length < 6}
                     >
                       {inscriptionLoading ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        'Recevoir le code'
+                        'Continuer'
                       )}
                     </Button>
                   </div>
                 )}
 
-                {/* Step 2: OTP */}
-                {inscriptionStep === 'otp' && (
-                  <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="text-center">
-                      <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                        <Phone className="w-7 h-7 text-orange-500" />
-                      </div>
-                      <h2 className="text-xl font-bold text-gray-900">Vérification SMS</h2>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Code envoyé au <strong className="text-gray-700">{formatFullPhone(inscriptionCountry, inscriptionPhone)}</strong>
-                      </p>
-                    </div>
-
-                    <OtpInput
-                      length={6}
-                      value={inscriptionOtp}
-                      onChange={setInscriptionOtp}
-                      disabled={inscriptionLoading}
-                    />
-
-                    {inscriptionLoading && (
-                      <div className="flex justify-center">
-                        <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
-                      </div>
-                    )}
-
-                    {inscriptionOtpTimer > 0 ? (
-                      <p className="text-center text-xs text-gray-400">
-                        Renvoyer dans <span className="font-mono font-semibold text-gray-600">{inscriptionOtpTimer}s</span>
-                      </p>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          setInscriptionLoading(true);
-                          try {
-                            await authApi.initiatePhoneVerification(inscriptionCountry, inscriptionPhone);
-                            startTimer(setInscriptionOtpTimer, inscriptionTimerRef, 60);
-                            addToast('success', 'Code renvoyé.');
-                          } catch (err) {
-                            addToast('error', getApiMessage(err));
-                          } finally {
-                            setInscriptionLoading(false);
-                          }
-                        }}
-                        disabled={inscriptionLoading}
-                        className="w-full text-center text-sm text-orange-600 hover:text-orange-700 font-medium disabled:opacity-50"
-                      >
-                        Renvoyer le code
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Step 3: Profile form */}
+                {/* Step 2: Profile form */}
                 {inscriptionStep === 'form' && (
                   <form onSubmit={handleInscriptionSubmit} className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ArrowLeft, Calendar, PiggyBank, CheckCircle, Clock,
-  Loader2, AlertCircle, TrendingUp, CreditCard
+  Calendar, PiggyBank, CheckCircle, Clock,
+  Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
@@ -19,19 +19,14 @@ interface MonEpargneProps {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'text-amber-600 bg-amber-50 border-amber-200' },
-  DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'text-blue-600 bg-blue-50 border-blue-200' },
-  IN_PROGRESS:     { label: 'Paiement en cours',   color: 'text-blue-600 bg-blue-50 border-blue-200' },
+  PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'text-amber-700 bg-amber-50 border-amber-200' },
+  DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'text-blue-700 bg-blue-50 border-blue-200' },
+  IN_PROGRESS:     { label: 'Paiement en cours',   color: 'text-blue-700 bg-blue-50 border-blue-200' },
   SAVING:          { label: 'Épargne en cours',    color: 'text-forest-800 bg-forest-800/5 border-forest-800/20' },
-  FULLY_PAID:      { label: 'Voyage payé',         color: 'text-green-600 bg-green-50 border-green-200' },
-  COMPLETED:       { label: 'Voyage payé',         color: 'text-green-600 bg-green-50 border-green-200' },
+  FULLY_PAID:      { label: 'Voyage payé',         color: 'text-green-700 bg-green-50 border-green-200' },
+  COMPLETED:       { label: 'Voyage payé',         color: 'text-green-700 bg-green-50 border-green-200' },
   CANCELLED:       { label: 'Annulé',              color: 'text-red-600 bg-red-50 border-red-200' },
   REFUNDED:        { label: 'Remboursé',           color: 'text-gray-600 bg-gray-50 border-gray-200' },
-};
-
-const PAYMENT_TYPE_LABELS: Record<string, string> = {
-  DEPOSIT: 'Acompte',
-  INSTALLMENT: 'Versement',
 };
 
 export const MonEpargne: React.FC<MonEpargneProps> = ({
@@ -65,9 +60,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (bookingId) loadData();
-  }, [bookingId]);
+  useEffect(() => { if (bookingId) loadData(); }, [bookingId]);
 
   const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
@@ -76,22 +69,21 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     : 0;
 
   const daysLeft = booking?.paymentDeadline
-    ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / 86400000))
     : null;
 
+  const isUrgent = daysLeft !== null && daysLeft <= 14;
   const status = booking ? (STATUS_LABELS[booking.status] ?? { label: booking.status, color: 'text-gray-600 bg-gray-50 border-gray-200' }) : null;
+  const isComplete = booking && ['FULLY_PAID', 'COMPLETED'].includes(booking.status);
+  const canPay = booking && !['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.remainingAmount ?? 1) > 0;
 
   return (
-    <PublicLayout
-      onAdminLogin={onAdminLogin}
-      onOpenAuth={onOpenAuth}
-      onMesVoyages={onMesVoyages}
-      onLogout={onLogout}
-    >
+    <PublicLayout onAdminLogin={onAdminLogin} onOpenAuth={onOpenAuth} onMesVoyages={onMesVoyages} onLogout={onLogout}>
+
       {loading && (
         <div className="flex flex-col items-center py-32 gap-4">
-          <Loader2 className="w-8 h-8 text-forest-800 animate-spin" />
-          <p className="text-dark-800/60">Chargement...</p>
+          <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+          <p className="text-dark-800/50">Chargement...</p>
         </div>
       )}
 
@@ -99,7 +91,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
         <div className="flex flex-col items-center py-24 gap-4">
           <AlertCircle className="w-8 h-8 text-red-400" />
           <p className="text-red-600 font-medium">{error}</p>
-          <button onClick={loadData} className="px-6 py-2.5 bg-forest-800 text-white rounded-lg hover:bg-forest-900 transition-colors text-sm font-medium">
+          <button onClick={loadData} className="px-6 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-semibold">
             Réessayer
           </button>
         </div>
@@ -107,114 +99,108 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
 
       {!loading && !error && booking && (
         <>
-          {/* Hero avec image */}
-          <div className="relative h-[280px] overflow-hidden">
-            <img
-              src={booking.voyage?.images?.[0] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600'}
-              alt={booking.voyage?.titre}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-dark-800/80" />
-            <div className="relative h-full flex flex-col justify-end pb-8 px-3 sm:px-6 lg:px-8 max-w-4xl mx-auto">
-              <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-4 self-start"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Mes voyages
+          {/* Compact header */}
+          <div className="bg-gradient-to-r from-dark-800 to-dark-700 text-white">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+              <button onClick={onBack} className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm mb-3 transition-colors">
+                <ChevronLeft className="w-4 h-4" /> Mes Voyages
               </button>
-              <h1 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-2">
-                {booking.voyage?.titre || 'Mon Épargne'}
-              </h1>
-              {status && (
-                <span className={`self-start text-xs font-semibold px-3 py-1.5 rounded-full border ${status.color}`}>
-                  {status.label}
-                </span>
-              )}
-            </div>
-            <div className="absolute bottom-0 left-0 right-0">
-              <svg viewBox="0 0 1440 50" className="w-full" preserveAspectRatio="none">
-                <path d="M0,25 C360,50 720,0 1080,25 C1260,38 1380,30 1440,25 L1440,50 L0,50 Z" fill="white" />
-              </svg>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h1 className="font-playfair text-2xl sm:text-3xl font-bold">{booking.voyage?.titre || 'Mon Épargne'}</h1>
+                  <p className="text-white/50 text-sm mt-1">{booking.voyage?.destination}</p>
+                </div>
+                {status && (
+                  <span className={`self-start sm:self-center text-xs font-semibold px-3 py-1.5 rounded-full border ${status.color}`}>
+                    {status.label}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* LEFT: progression + infos */}
-              <div className="lg:col-span-2 space-y-5">
-                {/* Carte progression */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 shadow-sm">
-                  <div className="flex items-center gap-2 mb-5">
-                    <TrendingUp className="w-5 h-5 text-forest-800" />
-                    <h2 className="font-playfair font-bold text-dark-800 text-base sm:text-lg">Progression de l'épargne</h2>
-                  </div>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
 
-                  {/* Barre principale */}
-                  <div className="mb-5">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-dark-800/60">Montant épargné</span>
-                      <span className="font-bold text-dark-800">{percent}%</span>
-                    </div>
-                    <div className="h-4 bg-gray-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-700 ${percent >= 100 ? 'bg-green-500' : 'bg-forest-800'}`}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                    <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-xl">
-                      <p className="text-[10px] sm:text-xs text-dark-800/50 mb-1">Total voyage</p>
-                      <p className="font-bold text-dark-800 text-xs sm:text-sm">{fmtPrice(booking.totalPrice)}</p>
-                    </div>
-                    <div className="text-center p-2 sm:p-3 bg-forest-800/5 rounded-xl">
-                      <p className="text-[10px] sm:text-xs text-dark-800/50 mb-1">Épargné</p>
-                      <p className="font-bold text-forest-800 text-xs sm:text-sm">{fmtPrice(booking.amountPaid)}</p>
-                    </div>
-                    <div className={`text-center p-2 sm:p-3 rounded-xl ${booking.remainingAmount > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
-                      <p className="text-[10px] sm:text-xs text-dark-800/50 mb-1">Restant</p>
-                      <p className={`font-bold text-xs sm:text-sm ${booking.remainingAmount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
-                        {fmtPrice(booking.remainingAmount)}
-                      </p>
-                    </div>
-                  </div>
+            {/* Progression principale */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary-500" />
+                  <h2 className="font-bold text-dark-800">Progression</h2>
                 </div>
+                <span className={`text-2xl font-bold ${percent >= 100 ? 'text-green-500' : 'text-dark-800'}`}>{percent}%</span>
+              </div>
 
-                {/* Historique des paiements */}
-                <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 shadow-sm">
+              {/* Grande barre de progression */}
+              <div className="h-4 bg-gray-100 rounded-full overflow-hidden mb-5">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${
+                    percent >= 100 ? 'bg-green-500' : isUrgent ? 'bg-red-400' : 'bg-primary-500'
+                  }`}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+
+              {/* Stats en ligne */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3 bg-gray-50 rounded-xl">
+                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Total voyage</p>
+                  <p className="font-bold text-dark-800 text-sm">{fmtPrice(booking.totalPrice)}</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-xl">
+                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Épargné</p>
+                  <p className="font-bold text-green-600 text-sm">{fmtPrice(booking.amountPaid)}</p>
+                </div>
+                <div className={`text-center p-3 rounded-xl ${booking.remainingAmount > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
+                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Restant</p>
+                  <p className={`font-bold text-sm ${booking.remainingAmount > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                    {fmtPrice(booking.remainingAmount)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Colonne gauche : historique */}
+              <div className="lg:col-span-2">
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-5">
-                    <CreditCard className="w-5 h-5 text-dark-800" />
-                    <h2 className="font-playfair font-bold text-dark-800 text-base sm:text-lg">Historique des paiements</h2>
+                    <CreditCard className="w-5 h-5 text-dark-800/70" />
+                    <h2 className="font-bold text-dark-800">Historique des paiements</h2>
                   </div>
 
                   {payments.length === 0 ? (
-                    <div className="text-center py-8">
+                    <div className="text-center py-10">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <CreditCard className="w-5 h-5 text-gray-300" />
+                      </div>
                       <p className="text-dark-800/40 text-sm">Aucun paiement enregistré</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {payments.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between py-3 border-b border-gray-50 last:border-0 gap-2">
-                          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                            <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-forest-800/10'}`}>
+                    <div className="space-y-2">
+                      {payments.map(p => (
+                        <div key={p.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                              p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-primary-50'
+                            }`}>
                               {p.type === 'DEPOSIT'
                                 ? <CheckCircle className="w-4 h-4 text-blue-500" />
-                                : <PiggyBank className="w-4 h-4 text-forest-800" />
+                                : <PiggyBank className="w-4 h-4 text-primary-500" />
                               }
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-medium text-dark-800 truncate">
-                                {PAYMENT_TYPE_LABELS[p.type] ?? p.type}
+                              <p className="text-sm font-medium text-dark-800">
+                                {p.type === 'DEPOSIT' ? 'Acompte' : 'Versement'}
                               </p>
-                              <p className="text-[10px] sm:text-xs text-dark-800/50">{p.date}</p>
+                              <p className="text-xs text-dark-800/40">{p.date}</p>
                             </div>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="font-semibold text-dark-800 text-xs sm:text-sm">{fmtPrice(p.amount)}</p>
-                            <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${p.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'}`}>
+                            <p className="font-bold text-dark-800 text-sm">{fmtPrice(p.amount)}</p>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                              p.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
+                            }`}>
                               {p.status === 'COMPLETED' ? 'Confirmé' : p.status}
                             </span>
                           </div>
@@ -225,22 +211,23 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 </div>
               </div>
 
-              {/* RIGHT: actions + infos voyage */}
-              <div className="space-y-5">
-                {/* Deadline card */}
-                {daysLeft !== null && !['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.remainingAmount ?? 1) > 0 && (
-                  <div className={`rounded-2xl p-5 border ${daysLeft <= 14 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Clock className={`w-5 h-5 ${daysLeft <= 14 ? 'text-red-500' : 'text-amber-500'}`} />
-                      <p className={`font-semibold text-sm ${daysLeft <= 14 ? 'text-red-700' : 'text-amber-700'}`}>
-                        Date limite de paiement
+              {/* Colonne droite : actions + infos */}
+              <div className="space-y-4">
+
+                {/* Échéance */}
+                {daysLeft !== null && canPay && (
+                  <div className={`rounded-2xl p-5 border ${isUrgent ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className={`w-4 h-4 ${isUrgent ? 'text-red-500' : 'text-amber-500'}`} />
+                      <p className={`text-xs font-semibold ${isUrgent ? 'text-red-600' : 'text-amber-600'}`}>
+                        Date limite
                       </p>
                     </div>
-                    <p className={`text-xl sm:text-2xl font-bold font-playfair ${daysLeft <= 14 ? 'text-red-700' : 'text-amber-700'}`}>
-                      {daysLeft} jours
+                    <p className={`text-3xl font-bold font-playfair ${isUrgent ? 'text-red-700' : 'text-amber-700'}`}>
+                      {daysLeft} <span className="text-lg">jours</span>
                     </p>
                     {booking.paymentDeadline && (
-                      <p className={`text-xs mt-1 ${daysLeft <= 14 ? 'text-red-500' : 'text-amber-600'}`}>
+                      <p className={`text-xs mt-1 ${isUrgent ? 'text-red-500/70' : 'text-amber-600/70'}`}>
                         {new Date(booking.paymentDeadline).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </p>
                     )}
@@ -248,43 +235,43 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 )}
 
                 {/* Bouton épargner */}
-                {!['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.remainingAmount ?? 1) > 0 && (
+                {canPay && (
                   <button
                     onClick={() => setEpargneOpen(true)}
-                    className="w-full sm:w-auto py-3 sm:py-4 px-6 bg-forest-800 text-white rounded-2xl font-semibold hover:bg-forest-900 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-primary-500 text-white rounded-2xl font-semibold hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 flex items-center justify-center gap-2 text-base"
                   >
                     <PiggyBank className="w-5 h-5" />
                     Ajouter un versement
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
 
-                {(['FULLY_PAID', 'COMPLETED'].includes(booking.status) || (booking.remainingAmount ?? 1) === 0) && (
+                {/* Voyage payé */}
+                {isComplete && (
                   <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
-                    <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                    <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
                     <p className="font-bold text-green-700">Voyage intégralement payé !</p>
-                    <p className="text-xs text-green-600 mt-1">Préparez vos bagages, l'aventure vous attend.</p>
+                    <p className="text-xs text-green-600/70 mt-1">Préparez vos bagages, l'aventure vous attend.</p>
                   </div>
                 )}
 
                 {/* Infos voyage */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-3">
-                  <h3 className="font-playfair font-bold text-dark-800">Détails du voyage</h3>
+                  <h3 className="font-bold text-dark-800 text-sm">Détails du voyage</h3>
                   {booking.voyage?.departureDate && (
-                    <div className="flex items-center gap-2 text-sm text-dark-800/70">
+                    <div className="flex items-center gap-2 text-sm text-dark-800/60">
                       <Calendar className="w-4 h-4 text-primary-500 flex-shrink-0" />
                       <span>{booking.voyage.departureDate}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-sm text-dark-800/70">
-                    <svg className="w-4 h-4 text-primary-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
+                  <div className="flex items-center gap-2 text-sm text-dark-800/60">
+                    <Users className="w-4 h-4 text-primary-500 flex-shrink-0" />
                     <span>{booking.nombrePersonnes} personne{booking.nombrePersonnes > 1 ? 's' : ''}</span>
                   </div>
-                  <div className="pt-2 border-t border-gray-100">
-                    <p className="text-xs text-dark-800/50 mb-0.5">Acompte versé</p>
+                  <div className="pt-3 border-t border-gray-100">
+                    <p className="text-xs text-dark-800/40 mb-0.5">Acompte versé</p>
                     <p className="font-semibold text-dark-800">{fmtPrice(booking.depositAmount)}</p>
-                    <p className="text-xs text-red-500 mt-0.5">Non remboursable</p>
+                    <p className="text-[10px] text-red-400 mt-0.5">Non remboursable</p>
                   </div>
                 </div>
               </div>

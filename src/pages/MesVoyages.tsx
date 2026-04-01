@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { MapPin, Calendar, Clock, PiggyBank, Eye, AlertCircle, Loader2, Plane, ChevronDown } from 'lucide-react';
+import {
+  MapPin, Calendar, Clock, PiggyBank, Eye, AlertCircle, Loader2,
+  Plane, ChevronDown, ArrowRight, TrendingUp, Wallet, ChevronLeft
+} from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
 import { getMyBookings } from '../api/trips';
@@ -15,14 +18,14 @@ interface MesVoyagesProps {
   onLogout?: () => void;
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'bg-amber-100 text-amber-700' },
-  DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'bg-blue-100 text-blue-700' },
-  SAVING:          { label: 'Épargne en cours',    color: 'bg-forest-800/10 text-forest-800' },
-  IN_PROGRESS:     { label: 'En cours',            color: 'bg-indigo-100 text-indigo-700' },
-  FULLY_PAID:      { label: 'Voyage payé',         color: 'bg-green-100 text-green-700' },
-  COMPLETED:       { label: 'Terminé',             color: 'bg-emerald-100 text-emerald-700' },
-  CANCELLED:       { label: 'Annulé',              color: 'bg-red-100 text-red-600' },
+const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
+  PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
+  DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
+  SAVING:          { label: 'Épargne en cours',    color: 'text-forest-800', bg: 'bg-forest-800/5 border-forest-800/20' },
+  IN_PROGRESS:     { label: 'En cours',            color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200' },
+  FULLY_PAID:      { label: 'Voyage payé',         color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
+  COMPLETED:       { label: 'Terminé',             color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
+  CANCELLED:       { label: 'Annulé',              color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
 };
 
 const FILTER_TABS: { key: string; label: string; statuses: string[] }[] = [
@@ -33,11 +36,6 @@ const FILTER_TABS: { key: string; label: string; statuses: string[] }[] = [
 ];
 
 type SortKey = 'recent' | 'oldest' | 'amount';
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: 'recent', label: 'Plus récent' },
-  { key: 'oldest', label: 'Plus ancien' },
-  { key: 'amount', label: 'Montant' },
-];
 
 export const MesVoyages: React.FC<MesVoyagesProps> = ({
   onBack,
@@ -67,96 +65,78 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
     }
   };
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
+  useEffect(() => { loadBookings(); }, []);
 
   const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
+
+  // Stats globales
+  const stats = useMemo(() => {
+    const active = bookings.filter(b => !['CANCELLED', 'COMPLETED'].includes(b.status));
+    const totalEpargne = bookings.reduce((sum, b) => sum + b.amountPaid, 0);
+    const prochaine = active
+      .filter(b => b.paymentDeadline)
+      .sort((a, b) => new Date(a.paymentDeadline!).getTime() - new Date(b.paymentDeadline!).getTime())[0];
+    const joursProchain = prochaine?.paymentDeadline
+      ? Math.max(0, Math.ceil((new Date(prochaine.paymentDeadline).getTime() - Date.now()) / 86400000))
+      : null;
+    return {
+      total: bookings.length,
+      enCours: active.length,
+      totalEpargne,
+      joursProchain,
+    };
+  }, [bookings]);
 
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = { '': bookings.length };
     for (const tab of FILTER_TABS) {
-      if (tab.key) {
-        counts[tab.key] = bookings.filter((b) => tab.statuses.includes(b.status)).length;
-      }
+      if (tab.key) counts[tab.key] = bookings.filter(b => tab.statuses.includes(b.status)).length;
     }
     return counts;
   }, [bookings]);
 
   const filteredBookings = useMemo(() => {
-    const activeTab = FILTER_TABS.find((t) => t.key === statusFilter);
+    const activeTab = FILTER_TABS.find(t => t.key === statusFilter);
     let result = activeTab && activeTab.statuses.length > 0
-      ? bookings.filter((b) => activeTab.statuses.includes(b.status))
+      ? bookings.filter(b => activeTab.statuses.includes(b.status))
       : [...bookings];
-
     result.sort((a, b) => {
-      if (sortKey === 'oldest') {
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
-      if (sortKey === 'amount') {
-        return b.totalPrice - a.totalPrice;
-      }
-      // recent (default)
+      if (sortKey === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      if (sortKey === 'amount') return b.totalPrice - a.totalPrice;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
-
     return result;
   }, [bookings, statusFilter, sortKey]);
 
   return (
-    <PublicLayout
-      onAdminLogin={onAdminLogin}
-      onOpenAuth={onOpenAuth}
-      onMesVoyages={onMesVoyages}
-      onLogout={onLogout}
-    >
-      {/* Hero */}
-      <div className="relative h-[240px] overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600)' }}
-        >
-          <div className="absolute inset-0 bg-forest-800/85" />
-        </div>
-        <div className="relative h-full flex items-center justify-center">
-          <div className="text-center text-white">
-            <h1 className="text-4xl md:text-5xl font-bold mb-3 tracking-tight" style={{ fontFamily: "'Outfit', sans-serif" }}>
-              MES VOYAGES
-            </h1>
-            <div className="flex items-center justify-center gap-2 text-gray-300 text-sm">
-              <button onClick={onBack} className="hover:text-white transition-colors">Accueil</button>
-              <span>/</span>
-              <span className="text-primary-500">Mes Voyages</span>
-            </div>
-          </div>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg viewBox="0 0 1440 60" className="w-full" preserveAspectRatio="none">
-            <path d="M0,30 C360,60 720,0 1080,30 C1260,45 1380,38 1440,30 L1440,60 L0,60 Z" fill="white" />
-          </svg>
+    <PublicLayout onAdminLogin={onAdminLogin} onOpenAuth={onOpenAuth} onMesVoyages={onMesVoyages} onLogout={onLogout}>
+
+      {/* Compact header */}
+      <div className="bg-gradient-to-r from-dark-800 to-dark-700 text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+          <button onClick={onBack} className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm mb-3 transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Accueil
+          </button>
+          <h1 className="font-playfair text-2xl sm:text-3xl font-bold">Mes Voyages</h1>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+
         {/* Loading */}
         {loading && (
           <div className="flex flex-col items-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-forest-800 animate-spin" />
-            <p className="text-dark-800/60">Chargement de vos réservations...</p>
+            <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+            <p className="text-dark-800/50">Chargement...</p>
           </div>
         )}
 
         {/* Error */}
         {!loading && error && (
           <div className="flex flex-col items-center py-16 gap-4">
-            <div className="flex items-center gap-2 text-red-500">
-              <AlertCircle className="w-5 h-5" />
-              <p className="font-medium">{error}</p>
-            </div>
-            <button
-              onClick={loadBookings}
-              className="px-6 py-2.5 bg-forest-800 text-white rounded-lg hover:bg-forest-900 transition-colors font-medium text-sm"
-            >
+            <AlertCircle className="w-8 h-8 text-red-400" />
+            <p className="text-red-500 font-medium">{error}</p>
+            <button onClick={loadBookings} className="px-6 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors text-sm font-semibold">
               Réessayer
             </button>
           </div>
@@ -165,190 +145,214 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
         {/* Empty */}
         {!loading && !error && bookings.length === 0 && (
           <div className="flex flex-col items-center py-20 gap-5 text-center">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center">
-              <Plane className="w-9 h-9 text-gray-300" />
+            <div className="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center">
+              <Plane className="w-9 h-9 text-primary-400" />
             </div>
             <div>
               <p className="text-xl font-playfair font-bold text-dark-800 mb-2">Aucune réservation</p>
-              <p className="text-dark-800/60 text-sm max-w-sm">
-                Vous n'avez pas encore réservé de voyage. Découvrez nos destinations et commencez à épargner !
+              <p className="text-dark-800/50 text-sm max-w-sm">
+                Découvrez nos destinations et réservez votre prochain voyage.
               </p>
             </div>
-            <button
-              onClick={onBack}
-              className="px-8 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
-            >
-              Découvrir les voyages
+            <button onClick={onBack} className="inline-flex items-center gap-2 px-8 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors">
+              Voir les voyages <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
-        {/* Booking cards */}
+        {/* Content */}
         {!loading && !error && bookings.length > 0 && (
-          <div className="space-y-5">
-            <p className="text-sm text-dark-800/60">
-              {bookings.length} réservation{bookings.length > 1 ? 's' : ''}
-            </p>
+          <>
+            {/* Stats cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-primary-50 rounded-lg flex items-center justify-center">
+                    <Plane className="w-4 h-4 text-primary-500" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-dark-800">{stats.total}</p>
+                <p className="text-xs text-dark-800/40">Réservation{stats.total > 1 ? 's' : ''}</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-dark-800">{stats.enCours}</p>
+                <p className="text-xs text-dark-800/40">En cours</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                    <Wallet className="w-4 h-4 text-green-500" />
+                  </div>
+                </div>
+                <p className="text-lg sm:text-2xl font-bold text-dark-800">{fmtPrice(stats.totalEpargne)}</p>
+                <p className="text-xs text-dark-800/40">Total épargné</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${stats.joursProchain !== null && stats.joursProchain <= 14 ? 'bg-red-50' : 'bg-amber-50'}`}>
+                    <Clock className={`w-4 h-4 ${stats.joursProchain !== null && stats.joursProchain <= 14 ? 'text-red-500' : 'text-amber-500'}`} />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-dark-800">{stats.joursProchain !== null ? `${stats.joursProchain}j` : '—'}</p>
+                <p className="text-xs text-dark-800/40">Prochaine échéance</p>
+              </div>
+            </div>
 
             {/* Filter tabs + sort */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-              {/* Status filter pills */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-1">
-                {FILTER_TABS.map((tab) => {
+                {FILTER_TABS.map(tab => {
                   const isActive = statusFilter === tab.key;
                   return (
                     <button
                       key={tab.key}
                       onClick={() => setStatusFilter(tab.key)}
                       className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                        isActive
-                          ? 'bg-forest-800 text-white'
-                          : 'bg-gray-100 text-dark-800/70 hover:bg-gray-200'
+                        isActive ? 'bg-dark-800 text-white' : 'bg-gray-100 text-dark-800/60 hover:bg-gray-200'
                       }`}
                     >
                       {tab.label}
-                      <span
-                        className={`text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
-                          isActive ? 'bg-white/20 text-white' : 'bg-gray-200 text-dark-800/50'
-                        }`}
-                      >
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full min-w-[20px] text-center ${
+                        isActive ? 'bg-white/20' : 'bg-gray-200 text-dark-800/40'
+                      }`}>
                         {tabCounts[tab.key] ?? 0}
                       </span>
                     </button>
                   );
                 })}
               </div>
-
-              {/* Sort dropdown */}
               <div className="relative flex-shrink-0">
                 <select
                   value={sortKey}
-                  onChange={(e) => setSortKey(e.target.value as SortKey)}
-                  className="appearance-none pl-3 pr-8 py-2 bg-gray-100 rounded-lg text-sm font-medium text-dark-800/70 hover:bg-gray-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-forest-800/20"
+                  onChange={e => setSortKey(e.target.value as SortKey)}
+                  className="appearance-none pl-3 pr-8 py-2 bg-gray-100 rounded-lg text-sm font-medium text-dark-800/60 hover:bg-gray-200 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                 >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.key} value={opt.key}>{opt.label}</option>
-                  ))}
+                  <option value="recent">Plus récent</option>
+                  <option value="oldest">Plus ancien</option>
+                  <option value="amount">Montant</option>
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-800/40 pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-800/30 pointer-events-none" />
               </div>
             </div>
 
-            {/* No results for filter */}
             {filteredBookings.length === 0 && (
-              <div className="text-center py-10 text-dark-800/50 text-sm">
+              <div className="text-center py-12 text-dark-800/40 text-sm">
                 Aucune réservation dans cette catégorie.
               </div>
             )}
 
-            {filteredBookings.map((booking) => {
-              const status = STATUS_LABELS[booking.status] ?? { label: booking.status, color: 'bg-gray-100 text-gray-600' };
-              const percent = booking.totalPrice > 0
-                ? Math.min(100, Math.round((booking.amountPaid / booking.totalPrice) * 100))
-                : 0;
-              const daysLeft = booking.paymentDeadline
-                ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-                : null;
-              const isUrgent = daysLeft !== null && daysLeft <= 14 && booking.status !== 'FULLY_PAID' && booking.status !== 'CANCELLED';
+            {/* Booking cards */}
+            <div className="space-y-4">
+              {filteredBookings.map(booking => {
+                const status = STATUS_LABELS[booking.status] ?? { label: booking.status, color: 'text-gray-600', bg: 'bg-gray-50 border-gray-200' };
+                const percent = booking.totalPrice > 0 ? Math.min(100, Math.round((booking.amountPaid / booking.totalPrice) * 100)) : 0;
+                const daysLeft = booking.paymentDeadline
+                  ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / 86400000))
+                  : null;
+                const isUrgent = daysLeft !== null && daysLeft <= 14 && !['FULLY_PAID', 'CANCELLED', 'COMPLETED'].includes(booking.status);
+                const canPay = !['FULLY_PAID', 'CANCELLED', 'COMPLETED'].includes(booking.status);
 
-              return (
-                <div key={booking.id} className="bg-white rounded-2xl border border-gray-100 hover:shadow-lg transition-all duration-300 overflow-hidden">
-                  <div className="flex flex-col md:flex-row gap-0">
-                    {/* Image */}
-                    <div className="md:w-48 h-36 sm:h-44 md:h-auto relative overflow-hidden flex-shrink-0">
-                      <img
-                        src={booking.voyage?.images?.[0] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400'}
-                        alt={booking.voyage?.titre}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-3 left-3">
-                        <span className={`text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full ${status.color}`}>
+                return (
+                  <div key={booking.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300">
+                    <div className="flex flex-col sm:flex-row">
+                      {/* Image */}
+                      <div className="sm:w-44 h-36 sm:h-auto relative overflow-hidden flex-shrink-0">
+                        <img
+                          src={booking.voyage?.images?.[0] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400'}
+                          alt={booking.voyage?.titre}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent sm:bg-gradient-to-r" />
+                        <span className={`absolute top-3 left-3 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${status.bg} ${status.color}`}>
                           {status.label}
                         </span>
                       </div>
-                    </div>
 
-                    {/* Content */}
-                    <div className="flex-1 p-3 sm:p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-playfair font-bold text-dark-800 text-lg leading-tight">
-                            {booking.voyage?.titre || 'Voyage'}
-                          </h3>
-                          <div className="flex items-center gap-1.5 text-xs text-dark-800/60 mt-1">
-                            <MapPin className="w-3.5 h-3.5 text-primary-500" />
-                            {booking.voyage?.destination}
+                      {/* Content */}
+                      <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="min-w-0">
+                            <h3 className="font-playfair font-bold text-dark-800 text-base sm:text-lg truncate">
+                              {booking.voyage?.titre || 'Voyage'}
+                            </h3>
+                            <div className="flex items-center gap-3 mt-1 text-xs text-dark-800/50">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-primary-500" />{booking.voyage?.destination}
+                              </span>
+                              {booking.voyage?.departureDate && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />{booking.voyage.departureDate}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="font-bold text-dark-800 text-sm sm:text-base">{fmtPrice(booking.totalPrice)}</p>
+                            <p className="text-[10px] text-dark-800/40">{booking.nombrePersonnes} pers.</p>
                           </div>
                         </div>
-                        <div className="text-right flex-shrink-0 ml-3">
-                          <p className="text-xs text-dark-800/50">Total</p>
-                          <p className="font-bold text-dark-800">{fmtPrice(booking.totalPrice)}</p>
-                          <p className="text-xs text-dark-800/50">{booking.nombrePersonnes} pers.</p>
-                        </div>
-                      </div>
 
-                      {/* Info row */}
-                      <div className="flex flex-wrap gap-3 mb-4 text-xs text-dark-800/60">
-                        {booking.voyage?.departureDate && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {booking.voyage.departureDate}
-                          </span>
+                        {/* Progress */}
+                        {booking.status !== 'CANCELLED' && (
+                          <div className="mb-4">
+                            <div className="flex justify-between text-xs mb-1.5">
+                              <span className="text-dark-800/50">
+                                {fmtPrice(booking.amountPaid)} épargnés
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-dark-800">{percent}%</span>
+                                {isUrgent && (
+                                  <span className="text-red-500 font-medium flex items-center gap-0.5">
+                                    <Clock className="w-3 h-3" />{daysLeft}j
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  percent >= 100 ? 'bg-green-500' : isUrgent ? 'bg-red-400' : 'bg-primary-500'
+                                }`}
+                                style={{ width: `${percent}%` }}
+                              />
+                            </div>
+                            {booking.remainingAmount > 0 && (
+                              <p className="text-[10px] text-dark-800/40 mt-1">
+                                Reste {fmtPrice(booking.remainingAmount)}
+                              </p>
+                            )}
+                          </div>
                         )}
-                        {daysLeft !== null && booking.status !== 'FULLY_PAID' && booking.status !== 'CANCELLED' && (
-                          <span className={`flex items-center gap-1 font-medium ${isUrgent ? 'text-red-500' : ''}`}>
-                            <Clock className="w-3.5 h-3.5" />
-                            {isUrgent ? `Urgent : ` : ''}{daysLeft} jours restants
-                          </span>
-                        )}
-                      </div>
 
-                      {/* Progress bar */}
-                      {booking.status !== 'CANCELLED' && (
-                        <div className="mb-4">
-                          <div className="flex justify-between text-xs text-dark-800/60 mb-1.5">
-                            <span>Épargné : {fmtPrice(booking.amountPaid)}</span>
-                            <span className="font-medium">{percent}%</span>
-                          </div>
-                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all ${percent >= 100 ? 'bg-green-500' : 'bg-forest-800'}`}
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                          {booking.remainingAmount > 0 && (
-                            <p className="text-xs text-dark-800/50 mt-1">
-                              Restant : <span className="font-medium text-dark-800">{fmtPrice(booking.remainingAmount)}</span>
-                            </p>
+                        {/* Actions */}
+                        <div className="flex gap-2 mt-auto">
+                          <button
+                            onClick={() => onViewBooking(booking.id)}
+                            className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-200 text-dark-800 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm"
+                          >
+                            <Eye className="w-4 h-4" /> Détails
+                          </button>
+                          {canPay && (
+                            <button
+                              onClick={() => setEpargneBooking(booking)}
+                              className="flex items-center gap-1.5 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm"
+                            >
+                              <PiggyBank className="w-4 h-4" /> Épargner
+                            </button>
                           )}
                         </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex gap-2.5">
-                        <button
-                          onClick={() => onViewBooking(booking.id)}
-                          className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 text-dark-800 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Détails
-                        </button>
-                        {booking.status !== 'FULLY_PAID' && booking.status !== 'CANCELLED' && (
-                          <button
-                            onClick={() => setEpargneBooking(booking)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-forest-800 text-white rounded-lg hover:bg-forest-900 transition-colors font-medium text-sm"
-                          >
-                            <PiggyBank className="w-4 h-4" />
-                            Épargner
-                          </button>
-                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
