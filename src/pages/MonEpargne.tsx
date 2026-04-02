@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
   Calendar, PiggyBank, CheckCircle, Clock,
-  Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight, RefreshCw, XCircle
+  Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight, RefreshCw, XCircle,
+  Mail, FileText, Upload, Paperclip, ExternalLink
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
-import { getBookingById, getBookingPayments, cancelBooking } from '../api/trips';
+import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, getBookingDocumentRequests, submitDocument, markMessageRead } from '../api/trips';
+import type { BookingMessage, DocumentRequest } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import type { MappedBooking, MappedPayment } from '../types';
@@ -48,6 +50,9 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
   const [retryPayment, setRetryPayment] = useState<{ type: 'DEPOSIT' | 'INSTALLMENT'; amount: number } | null>(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [messages, setMessages] = useState<BookingMessage[]>([]);
+  const [docRequests, setDocRequests] = useState<DocumentRequest[]>([]);
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -61,12 +66,16 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     setLoading(true);
     setError('');
     try {
-      const [b, p] = await Promise.all([
+      const [b, p, msgs, docs] = await Promise.all([
         getBookingById(bookingId),
         getBookingPayments(bookingId),
+        getBookingMessages(bookingId).catch(() => [] as BookingMessage[]),
+        getBookingDocumentRequests(bookingId).catch(() => [] as DocumentRequest[]),
       ]);
       setBooking(b);
       setPayments(p);
+      setMessages(msgs);
+      setDocRequests(docs);
     } catch (err: any) {
       const msg: string = err?.message || '';
       const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
@@ -275,6 +284,128 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Messages de l'organisateur */}
+              {messages.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-5">
+                    <Mail className="w-5 h-5 text-blue-500" />
+                    <h2 className="font-bold text-dark-800">Messages</h2>
+                    {messages.filter(m => !m.read).length > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {messages.filter(m => !m.read).length}
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {messages.map(msg => (
+                      <div
+                        key={msg.id}
+                        className={`rounded-xl p-4 border transition-colors ${!msg.read ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100'}`}
+                        onClick={() => { if (!msg.read) markMessageRead(bookingId, msg.id).then(() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))).catch(() => {}); }}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="text-sm font-semibold text-dark-800">{msg.subject}</p>
+                          {!msg.read && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />}
+                        </div>
+                        <p className="text-sm text-dark-800/70 whitespace-pre-line">{msg.message}</p>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {msg.attachments.map((att, i) => (
+                              <a
+                                key={i}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-primary-600 hover:bg-primary-50 transition-colors"
+                              >
+                                <FileText className="w-3.5 h-3.5" />
+                                {att.filename}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-[10px] text-dark-800/30 mt-2">
+                          {msg.sentAt ? new Date(msg.sentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Documents demandés */}
+              {docRequests.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-5">
+                    <FileText className="w-5 h-5 text-amber-500" />
+                    <h2 className="font-bold text-dark-800">Documents demandés</h2>
+                    {docRequests.filter(d => d.status === 'pending').length > 0 && (
+                      <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {docRequests.filter(d => d.status === 'pending').length} à fournir
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    {docRequests.map(doc => (
+                      <div key={doc.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-sm font-semibold text-dark-800">{doc.label}</p>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
+                            doc.status === 'approved' ? 'bg-green-100 text-green-600 border-green-200'
+                              : doc.status === 'submitted' ? 'bg-blue-100 text-blue-600 border-blue-200'
+                              : doc.status === 'rejected' ? 'bg-red-100 text-red-600 border-red-200'
+                              : 'bg-amber-100 text-amber-600 border-amber-200'
+                          }`}>
+                            {doc.status === 'approved' ? 'Validé' : doc.status === 'submitted' ? 'Soumis' : doc.status === 'rejected' ? 'Refusé' : 'À fournir'}
+                          </span>
+                        </div>
+                        {doc.notes && <p className="text-xs text-dark-800/50 mb-3">{doc.notes}</p>}
+                        {(doc.status === 'pending' || doc.status === 'rejected') && (
+                          <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer">
+                            {uploadingDocId === doc.id ? (
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Upload...</>
+                            ) : (
+                              <><Upload className="w-4 h-4" /> {doc.status === 'rejected' ? 'Renvoyer' : 'Envoyer le document'}</>
+                            )}
+                            <input
+                              type="file"
+                              accept="application/pdf,image/jpeg,image/png"
+                              className="hidden"
+                              disabled={uploadingDocId === doc.id}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setUploadingDocId(doc.id);
+                                try {
+                                  await submitDocument(bookingId, doc.id, file);
+                                  setDocRequests(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'submitted' } : d));
+                                } catch {
+                                  setError('Erreur lors de l\'envoi du document.');
+                                } finally {
+                                  setUploadingDocId(null);
+                                }
+                                if (e.target) e.target.value = '';
+                              }}
+                            />
+                          </label>
+                        )}
+                        {doc.status === 'submitted' && (
+                          <p className="text-xs text-blue-500 mt-2 flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" /> Document envoyé — en attente de validation
+                          </p>
+                        )}
+                        {doc.status === 'approved' && (
+                          <p className="text-xs text-green-500 mt-2 flex items-center gap-1">
+                            <CheckCircle className="w-3.5 h-3.5" /> Document validé
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Colonne droite : actions + infos */}
               <div className="space-y-4">

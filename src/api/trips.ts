@@ -914,18 +914,24 @@ function mapBooking(b: BookingBackend): MappedBooking {
   const totalAmount = b.totalAmount ?? 0;
   const depositAmount = b.depositAmount ?? Math.round(totalAmount * 0.5);
 
-  // Only count successful payments for progression
-  const successPayments = (b.payments || []).filter(p => {
-    const s = (p.status || '').toLowerCase();
-    return s === 'success' || s === 'completed';
-  });
-  const paidFromPayments = successPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+  // When payments array is present (detail view), recalculate from successful payments only.
+  // When payments array is absent (list view), trust backend values directly.
+  const hasPayments = b.payments && b.payments.length > 0;
+  let amountPaid: number;
+  let remainingAmount: number;
 
-  // Use payments-based calculation if payments array exists, otherwise fall back to backend values
-  const amountPaid = (b.payments && b.payments.length > 0)
-    ? paidFromPayments
-    : (b.amountPaid ?? 0);
-  const remainingAmount = Math.max(0, totalAmount - amountPaid);
+  if (hasPayments) {
+    const successPayments = b.payments!.filter(p => {
+      const s = (p.status || '').toLowerCase();
+      return s === 'success' || s === 'completed';
+    });
+    amountPaid = successPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+    remainingAmount = Math.max(0, totalAmount - amountPaid);
+  } else {
+    // Trust backend-computed values (backend already filters by success)
+    amountPaid = b.amountPaid ?? 0;
+    remainingAmount = b.remainingAmount ?? Math.max(0, totalAmount - amountPaid);
+  }
   return {
     id: b._id,
     bookingNumber: b.bookingNumber,
@@ -1031,6 +1037,72 @@ export async function getBookingPayments(bookingId: string): Promise<MappedPayme
     `${TRIPS_PREFIX}/bookings/${bookingId}`
   );
   return (res.booking.payments || []).map(mapPayment);
+}
+
+// ─── Booking Messages & Documents (user-facing) ───────────────────────────
+
+export interface BookingMessage {
+  id: string;
+  subject: string;
+  message: string;
+  attachments?: { url: string; filename: string }[];
+  sentAt: string;
+  read: boolean;
+}
+
+export interface DocumentRequest {
+  id: string;
+  documentType: string;
+  label: string;
+  status: 'pending' | 'submitted' | 'approved' | 'rejected';
+  notes?: string;
+  requestedAt: string;
+  submittedUrl?: string;
+}
+
+export async function getBookingMessages(bookingId: string): Promise<BookingMessage[]> {
+  const res = await apiRequest<{ success: boolean; messages: any[] }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/messages`
+  );
+  return (res.messages || []).map((m: any) => ({
+    id: m._id || m.id,
+    subject: m.subject || '',
+    message: m.message || '',
+    attachments: m.attachments || [],
+    sentAt: m.sentAt || m.createdAt || '',
+    read: m.read ?? false,
+  }));
+}
+
+export async function getBookingDocumentRequests(bookingId: string): Promise<DocumentRequest[]> {
+  const res = await apiRequest<{ success: boolean; documentRequests: any[] }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/documents`
+  );
+  return (res.documentRequests || []).map((d: any) => ({
+    id: d._id || d.id,
+    documentType: d.documentType || d.type || '',
+    label: d.label || d.documentType || '',
+    status: d.status || 'pending',
+    notes: d.notes,
+    requestedAt: d.requestedAt || d.createdAt || '',
+    submittedUrl: d.submittedUrl || d.fileUrl,
+  }));
+}
+
+export async function submitDocument(bookingId: string, documentId: string, file: File): Promise<{ success: boolean }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequestMultipart<{ success: boolean }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/documents/${documentId}/submit`,
+    formData
+  );
+}
+
+export async function markMessageRead(bookingId: string, messageId: string): Promise<void> {
+  await apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/messages/${messageId}/read`,
+    { method: 'POST' }
+  );
 }
 
 // ─── Payout (Reversement) ──────────────────────────────────────────────────
