@@ -260,7 +260,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               {/* Info KKiaPay */}
               {paymentMethod === 'kkiapay' && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-3.5 text-sm text-green-800">
-                  Le widget KKiaPay s'ouvrira pour finaliser le paiement. Carte bancaire, Mobile Money et autres moyens acceptés.
+                  Le widget KKiaPay s'ouvrira pour finaliser le paiement. Carte bancaire, Mobile Money et autres moyens acceptés. Des frais supplémentaires peuvent être appliqués par l'agrégateur de paiement.
                 </div>
               )}
 

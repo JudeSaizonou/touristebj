@@ -542,7 +542,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               {/* Info KKiaPay */}
               {paymentMethod === 'kkiapay' && (
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-3.5 text-sm text-orange-800">
-                  Le widget KKiaPay s'ouvrira pour finaliser le paiement. Carte bancaire, Mobile Money et autres moyens acceptés.
+                  Le widget KKiaPay s'ouvrira pour finaliser le paiement. Carte bancaire, Mobile Money et autres moyens acceptés. Des frais supplémentaires peuvent être appliqués par l'agrégateur de paiement.
                 </div>
               )}
 
