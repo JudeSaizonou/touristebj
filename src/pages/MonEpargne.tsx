@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Calendar, PiggyBank, CheckCircle, Clock,
-  Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight, RefreshCw
+  Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight, RefreshCw, XCircle
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
-import { getBookingById, getBookingPayments } from '../api/trips';
+import { getBookingById, getBookingPayments, cancelBooking } from '../api/trips';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import type { MappedBooking, MappedPayment } from '../types';
 import type { AuthMode } from './Auth';
@@ -45,6 +46,8 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
   const [error, setError] = useState('');
   const [epargneOpen, setEpargneOpen] = useState(false);
   const [retryPayment, setRetryPayment] = useState<{ type: 'DEPOSIT' | 'INSTALLMENT'; amount: number } | null>(null);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -93,7 +96,24 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
   const isUrgent = daysLeft !== null && daysLeft <= 14;
   const status = booking ? (STATUS_LABELS[booking.status] ?? { label: booking.status, color: 'text-gray-600 bg-gray-50 border-gray-200' }) : null;
   const isComplete = booking && ['FULLY_PAID', 'COMPLETED'].includes(booking.status);
+  const isCancelled = booking && booking.status === 'CANCELLED';
+  const needsDeposit = booking && booking.status === 'PENDING_DEPOSIT';
   const canPay = booking && !['FULLY_PAID', 'COMPLETED', 'CANCELLED', 'REFUNDED'].includes(booking.status) && (booking.remainingAmount ?? 1) > 0;
+  const canCancel = booking && booking.amountPaid === 0 && !['CANCELLED', 'COMPLETED', 'FULLY_PAID', 'REFUNDED'].includes(booking.status);
+
+  const handleCancel = async () => {
+    if (!booking || cancelling) return;
+    setCancelling(true);
+    try {
+      await cancelBooking(booking.id);
+      await loadData();
+      setShowCancelConfirm(false);
+    } catch (e: any) {
+      setError(e?.message || 'Impossible d\'annuler la réservation.');
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   return (
     <PublicLayout onAdminLogin={onAdminLogin} onOpenAuth={onOpenAuth} onMesVoyages={onMesVoyages} onLogout={onLogout}>
@@ -278,15 +298,38 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   </div>
                 )}
 
-                {/* Bouton épargner */}
-                {canPay && (
+                {/* Bouton payer acompte */}
+                {canPay && needsDeposit && (
                   <button
-                    onClick={() => setEpargneOpen(true)}
+                    onClick={() => { setRetryPayment({ type: 'DEPOSIT', amount: booking.depositAmount }); setEpargneOpen(true); }}
+                    className="w-full py-4 bg-primary-500 text-white rounded-2xl font-semibold hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 flex items-center justify-center gap-2 text-base"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    Payer l'acompte ({fmtPrice(booking.depositAmount)})
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Bouton épargner (après acompte payé) */}
+                {canPay && !needsDeposit && (
+                  <button
+                    onClick={() => { setRetryPayment(null); setEpargneOpen(true); }}
                     className="w-full py-4 bg-primary-500 text-white rounded-2xl font-semibold hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 flex items-center justify-center gap-2 text-base"
                   >
                     <PiggyBank className="w-5 h-5" />
                     Ajouter un versement
                     <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+
+                {/* Bouton annuler */}
+                {canCancel && (
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="w-full py-3 border border-red-200 text-red-500 rounded-2xl font-medium hover:bg-red-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Annuler cette réservation
                   </button>
                 )}
 
@@ -296,6 +339,21 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                     <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
                     <p className="font-bold text-green-700">Voyage intégralement payé !</p>
                     <p className="text-xs text-green-600/70 mt-1">Préparez vos bagages, l'aventure vous attend.</p>
+                  </div>
+                )}
+
+                {/* Réservation annulée */}
+                {isCancelled && (
+                  <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
+                    <XCircle className="w-10 h-10 text-red-400 mx-auto mb-2" />
+                    <p className="font-bold text-red-600">Réservation annulée</p>
+                    <p className="text-xs text-red-500/70 mt-1">Cette réservation a été annulée.</p>
+                    <button
+                      onClick={onBack}
+                      className="mt-3 px-6 py-2.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors text-sm"
+                    >
+                      Retour à mes voyages
+                    </button>
                   </div>
                 )}
 
@@ -331,6 +389,16 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
         onSuccess={() => { setRetryPayment(null); loadData(); }}
         forceType={retryPayment?.type}
         defaultAmount={retryPayment?.amount}
+      />
+
+      <ConfirmModal
+        isOpen={showCancelConfirm}
+        title="Annuler la réservation"
+        message="Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible."
+        confirmLabel="Oui, annuler"
+        loading={cancelling}
+        onConfirm={handleCancel}
+        onCancel={() => setShowCancelConfirm(false)}
       />
     </PublicLayout>
   );
