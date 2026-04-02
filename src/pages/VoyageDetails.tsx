@@ -423,15 +423,15 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                                 ? `${window.location.href}?ref=${user.referralCode}`
                                 : window.location.href;
                               const lines = [
-                                `🌍 *${voyage.titre}*${voyage.destination ? ` — ${voyage.destination}` : ''}`,
+                                `*${voyage.titre}*${voyage.destination ? ` - ${voyage.destination}` : ''}`,
                                 '',
-                                `💰 ${fmtPrice(basePrice)}/pers.`,
-                                voyage.dateDebut ? `📅 Départ : ${voyage.dateDebut}` : '',
-                                voyage.availableSpots != null ? `⏳ ${voyage.availableSpots} places restantes` : '',
+                                `Prix : ${fmtPrice(basePrice)}/pers.`,
+                                voyage.dateDebut ? `Depart : ${voyage.dateDebut}` : '',
+                                voyage.availableSpots != null ? `${voyage.availableSpots} places restantes` : '',
                                 '',
-                                '✅ Réservez maintenant avec seulement 30% d\'acompte !',
+                                'Reservez maintenant avec seulement 30% d\'acompte !',
                                 '',
-                                `👉 ${shareUrl}`,
+                                shareUrl,
                               ].filter(Boolean).join('\n');
                               window.open(`https://wa.me/?text=${encodeURIComponent(lines)}`, '_blank');
                               setShowShareOptions(false);
