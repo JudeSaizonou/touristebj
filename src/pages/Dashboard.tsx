@@ -420,10 +420,8 @@ export const Dashboard: React.FC = () => {
             <p className="text-xs text-white/60 mb-1">Solde disponible</p>
             <p className="text-2xl font-bold mb-3">{fmtFcfa(payoutBalance.availableBalance)}</p>
             <div className="flex gap-3 text-xs text-white/50">
-              <span>Revenus: {fmtFcfa(payoutBalance.totalRevenue)}</span>
-            </div>
-            <div className="flex gap-3 text-xs text-white/50 mt-1">
-              <span>Reverse: {fmtFcfa(payoutBalance.totalPayouts)}</span>
+              <span>Collecté : {fmtFcfa(payoutBalance.totalRevenue)}</span>
+              <span>Reversé : {fmtFcfa(payoutBalance.totalPayouts)}</span>
             </div>
             <a
               href="/admin/reversements"

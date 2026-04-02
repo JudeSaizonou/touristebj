@@ -10,9 +10,9 @@ const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + 
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'En attente',
-  approved: 'Approuv\u00e9',
-  processed: 'Trait\u00e9',
-  rejected: 'Rejet\u00e9',
+  approved: 'Approuvé',
+  processed: 'Traité',
+  rejected: 'Rejeté',
 };
 
 const STATUS_STYLE: Record<string, string> = {
@@ -72,29 +72,22 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
     }
   };
 
-  useEffect(() => {
-    loadBalance();
-  }, []);
-
-  useEffect(() => {
-    loadPayouts();
-  }, [currentPage, statusFilter]);
+  useEffect(() => { loadBalance(); }, []);
+  useEffect(() => { loadPayouts(); }, [currentPage, statusFilter]);
 
   const totalPages = pagination?.pages ?? Math.max(1, Math.ceil((pagination?.total ?? payouts.length) / itemsPerPage));
 
   const handleExportFormat = (format: 'csv' | 'pdf' | 'xlsx') => {
-    const headers = ['Date', 'Montant', 'Commission', 'Net re\u00e7u', 'M\u00e9thode', 'Statut'];
+    const headers = ['Date', 'Montant', 'Méthode', 'Statut'];
     const rows = payouts.map((p) => [
       new Date(p.createdAt).toLocaleDateString('fr-FR'),
       fmtPrice(p.amount),
-      fmtPrice(p.commission),
-      fmtPrice(p.netAmount),
       METHOD_LABEL[p.paymentMethod] || p.paymentMethod,
       STATUS_LABEL[p.status] || p.status,
     ]);
     handleExport(format, { headers, rows, filename: 'reversements' });
     setShowExportModal(false);
-    addToast('success', 'Export t\u00e9l\u00e9charg\u00e9');
+    addToast('success', 'Export téléchargé');
   };
 
   return (
@@ -143,18 +136,14 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-white/20">
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
               <div>
-                <p className="text-sm text-white/60">Revenu total</p>
+                <p className="text-sm text-white/60">Total collecté</p>
                 <p className="text-lg font-semibold">{fmtPrice(balance.totalRevenue)}</p>
               </div>
               <div>
-                <p className="text-sm text-white/60">Total revers\u00e9</p>
+                <p className="text-sm text-white/60">Total reversé</p>
                 <p className="text-lg font-semibold">{fmtPrice(balance.totalPayouts)}</p>
-              </div>
-              <div>
-                <p className="text-sm text-white/60">Taux de commission</p>
-                <p className="text-lg font-semibold">{balance.commissionRate}%</p>
               </div>
             </div>
           </div>
@@ -171,17 +160,14 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setCurrentPage(1);
-          }}
+          onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
           className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-forest-500 focus:border-forest-500 outline-none"
         >
           <option value="">Tous les statuts</option>
           <option value="pending">En attente</option>
-          <option value="approved">Approuv\u00e9</option>
-          <option value="processed">Trait\u00e9</option>
-          <option value="rejected">Rejet\u00e9</option>
+          <option value="approved">Approuvé</option>
+          <option value="processed">Traité</option>
+          <option value="rejected">Rejeté</option>
         </select>
       </div>
 
@@ -194,8 +180,8 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
         ) : payouts.length === 0 ? (
           <div className="text-center py-16">
             <ArrowRightLeft className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">Aucun reversement trouv\u00e9</p>
-            <p className="text-sm text-gray-400 mt-1">Les demandes de reversement appara\u00eetront ici</p>
+            <p className="text-gray-500 font-medium">Aucun reversement trouvé</p>
+            <p className="text-sm text-gray-400 mt-1">Les demandes de reversement apparaîtront ici</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -204,9 +190,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Date</th>
                   <th className="text-right px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">Montant</th>
-                  <th className="text-right px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Commission</th>
-                  <th className="text-right px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">Net re\u00e7u</th>
-                  <th className="text-left px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">M\u00e9thode</th>
+                  <th className="text-left px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600 hidden sm:table-cell">Méthode</th>
                   <th className="text-center px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-semibold text-gray-600">Statut</th>
                 </tr>
               </thead>
@@ -214,30 +198,16 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
                 {payouts.map((p) => (
                   <tr key={p._id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 whitespace-nowrap hidden sm:table-cell">
-                      {new Date(p.createdAt).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                      {new Date(p.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
                     <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-right font-medium text-gray-900 whitespace-nowrap text-xs sm:text-sm">
                       {fmtPrice(p.amount)}
-                    </td>
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-right text-gray-500 whitespace-nowrap text-xs sm:text-sm hidden sm:table-cell">
-                      {fmtPrice(p.commission)}
-                    </td>
-                    <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-right font-medium text-forest-700 whitespace-nowrap text-xs sm:text-sm">
-                      {fmtPrice(p.netAmount)}
                     </td>
                     <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-gray-700 whitespace-nowrap text-xs sm:text-sm hidden sm:table-cell">
                       {METHOD_LABEL[p.paymentMethod] || p.paymentMethod}
                     </td>
                     <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-center">
-                      <span
-                        className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                          STATUS_STYLE[p.status] || 'bg-gray-100 text-gray-700 border-gray-200'
-                        }`}
-                      >
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[p.status] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
                         {STATUS_LABEL[p.status] || p.status}
                       </span>
                     </td>
@@ -248,28 +218,19 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
           </div>
         )}
 
-        {/* Pagination */}
         {!loading && payouts.length > 0 && totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
             <p className="text-sm text-gray-600">
               Page {currentPage} sur {totalPages}
-              {pagination?.total && (
-                <span className="ml-1 text-gray-400">({pagination.total} r\u00e9sultats)</span>
-              )}
+              {pagination?.total && <span className="ml-1 text-gray-400">({pagination.total} résultats)</span>}
             </p>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1}
+                className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage >= totalPages}
-                className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}
+                className="p-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -277,13 +238,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
         )}
       </div>
 
-      {/* Export Modal */}
-      <ExportModal
-        isOpen={showExportModal}
-        onClose={() => setShowExportModal(false)}
-        onExport={handleExportFormat}
-        title="Exporter les reversements"
-      />
+      <ExportModal isOpen={showExportModal} onClose={() => setShowExportModal(false)} onExport={handleExportFormat} title="Exporter les reversements" />
     </div>
   );
 };

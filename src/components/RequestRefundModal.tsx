@@ -23,7 +23,6 @@ export const RequestRefundModal: React.FC<RequestRefundModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [payoutResult, setPayoutResult] = useState<{ netAmount: number; commission: number } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -32,7 +31,6 @@ export const RequestRefundModal: React.FC<RequestRefundModalProps> = ({
       setNotes('');
       setError('');
       setSuccess(false);
-      setPayoutResult(null);
       loadBalance();
     }
   }, [isOpen]);
@@ -64,14 +62,13 @@ export const RequestRefundModal: React.FC<RequestRefundModalProps> = ({
     setSubmitting(true);
     setError('');
     try {
-      const result = await requestPayout({
+      await requestPayout({
         amount: parsedAmount,
         paymentMethod: selectedMethod,
         phoneNumber: phoneNumber.replace(/\D/g, ''),
         countryCode: '229',
         notes: notes.trim() || undefined,
       });
-      setPayoutResult({ netAmount: result.netAmount, commission: result.commission });
       setSuccess(true);
       onSuccess?.();
     } catch (e: any) {
@@ -113,22 +110,6 @@ export const RequestRefundModal: React.FC<RequestRefundModalProps> = ({
                     Votre demande de reversement de <strong>{fmtPrice(parsedAmount)}</strong> est en attente de validation.
                   </p>
                 </div>
-                {payoutResult && (
-                  <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Montant brut</span>
-                      <span className="font-medium text-gray-900">{fmtPrice(parsedAmount)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Commission ({((balance?.commissionRate ?? 0.05) * 100).toFixed(0)}%)</span>
-                      <span className="font-medium text-red-600">-{fmtPrice(payoutResult.commission)}</span>
-                    </div>
-                    <div className="border-t border-gray-200 pt-2 flex justify-between">
-                      <span className="font-bold text-gray-900">Montant net</span>
-                      <span className="font-bold text-green-600">{fmtPrice(payoutResult.netAmount)}</span>
-                    </div>
-                  </div>
-                )}
                 <button
                   onClick={onClose}
                   className="w-full py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
@@ -144,8 +125,8 @@ export const RequestRefundModal: React.FC<RequestRefundModalProps> = ({
                     <p className="text-xs text-white/70 mb-1">Solde disponible</p>
                     <p className="text-2xl font-bold">{fmtPrice(balance.availableBalance)}</p>
                     <div className="flex gap-4 mt-3 text-xs text-white/60">
-                      <span>Revenus: {fmtPrice(balance.totalRevenue)}</span>
-                      <span>Reversé: {fmtPrice(balance.totalPayouts)}</span>
+                      <span>Total collecté : {fmtPrice(balance.totalRevenue)}</span>
+                      <span>Reversé : {fmtPrice(balance.totalPayouts)}</span>
                     </div>
                   </div>
                 )}
@@ -225,16 +206,12 @@ export const RequestRefundModal: React.FC<RequestRefundModalProps> = ({
                   />
                 </div>
 
-                {/* Commission info */}
-                {isAmountValid && !isOverBalance && balance && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm space-y-1">
-                    <div className="flex justify-between text-amber-700">
-                      <span>Commission ({(balance.commissionRate * 100).toFixed(0)}%)</span>
-                      <span className="font-medium">-{fmtPrice(Math.round(parsedAmount * balance.commissionRate))}</span>
-                    </div>
-                    <div className="flex justify-between text-amber-800 font-bold">
+                {/* Recap */}
+                {isAmountValid && !isOverBalance && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm">
+                    <div className="flex justify-between text-green-800 font-bold">
                       <span>Vous recevrez</span>
-                      <span>{fmtPrice(Math.round(parsedAmount * (1 - balance.commissionRate)))}</span>
+                      <span>{fmtPrice(parsedAmount)}</span>
                     </div>
                   </div>
                 )}
