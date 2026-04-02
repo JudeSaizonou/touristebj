@@ -515,13 +515,17 @@ export async function sendTravelerMessage(
   );
 }
 
-export async function uploadTravelerFile(bookingId: string, file: File): Promise<{ url: string; filename: string }> {
+export async function uploadTravelerFiles(
+  bookingId: string,
+  files: File[]
+): Promise<{ url: string; filename: string; size: number; mimetype: string }[]> {
   const formData = new FormData();
-  formData.append('file', file);
-  return apiRequestMultipart<{ success: boolean; url: string; filename: string }>(
+  files.forEach(f => formData.append('files', f));
+  const res = await apiRequestMultipart<{ success: boolean; files: { url: string; filename: string; size: number; mimetype: string }[] }>(
     `${TRIPS_PREFIX}/partner/dashboard/travelers/${bookingId}/upload`,
     formData
   );
+  return res.files || [];
 }
 
 export async function getAllVoyageurs(params?: {

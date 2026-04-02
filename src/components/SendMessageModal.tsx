@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { X, Send, Paperclip, Loader2, FileText, Trash2, AlertCircle } from 'lucide-react';
-import { sendTravelerMessage, uploadTravelerFile } from '../api/trips';
+import { sendTravelerMessage, uploadTravelerFiles } from '../api/trips';
 
 interface SendMessageModalProps {
   isOpen: boolean;
@@ -12,14 +12,19 @@ interface SendMessageModalProps {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILES = 5;
 const ALLOWED_TYPES = [
   'application/pdf',
   'image/jpeg',
   'image/png',
   'image/webp',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
+
+const fmtSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+};
 
 export const SendMessageModal: React.FC<SendMessageModalProps> = ({
   isOpen,
@@ -31,7 +36,7 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
 }) => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [attachments, setAttachments] = useState<{ url: string; filename: string }[]>([]);
+  const [attachments, setAttachments] = useState<{ url: string; filename: string; size?: number }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -40,26 +45,43 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
   if (!isOpen) return null;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
     if (fileRef.current) fileRef.current.value = '';
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setError('Format non supporté. PDF, JPG, PNG, WebP ou Word uniquement.');
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      setError('Fichier trop volumineux (max 10 MB).');
+    const remaining = MAX_FILES - attachments.length;
+    if (remaining <= 0) {
+      setError(`Maximum ${MAX_FILES} fichiers.`);
       return;
     }
 
-    setError('');
+    const selected = Array.from(files).slice(0, remaining);
+    const rejected: string[] = [];
+    const valid: File[] = [];
+
+    for (const file of selected) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        rejected.push(`${file.name} : format non supporté`);
+      } else if (file.size > MAX_FILE_SIZE) {
+        rejected.push(`${file.name} : trop volumineux (max 10 MB)`);
+      } else {
+        valid.push(file);
+      }
+    }
+
+    if (rejected.length > 0) {
+      setError(rejected.join(' · '));
+    }
+
+    if (valid.length === 0) return;
+
     setUploading(true);
+    if (!rejected.length) setError('');
     try {
-      const result = await uploadTravelerFile(bookingId, file);
-      setAttachments(prev => [...prev, { url: result.url, filename: result.filename || file.name }]);
+      const uploaded = await uploadTravelerFiles(bookingId, valid);
+      setAttachments(prev => [...prev, ...uploaded.map(f => ({ url: f.url, filename: f.filename, size: f.size }))]);
     } catch (err: any) {
-      setError(err?.message || 'Erreur lors de l\'upload du fichier.');
+      setError(err?.message || 'Erreur lors de l\'upload.');
     } finally {
       setUploading(false);
     }
@@ -77,7 +99,9 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
       await sendTravelerMessage(bookingId, {
         subject: subject.trim(),
         message: message.trim(),
-        attachments: attachments.length > 0 ? attachments : undefined,
+        attachments: attachments.length > 0
+          ? attachments.map(a => ({ url: a.url, filename: a.filename }))
+          : undefined,
       });
       onSuccess();
       handleClose();
@@ -147,14 +171,19 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
           {/* Attachments */}
           {attachments.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-dark-800/50">Pièces jointes</p>
+              <p className="text-xs font-semibold text-dark-800/50">
+                Pièces jointes ({attachments.length}/{MAX_FILES})
+              </p>
               {attachments.map((att, i) => (
                 <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <FileText className="w-4 h-4 text-primary-500 flex-shrink-0" />
-                    <span className="text-sm text-dark-800 truncate">{att.filename}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm text-dark-800 truncate">{att.filename}</p>
+                      {att.size && <p className="text-[10px] text-dark-800/40">{fmtSize(att.size)}</p>}
+                    </div>
                   </div>
-                  <button onClick={() => removeAttachment(i)} className="p-1 hover:bg-red-50 rounded transition-colors">
+                  <button onClick={() => removeAttachment(i)} className="p-1 hover:bg-red-50 rounded transition-colors flex-shrink-0">
                     <Trash2 className="w-3.5 h-3.5 text-red-400" />
                   </button>
                 </div>
@@ -163,22 +192,25 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
           )}
 
           {/* Add attachment */}
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploading}
-            className="inline-flex items-center gap-2 text-sm text-dark-800/60 hover:text-primary-500 transition-colors disabled:opacity-50"
-          >
-            {uploading ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Upload en cours...</>
-            ) : (
-              <><Paperclip className="w-4 h-4" /> Joindre un fichier (PDF, image, Word — max 10 MB)</>
-            )}
-          </button>
+          {attachments.length < MAX_FILES && (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="inline-flex items-center gap-2 text-sm text-dark-800/60 hover:text-primary-500 transition-colors disabled:opacity-50"
+            >
+              {uploading ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Upload en cours...</>
+              ) : (
+                <><Paperclip className="w-4 h-4" /> Joindre des fichiers (PDF, images — max 10 MB, {MAX_FILES - attachments.length} restant{MAX_FILES - attachments.length > 1 ? 's' : ''})</>
+              )}
+            </button>
+          )}
           <input
             ref={fileRef}
             type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            multiple
             onChange={handleFileSelect}
             className="hidden"
           />
