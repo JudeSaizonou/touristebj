@@ -265,28 +265,30 @@ export const ReservationsList: React.FC = () => {
             className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-colors"
           />
         </form>
-        <select
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
-          className="text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">Tous les statuts</option>
-          <option value="PENDING_DEPOSIT">En attente</option>
-          <option value="DEPOSIT_PAID">Acompte payé</option>
-          <option value="IN_PROGRESS">En cours</option>
-          <option value="COMPLETED">Complétés</option>
-          <option value="CANCELLED">Annulés</option>
-        </select>
-        <select
-          value={typeFilter}
-          onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
-          className="text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
-        >
-          <option value="">Tous les types</option>
-          <option value="solo">Solo</option>
-          <option value="group">Groupe</option>
-          <option value="invited">Invités</option>
-        </select>
+        <div className="flex gap-2 sm:gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            className="flex-1 sm:flex-none text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Tous les statuts</option>
+            <option value="PENDING_DEPOSIT">En attente</option>
+            <option value="DEPOSIT_PAID">Acompte payé</option>
+            <option value="IN_PROGRESS">En cours</option>
+            <option value="COMPLETED">Complétés</option>
+            <option value="CANCELLED">Annulés</option>
+          </select>
+          <select
+            value={typeFilter}
+            onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
+            className="flex-1 sm:flex-none text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Tous les types</option>
+            <option value="solo">Solo</option>
+            <option value="group">Groupe</option>
+            <option value="invited">Invités</option>
+          </select>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl shadow-card overflow-hidden border border-gray-100">
@@ -297,7 +299,7 @@ export const ReservationsList: React.FC = () => {
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Client</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Voyage</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Pers.</th>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Mode</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Mode</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Payé</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Solde</th>
@@ -328,7 +330,7 @@ export const ReservationsList: React.FC = () => {
                     {b.voyage.departureDate && <p className="text-xs text-gray-400">{b.voyage.departureDate}</p>}
                   </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 hidden sm:table-cell">{b.nombrePersonnes}</td>
-                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden lg:table-cell">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden md:table-cell">
                     {b.parentBookingId ? (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-teal-50 text-teal-700 border border-teal-200">Invité</span>
                     ) : b.paymentMode === 'pay_all' ? (

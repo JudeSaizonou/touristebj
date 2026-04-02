@@ -524,7 +524,7 @@ export const Dashboard: React.FC = () => {
                 placeholder="Rechercher client, voyage..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-56"
+                className="pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 w-full sm:w-56"
               />
             </form>
             <select
@@ -549,7 +549,7 @@ export const Dashboard: React.FC = () => {
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Client</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Voyage</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Pers.</th>
-                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Mode</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Mode</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Acompte</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solde</th>
@@ -580,7 +580,7 @@ export const Dashboard: React.FC = () => {
                     {b.voyage.departureDate && <p className="text-xs text-gray-400">{b.voyage.departureDate}</p>}
                   </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700">{b.nombrePersonnes}</td>
-                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden lg:table-cell">
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden md:table-cell">
                     {b.parentBookingId ? (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-teal-50 text-teal-700 border border-teal-200">Invité</span>
                     ) : b.paymentMode === 'pay_all' ? (

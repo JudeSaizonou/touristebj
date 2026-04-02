@@ -310,13 +310,13 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setGroupMode('pay_all')}
-                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                  className={`w-full flex items-start gap-2.5 p-3 sm:p-4 rounded-xl border-2 transition-all text-left ${
                     groupMode === 'pay_all'
                       ? 'border-primary-500 bg-orange-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <CreditCard className={`w-5 h-5 mt-0.5 flex-shrink-0 ${groupMode === 'pay_all' ? 'text-primary-500' : 'text-dark-800/40'}`} />
+                  <CreditCard className={`w-5 h-5 mt-0.5 flex-shrink-0 hidden sm:block ${groupMode === 'pay_all' ? 'text-primary-500' : 'text-dark-800/40'}`} />
                   <div>
                     <p className={`font-semibold text-sm ${groupMode === 'pay_all' ? 'text-primary-600' : 'text-dark-800'}`}>
                       Je paye pour tout le monde
@@ -330,13 +330,13 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setGroupMode('split')}
-                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                  className={`w-full flex items-start gap-2.5 p-3 sm:p-4 rounded-xl border-2 transition-all text-left ${
                     groupMode === 'split'
                       ? 'border-primary-500 bg-orange-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <Users className={`w-5 h-5 mt-0.5 flex-shrink-0 ${groupMode === 'split' ? 'text-primary-500' : 'text-dark-800/40'}`} />
+                  <Users className={`w-5 h-5 mt-0.5 flex-shrink-0 hidden sm:block ${groupMode === 'split' ? 'text-primary-500' : 'text-dark-800/40'}`} />
                   <div>
                     <p className={`font-semibold text-sm ${groupMode === 'split' ? 'text-primary-600' : 'text-dark-800'}`}>
                       Chacun paye sa part
@@ -685,7 +685,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
           {step === 'invite-guests' && (
             <div className="space-y-5">
               <div className="text-center">
-                <p className="font-playfair font-bold text-dark-800 text-lg">Inviter vos compagnons</p>
+                <p className="font-playfair font-bold text-dark-800 text-base sm:text-lg">Inviter vos compagnons</p>
                 <p className="text-sm text-dark-800/60 mt-1">
                   {isSplit
                     ? 'Ils recevront un email pour s\'inscrire et payer leur acompte.'

@@ -100,7 +100,7 @@ export const InvitationPage: React.FC<InvitationPageProps> = ({
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               {/* Trip image */}
               {trip?.images?.[0] && (
-                <div className="h-48 overflow-hidden">
+                <div className="h-40 sm:h-48 overflow-hidden">
                   <img src={trip.images[0]} alt={trip.title} className="w-full h-full object-cover" loading="lazy" />
                 </div>
               )}

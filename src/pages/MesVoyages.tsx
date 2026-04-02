@@ -219,7 +219,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                       </div>
                       <a
                         href={`/invitation/${inv.inviteToken}`}
-                        className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm whitespace-nowrap"
+                        className="flex items-center justify-center gap-1.5 w-full sm:w-auto px-5 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm whitespace-nowrap"
                       >
                         <UserPlus className="w-4 h-4" /> Accepter
                       </a>
