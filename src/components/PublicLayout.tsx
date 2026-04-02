@@ -210,110 +210,110 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
           </div>
         </div>
 
-        {/* ═══════ Mobile Drawer ═══════ */}
-        {mobileMenuOpen && (
-          <>
-            <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
-            <div className="fixed top-0 right-0 h-full w-72 sm:w-80 bg-white z-50 shadow-2xl lg:hidden overflow-y-auto">
-              <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                <img src={LogoTouristeBj} alt="Le Touriste.bj" className="h-9 object-contain" />
-                <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
-                  <X className="w-5 h-5 text-dark-800/60" />
+      </header>
+
+      {/* ═══════ Mobile Drawer (outside header to avoid backdrop-blur containing block) ═══════ */}
+      {mobileMenuOpen && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)} />
+          <div className="fixed top-0 right-0 h-full w-72 sm:w-80 bg-white z-50 shadow-2xl lg:hidden overflow-y-auto">
+            <div className="flex items-center justify-end p-4 border-b border-gray-100">
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <X className="w-5 h-5 text-dark-800/60" />
+              </button>
+            </div>
+
+            <nav className="p-4 space-y-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.label}
+                  onClick={item.action}
+                  className="w-full text-left px-4 py-3 rounded-xl font-medium text-sm text-dark-800/70 hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                >
+                  {item.label}
                 </button>
-              </div>
+              ))}
+            </nav>
 
-              <nav className="p-4 space-y-1">
-                {navItems.map((item) => (
-                  <button
-                    key={item.label}
-                    onClick={item.action}
-                    className="w-full text-left px-4 py-3 rounded-xl font-medium text-sm text-dark-800/70 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
+            <div className="border-t border-gray-100 mx-4" />
 
-              <div className="border-t border-gray-100 mx-4" />
-
-              <div className="p-4 space-y-2">
-                {user ? (
-                  <>
-                    <div className="px-4 py-3 bg-gradient-to-r from-primary-50 to-orange-50 rounded-xl">
-                      <p className="text-[10px] text-dark-800/40 uppercase tracking-wider font-semibold">Connect&#233;</p>
-                      <p className="font-semibold text-dark-800 text-sm truncate">{user.username || user.phoneNumber}</p>
-                    </div>
-                    {!isAdmin && onMesVoyages && (
-                      <button
-                        onClick={() => { setMobileMenuOpen(false); onMesVoyages(); }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-forest-700 hover:bg-forest-50 rounded-xl font-medium text-sm transition-colors text-left"
-                      >
-                        <PiggyBank className="w-4 h-4" /> Mes Voyages
-                      </button>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
-                        className="w-full px-4 py-3 text-dark-800/70 hover:bg-gray-50 rounded-xl font-medium text-sm transition-colors text-left"
-                      >
-                        Administration
-                      </button>
-                    )}
+            <div className="p-4 space-y-2">
+              {user ? (
+                <>
+                  <div className="px-4 py-3 bg-gradient-to-r from-primary-50 to-orange-50 rounded-xl">
+                    <p className="text-[10px] text-dark-800/40 uppercase tracking-wider font-semibold">Connect&#233;</p>
+                    <p className="font-semibold text-dark-800 text-sm truncate">{user.username || user.phoneNumber}</p>
+                  </div>
+                  {!isAdmin && onMesVoyages && (
                     <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm transition-colors text-left"
+                      onClick={() => { setMobileMenuOpen(false); onMesVoyages(); }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-forest-700 hover:bg-forest-50 rounded-xl font-medium text-sm transition-colors text-left"
                     >
-                      <LogOut className="w-4 h-4" /> Se d&#233;connecter
+                      <PiggyBank className="w-4 h-4" /> Mes Voyages
                     </button>
-                  </>
-                ) : (
-                  <>
-                    {onOpenAuth ? (
-                      <>
-                        <button
-                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('connexion'); }}
-                          className="w-full px-4 py-3 text-dark-800/70 hover:bg-gray-50 rounded-xl font-medium text-sm transition-colors text-center border border-gray-200"
-                        >
-                          Connexion
-                        </button>
-                        <button
-                          onClick={() => { setMobileMenuOpen(false); onOpenAuth('inscription'); }}
-                          className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
-                        >
-                          S'inscrire
-                        </button>
-                      </>
-                    ) : (
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
+                      className="w-full px-4 py-3 text-dark-800/70 hover:bg-gray-50 rounded-xl font-medium text-sm transition-colors text-left"
+                    >
+                      Administration
+                    </button>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl font-medium text-sm transition-colors text-left"
+                  >
+                    <LogOut className="w-4 h-4" /> Se d&#233;connecter
+                  </button>
+                </>
+              ) : (
+                <>
+                  {onOpenAuth ? (
+                    <>
                       <button
-                        onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
-                        className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
+                        onClick={() => { setMobileMenuOpen(false); onOpenAuth('connexion'); }}
+                        className="w-full px-4 py-3 text-dark-800/70 hover:bg-gray-50 rounded-xl font-medium text-sm transition-colors text-center border border-gray-200"
                       >
                         Connexion
                       </button>
-                    )}
-                  </>
-                )}
-              </div>
+                      <button
+                        onClick={() => { setMobileMenuOpen(false); onOpenAuth('inscription'); }}
+                        className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
+                      >
+                        S'inscrire
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => { setMobileMenuOpen(false); onAdminLogin?.(); }}
+                      className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
+                    >
+                      Connexion
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
 
-              <div className="p-4 border-t border-gray-100 mt-2">
-                <p className="text-[10px] text-dark-800/30 uppercase tracking-wider font-semibold mb-3">Suivez-nous</p>
-                <div className="flex items-center gap-3">
-                  {[
-                    { href: '#', label: 'Facebook', icon: <Facebook className="w-4 h-4" /> },
-                    { href: 'https://www.tiktok.com/@letouriste.bj', label: 'TikTok', icon: <TikTokIcon className="w-4 h-4" /> },
-                    { href: 'https://www.instagram.com/letouriste.bj', label: 'Instagram', icon: <Instagram className="w-4 h-4" /> },
-                  ].map(({ href, label, icon }, i) => (
-                    <a key={i} href={href} target={href !== '#' ? '_blank' : undefined} rel={href !== '#' ? 'noopener noreferrer' : undefined} aria-label={label}
-                      className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-dark-800/40 hover:bg-primary-500 hover:text-white transition-all">
-                      {icon}
-                    </a>
-                  ))}
-                </div>
+            <div className="p-4 border-t border-gray-100 mt-2">
+              <p className="text-[10px] text-dark-800/30 uppercase tracking-wider font-semibold mb-3">Suivez-nous</p>
+              <div className="flex items-center gap-3">
+                {[
+                  { href: '#', label: 'Facebook', icon: <Facebook className="w-4 h-4" /> },
+                  { href: 'https://www.tiktok.com/@letouriste.bj', label: 'TikTok', icon: <TikTokIcon className="w-4 h-4" /> },
+                  { href: 'https://www.instagram.com/letouriste.bj', label: 'Instagram', icon: <Instagram className="w-4 h-4" /> },
+                ].map(({ href, label, icon }, i) => (
+                  <a key={i} href={href} target={href !== '#' ? '_blank' : undefined} rel={href !== '#' ? 'noopener noreferrer' : undefined} aria-label={label}
+                    className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-dark-800/40 hover:bg-primary-500 hover:text-white transition-all">
+                    {icon}
+                  </a>
+                ))}
               </div>
             </div>
-          </>
-        )}
-      </header>
+          </div>
+        </>
+      )}
 
       {/* ═══════ Content ═══════ */}
       <main id="main-content">{children}</main>
