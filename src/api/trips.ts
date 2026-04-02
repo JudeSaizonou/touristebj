@@ -888,11 +888,19 @@ function mapBooking(b: BookingBackend): MappedBooking {
   const trip = typeof b.tripId === 'object' ? (b.tripId as TripBackend) : null;
   const totalAmount = b.totalAmount ?? 0;
   const depositAmount = b.depositAmount ?? Math.round(totalAmount * 0.5);
-  // remainingAmount est la source de vérité ; amountPaid en est déduit
-  const remainingAmount = b.remainingAmount ?? Math.max(0, totalAmount - (b.amountPaid ?? 0));
-  const amountPaid = typeof b.remainingAmount === 'number'
-    ? Math.max(0, totalAmount - b.remainingAmount)
+
+  // Only count successful payments for progression
+  const successPayments = (b.payments || []).filter(p => {
+    const s = (p.status || '').toLowerCase();
+    return s === 'success' || s === 'completed';
+  });
+  const paidFromPayments = successPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
+
+  // Use payments-based calculation if payments are available, otherwise fall back to backend values
+  const amountPaid = b.payments?.length
+    ? paidFromPayments
     : (b.amountPaid ?? 0);
+  const remainingAmount = Math.max(0, totalAmount - amountPaid);
   return {
     id: b._id,
     bookingNumber: b.bookingNumber,
@@ -927,6 +935,7 @@ function mapPayment(p: PaymentBackend): MappedPayment {
     id: p._id,
     amount: p.amount ?? 0,
     type: p.paymentType ?? p.type ?? 'trip_installment',
+    paymentMethod: p.paymentMethod,
     status: p.status ?? 'success',
     date: p.createdAt ? new Date(p.createdAt).toLocaleDateString('fr-FR') : '',
   };

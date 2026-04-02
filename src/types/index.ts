@@ -125,6 +125,7 @@ export interface MappedPayment {
   id: string;
   amount: number;
   type: string;
+  paymentMethod?: string;
   status: string;
   date: string;
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Calendar, PiggyBank, CheckCircle, Clock,
-  Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight
+  Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight, RefreshCw
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
@@ -195,34 +195,56 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {payments.map(p => (
-                        <div key={p.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors gap-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                              p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-primary-50'
-                            }`}>
-                              {p.type === 'DEPOSIT'
-                                ? <CheckCircle className="w-4 h-4 text-blue-500" />
-                                : <PiggyBank className="w-4 h-4 text-primary-500" />
-                              }
+                      {payments.map(p => {
+                        const isSuccess = ['success', 'completed'].includes((p.status || '').toLowerCase());
+                        const isPending = (p.status || '').toLowerCase() === 'pending';
+                        const isFailed = !isSuccess && !isPending;
+                        return (
+                          <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl gap-3 ${isPending || isFailed ? 'bg-gray-50/50' : 'hover:bg-gray-50'} transition-colors`}>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                isPending ? 'bg-amber-100' : isFailed ? 'bg-red-100' : p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-primary-50'
+                              }`}>
+                                {isPending
+                                  ? <Clock className="w-4 h-4 text-amber-500" />
+                                  : isFailed
+                                  ? <AlertCircle className="w-4 h-4 text-red-500" />
+                                  : p.type === 'DEPOSIT'
+                                  ? <CheckCircle className="w-4 h-4 text-blue-500" />
+                                  : <PiggyBank className="w-4 h-4 text-primary-500" />
+                                }
+                              </div>
+                              <div className="min-w-0">
+                                <p className={`text-sm font-medium ${isPending || isFailed ? 'text-dark-800/50' : 'text-dark-800'}`}>
+                                  {p.type === 'DEPOSIT' ? 'Acompte' : 'Versement'}
+                                </p>
+                                <p className="text-xs text-dark-800/40">{p.date}</p>
+                              </div>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-dark-800">
-                                {p.type === 'DEPOSIT' ? 'Acompte' : 'Versement'}
-                              </p>
-                              <p className="text-xs text-dark-800/40">{p.date}</p>
+                            <div className="text-right flex-shrink-0 flex items-center gap-2">
+                              <div>
+                                <p className={`font-bold text-sm ${isPending || isFailed ? 'text-dark-800/40 line-through' : 'text-dark-800'}`}>{fmtPrice(p.amount)}</p>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                                  isSuccess ? 'bg-green-100 text-green-600'
+                                    : isPending ? 'bg-amber-100 text-amber-600'
+                                    : 'bg-red-100 text-red-600'
+                                }`}>
+                                  {isSuccess ? 'Confirmé' : isPending ? 'En attente' : 'Échoué'}
+                                </span>
+                              </div>
+                              {(isPending || isFailed) && (
+                                <button
+                                  onClick={() => setEpargneOpen(true)}
+                                  className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                                  title="Repayer"
+                                >
+                                  <RefreshCw className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="font-bold text-dark-800 text-sm">{fmtPrice(p.amount)}</p>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                              p.status === 'COMPLETED' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-500'
-                            }`}>
-                              {p.status === 'COMPLETED' ? 'Confirmé' : p.status}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
