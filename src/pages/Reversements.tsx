@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRightLeft, Download, ChevronLeft, ChevronRight, Search, Loader2, Upload } from 'lucide-react';
+import { ArrowRightLeft, Download, ChevronLeft, ChevronRight, Search, Loader2, Upload, X, Clock, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import { getPayoutBalance, getPayoutHistory } from '../api/trips';
 import type { PayoutBalance, PayoutRequest } from '../api/trips';
 import { ExportModal } from '../components/ExportModal';
@@ -7,6 +7,7 @@ import { handleExport } from '../utils/export';
 import { ToastContainer, useToast } from '../components/Toast';
 
 const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
+const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'En attente',
@@ -20,6 +21,13 @@ const STATUS_STYLE: Record<string, string> = {
   approved: 'bg-blue-100 text-blue-700 border-blue-200',
   processed: 'bg-green-100 text-green-700 border-green-200',
   rejected: 'bg-red-100 text-red-700 border-red-200',
+};
+
+const STATUS_ICON: Record<string, React.ReactNode> = {
+  pending: <Clock className="w-5 h-5 text-amber-500" />,
+  approved: <CheckCircle className="w-5 h-5 text-blue-500" />,
+  processed: <CheckCircle className="w-5 h-5 text-green-500" />,
+  rejected: <AlertCircle className="w-5 h-5 text-red-500" />,
 };
 
 const METHOD_LABEL: Record<string, string> = {
@@ -40,6 +48,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
   const [loading, setLoading] = useState(true);
   const [balanceLoading, setBalanceLoading] = useState(true);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedPayout, setSelectedPayout] = useState<PayoutRequest | null>(null);
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 10;
 
@@ -196,7 +205,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {payouts.map((p) => (
-                  <tr key={p._id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={p._id} onClick={() => setSelectedPayout(p)} className="hover:bg-gray-50 transition-colors cursor-pointer">
                     <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 whitespace-nowrap hidden sm:table-cell">
                       {new Date(p.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
@@ -239,6 +248,100 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
       </div>
 
       <ExportModal isOpen={showExportModal} onClose={() => setShowExportModal(false)} onExport={handleExportFormat} title="Exporter les reversements" />
+
+      {/* Detail Modal */}
+      {selectedPayout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSelectedPayout(null)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="bg-gradient-to-br from-forest-800 to-forest-900 text-white p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-white/70" />
+                  <h3 className="font-bold text-lg">Détail du reversement</h3>
+                </div>
+                <button onClick={() => setSelectedPayout(null)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-3xl font-bold">{fmtPrice(selectedPayout.amount)}</p>
+              <div className="mt-2">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[selectedPayout.status] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+                  {STATUS_LABEL[selectedPayout.status] || selectedPayout.status}
+                </span>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-5 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Montant brut</p>
+                  <p className="font-bold text-dark-800 text-sm">{fmtPrice(selectedPayout.amount)}</p>
+                </div>
+                <div className="bg-gray-50 rounded-xl p-3">
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Montant net</p>
+                  <p className="font-bold text-green-600 text-sm">{fmtPrice(selectedPayout.netAmount)}</p>
+                </div>
+              </div>
+
+              {selectedPayout.commission > 0 && (
+                <div className="bg-amber-50 rounded-xl p-3 border border-amber-100">
+                  <p className="text-[10px] text-amber-500 uppercase tracking-wider mb-1">Commission</p>
+                  <p className="font-bold text-amber-700 text-sm">{fmtPrice(selectedPayout.commission)}</p>
+                </div>
+              )}
+
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-500">Méthode de paiement</span>
+                  <span className="text-sm font-medium text-dark-800">{METHOD_LABEL[selectedPayout.paymentMethod] || selectedPayout.paymentMethod}</span>
+                </div>
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-500">Statut</span>
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    {STATUS_ICON[selectedPayout.status]}
+                    {STATUS_LABEL[selectedPayout.status] || selectedPayout.status}
+                  </span>
+                </div>
+                {selectedPayout.transactionId && (
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <span className="text-sm text-gray-500">ID Transaction</span>
+                    <span className="text-sm font-mono text-dark-800 bg-gray-100 px-2 py-0.5 rounded">{selectedPayout.transactionId}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <span className="text-sm text-gray-500">Date de demande</span>
+                  <span className="text-sm text-dark-800">{fmtDate(selectedPayout.createdAt)}</span>
+                </div>
+                {selectedPayout.approvedAt && (
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <span className="text-sm text-gray-500">Date d'approbation</span>
+                    <span className="text-sm text-dark-800">{fmtDate(selectedPayout.approvedAt)}</span>
+                  </div>
+                )}
+                {selectedPayout.processedAt && (
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-sm text-gray-500">Date de traitement</span>
+                    <span className="text-sm text-dark-800">{fmtDate(selectedPayout.processedAt)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 pb-5">
+              <button
+                onClick={() => setSelectedPayout(null)}
+                className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors text-sm"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

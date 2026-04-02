@@ -87,6 +87,12 @@ export interface DashboardStatsResponse {
     clients?: { total?: number };
     groups?: { total?: number; payAll?: number; split?: number };
     invitations?: { total?: number; pending?: number; accepted?: number; expired?: number };
+    kpi?: {
+      conversionRate?: number;
+      averageBookingValue?: number;
+      nextDeparture?: { title?: string; destination?: string; departureDate?: string };
+      topDestinations?: Array<{ destination?: string; bookings?: number; revenue?: number }>;
+    };
   };
 }
 
@@ -634,6 +640,25 @@ export async function getReservations(params?: {
   };
 }
 
+export interface TopDestination {
+  destination: string;
+  bookings: number;
+  revenue: number;
+}
+
+export interface NextDeparture {
+  title: string;
+  destination: string;
+  departureDate: string;
+}
+
+export interface DashboardKpi {
+  conversionRate: number;
+  averageBookingValue: number;
+  nextDeparture?: NextDeparture;
+  topDestinations?: TopDestination[];
+}
+
 export interface DashboardStats {
   trips: { total: number; active: number; draft: number; completed: number; cancelled: number };
   bookings: { total: number; pendingDeposit: number; depositPaid: number; inProgress: number; completed: number; cancelled: number };
@@ -643,6 +668,7 @@ export interface DashboardStats {
   clients: { total: number };
   groups?: { total: number; payAll: number; split: number };
   invitations?: { total: number; pending: number; accepted: number; expired: number };
+  kpi?: DashboardKpi;
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -689,6 +715,20 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       pending: s.invitations.pending ?? 0,
       accepted: s.invitations.accepted ?? 0,
       expired: s.invitations.expired ?? 0,
+    } : undefined,
+    kpi: s.kpi ? {
+      conversionRate: s.kpi.conversionRate ?? 0,
+      averageBookingValue: s.kpi.averageBookingValue ?? 0,
+      nextDeparture: s.kpi.nextDeparture?.title ? {
+        title: s.kpi.nextDeparture.title,
+        destination: s.kpi.nextDeparture.destination || '',
+        departureDate: s.kpi.nextDeparture.departureDate || '',
+      } : undefined,
+      topDestinations: (s.kpi.topDestinations || []).map(d => ({
+        destination: d.destination || '',
+        bookings: d.bookings ?? 0,
+        revenue: d.revenue ?? 0,
+      })),
     } : undefined,
   };
 }
@@ -1361,4 +1401,105 @@ export async function getBookingInvitations(bookingId: string): Promise<MappedIn
     `${TRIPS_PREFIX}/bookings/${bookingId}/invitations`
   );
   return (res.invitations || []).map(mapInvitation);
+}
+
+export async function resendInvitation(
+  bookingId: string,
+  invitee: { name: string; email: string }
+): Promise<MappedInvitation[]> {
+  const res = await apiRequest<{ success: boolean; invitations: InvitationBackend[] }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/invite`,
+    { method: 'POST', body: JSON.stringify({ invitees: [invitee] }) }
+  );
+  return (res.invitations || []).map(mapInvitation);
+}
+
+// ─── Partner Notifications ───────────────────────────────────────────────
+
+export interface PartnerNotification {
+  _id: string;
+  type: 'new_booking' | 'payment_received' | 'payment_overdue' | 'payout_processed' | 'partner_payout' | 'booking_cancelled' | 'invitation_accepted';
+  title: string;
+  message: string;
+  bookingId?: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export async function getPartnerNotifications(params?: {
+  page?: number;
+  limit?: number;
+  read?: boolean;
+}): Promise<{ notifications: PartnerNotification[]; unreadCount: number; pagination?: any }> {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.read !== undefined) q.set('read', String(params.read));
+  const query = q.toString();
+  const res = await apiRequest<{
+    success: boolean;
+    notifications: PartnerNotification[];
+    unreadCount: number;
+    pagination?: any;
+  }>(`${TRIPS_PREFIX}/partner/notifications${query ? `?${query}` : ''}`);
+  return {
+    notifications: res.notifications || [],
+    unreadCount: res.unreadCount ?? 0,
+    pagination: res.pagination,
+  };
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/partner/notifications/${id}/read`,
+    { method: 'PUT' }
+  );
+}
+
+export async function markAllNotificationsRead(): Promise<number> {
+  const res = await apiRequest<{ success: boolean; modifiedCount: number }>(
+    `${TRIPS_PREFIX}/partner/notifications/read-all`,
+    { method: 'PUT' }
+  );
+  return res.modifiedCount ?? 0;
+}
+
+// ─── Partner Conversations (Messages) ────────────────────────────────────
+
+export interface PartnerConversation {
+  bookingId: string;
+  client: {
+    name: string;
+    phone: string;
+    email: string;
+  };
+  tripTitle: string;
+  lastMessage: {
+    subject: string;
+    message: string;
+    sentAt: string;
+    sender: 'partner' | 'system';
+    read: boolean;
+  };
+  unreadCount: number;
+  totalMessages: number;
+}
+
+export async function getPartnerConversations(params?: {
+  page?: number;
+  limit?: number;
+}): Promise<{ conversations: PartnerConversation[]; pagination?: any }> {
+  const q = new URLSearchParams();
+  if (params?.page) q.set('page', String(params.page));
+  if (params?.limit) q.set('limit', String(params.limit));
+  const query = q.toString();
+  const res = await apiRequest<{
+    success: boolean;
+    conversations: PartnerConversation[];
+    pagination?: any;
+  }>(`${TRIPS_PREFIX}/partner/messages${query ? `?${query}` : ''}`);
+  return {
+    conversations: res.conversations || [],
+    pagination: res.pagination,
+  };
 }

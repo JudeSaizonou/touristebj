@@ -8,6 +8,16 @@ const STORAGE_KEYS = {
   DOCUMENT_REQUESTS: 'touriste_document_requests',
 };
 
+/** Safe JSON.parse — returns fallback on corrupted data instead of crashing */
+function safeParse<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
 // Initialize default data
 const DEFAULT_VOYAGES = [
   {
@@ -410,7 +420,7 @@ export class StorageService {
   // Voyages
   static getVoyages() {
     const data = localStorage.getItem(STORAGE_KEYS.VOYAGES);
-    return data ? JSON.parse(data) : [];
+    return safeParse<any[]>(data, []);
   }
 
   static getVoyageById(id: string) {
@@ -442,7 +452,7 @@ export class StorageService {
   // Reservations
   static getReservations() {
     const data = localStorage.getItem(STORAGE_KEYS.RESERVATIONS);
-    return data ? JSON.parse(data) : [];
+    return safeParse<any[]>(data, []);
   }
 
   static saveReservation(reservation: any) {
@@ -463,14 +473,14 @@ export class StorageService {
   // Voyageurs (per voyage)
   static getVoyageursByVoyage(voyageId: string): any[] {
     const data = localStorage.getItem(STORAGE_KEYS.VOYAGEURS);
-    const all = data ? JSON.parse(data) : {};
+    const all = safeParse<Record<string, any>>(data, {});
     return all[voyageId] || [];
   }
 
   // Get ALL voyageurs across all voyages
   static getAllVoyageurs(): { voyageur: any; voyageId: string; voyageDestination: string }[] {
     const data = localStorage.getItem(STORAGE_KEYS.VOYAGEURS);
-    const all = data ? JSON.parse(data) : {};
+    const all = safeParse<Record<string, any>>(data, {});
     const voyages = this.getVoyages();
     const result: { voyageur: any; voyageId: string; voyageDestination: string }[] = [];
 
@@ -486,7 +496,7 @@ export class StorageService {
 
   static saveVoyageur(voyageId: string, voyageur: any) {
     const data = localStorage.getItem(STORAGE_KEYS.VOYAGEURS);
-    const all = data ? JSON.parse(data) : {};
+    const all = safeParse<Record<string, any>>(data, {});
     if (!all[voyageId]) all[voyageId] = [];
 
     const index = all[voyageId].findIndex((v: any) => v.id === voyageur.id);
@@ -503,7 +513,7 @@ export class StorageService {
 
   static deleteVoyageur(voyageId: string, voyageurId: string) {
     const data = localStorage.getItem(STORAGE_KEYS.VOYAGEURS);
-    const all = data ? JSON.parse(data) : {};
+    const all = safeParse<Record<string, any>>(data, {});
     if (all[voyageId]) {
       all[voyageId] = all[voyageId].filter((v: any) => v.id !== voyageurId);
       localStorage.setItem(STORAGE_KEYS.VOYAGEURS, JSON.stringify(all));
@@ -518,7 +528,7 @@ export class StorageService {
     if (documents.length === 0) return null;
 
     const data = localStorage.getItem(STORAGE_KEYS.VOYAGEURS);
-    const all = data ? JSON.parse(data) : {};
+    const all = safeParse<Record<string, any>>(data, {});
     if (!all[voyageId]) return null;
 
     const voyageurIndex = all[voyageId].findIndex((v: any) => v.id === voyageurId);
@@ -545,7 +555,7 @@ export class StorageService {
     localStorage.setItem(STORAGE_KEYS.VOYAGEURS, JSON.stringify(all));
 
     const requestsData = localStorage.getItem(STORAGE_KEYS.DOCUMENT_REQUESTS);
-    const requests = requestsData ? JSON.parse(requestsData) : [];
+    const requests = safeParse<any[]>(requestsData, []);
     requests.push({
       id: Date.now().toString(),
       voyageId,
@@ -563,7 +573,7 @@ export class StorageService {
   static getComputedStats() {
     const voyages = this.getVoyages();
     const data = localStorage.getItem(STORAGE_KEYS.VOYAGEURS);
-    const allVoyageurs = data ? JSON.parse(data) : {};
+    const allVoyageurs = safeParse<Record<string, any>>(data, {});
 
     let totalReservations = 0;
     let totalAcomptes = 0;

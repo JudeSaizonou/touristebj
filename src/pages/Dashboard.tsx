@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, X, TrendingUp, Users, MapPin, CreditCard, Clock, AlertTriangle, Plus, Wallet, Eye, UserPlus, Mail } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Search, ChevronLeft, ChevronRight, X, TrendingUp, Users, MapPin, CreditCard, Clock, AlertTriangle, Plus, Wallet, Eye, UserPlus, Mail, Upload, RefreshCw } from 'lucide-react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip, LineChart, Line, CartesianGrid, YAxis, PieChart, Pie } from 'recharts';
 import { getDashboardStats, getDashboardBookings, getMonthlyStats, getPayoutBalance, getGroupDetail } from '../api/trips';
 import type { DashboardStats, DashboardBooking, MonthlyPoint, PayoutBalance, GroupDetail } from '../api/trips';
+import { ExportModal } from '../components/ExportModal';
+import { handleExport } from '../utils/export';
 
 const fmt = (n: number) =>
   n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n);
@@ -212,6 +214,8 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, onClos
   );
 };
 
+const AUTO_REFRESH_MS = 60_000; // 60s
+
 export const Dashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bookings, setBookings] = useState<DashboardBooking[]>([]);
@@ -224,20 +228,12 @@ export const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<DashboardBooking | null>(null);
   const [payoutBalance, setPayoutBalance] = useState<PayoutBalance | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    loadStats();
-    loadMonthly();
-    loadPayout();
-  }, []);
-
-  useEffect(() => {
-    loadBookings();
-  }, [currentPage, statusFilter]);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const data = await getDashboardStats();
       setStats(data);
@@ -246,29 +242,29 @@ export const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadPayout = async () => {
+  const loadPayout = useCallback(async () => {
     try {
       const b = await getPayoutBalance();
       setPayoutBalance(b);
     } catch {
       // non critique
     }
-  };
+  }, []);
 
-  const loadMonthly = async () => {
+  const loadMonthly = useCallback(async () => {
     try {
       const data = await getMonthlyStats(12);
       setMonthlyData(data);
     } catch {
       // non critique
     }
-  };
+  }, []);
 
   const [searchLoading, setSearchLoading] = useState(false);
 
-  const loadBookings = async (overridePage?: number, overrideSearch?: string) => {
+  const loadBookings = useCallback(async (overridePage?: number, overrideSearch?: string) => {
     setSearchLoading(true);
     try {
       const { bookings: list, pagination: pag } = await getDashboardBookings({
@@ -284,26 +280,97 @@ export const Dashboard: React.FC = () => {
     } finally {
       setSearchLoading(false);
     }
-  };
+  }, [search, statusFilter, currentPage]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Initial load
+  useEffect(() => {
+    loadStats();
+    loadMonthly();
+    loadPayout();
+  }, [loadStats, loadMonthly, loadPayout]);
+
+  // Reload bookings on filter/page change
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
+
+  // Auto-refresh stats every 60s
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadStats();
+      loadPayout();
+      setLastRefresh(new Date());
+    }, AUTO_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [loadStats, loadPayout]);
+
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
     loadBookings(1, search);
-  };
+  }, [search, loadBookings]);
 
-  const totalPages = pagination?.pages ?? Math.max(1, Math.ceil((pagination?.total ?? bookings.length) / itemsPerPage));
+  const handleRefresh = useCallback(() => {
+    loadStats();
+    loadMonthly();
+    loadPayout();
+    loadBookings();
+    setLastRefresh(new Date());
+  }, [loadStats, loadMonthly, loadPayout, loadBookings]);
 
-  if (loading) {
+  const totalPages = useMemo(
+    () => pagination?.pages ?? Math.max(1, Math.ceil((pagination?.total ?? bookings.length) / itemsPerPage)),
+    [pagination, bookings.length]
+  );
+
+  // KPIs from backend (fallback to client-side computation)
+  const kpi = useMemo(() => {
+    if (!stats) return null;
+    if (stats.kpi) return stats.kpi;
+    // Fallback if backend doesn't return kpi yet
+    const totalBookings = stats.bookings.total || 1;
+    const conversionRate = totalBookings > 0
+      ? Math.round(((stats.bookings.depositPaid + stats.bookings.inProgress + stats.bookings.completed) / totalBookings) * 100)
+      : 0;
+    const averageBookingValue = stats.revenue.transactions > 0
+      ? Math.round(stats.revenue.total / stats.revenue.transactions)
+      : 0;
+    return { conversionRate, averageBookingValue } as DashboardStats['kpi'];
+  }, [stats]);
+
+  // Export bookings
+  const handleExportFormat = useCallback((format: 'csv' | 'pdf' | 'xlsx') => {
+    const headers = ['Client', 'Voyage', 'Personnes', 'Total', 'Payé', 'Restant', 'Statut', 'Date'];
+    const rows = bookings.map(b => [
+      b.client.nom,
+      b.voyage.destination || b.voyage.titre,
+      String(b.nombrePersonnes),
+      fmtFcfa(b.totalAmount),
+      fmtFcfa(b.amountPaid),
+      fmtFcfa(b.remainingAmount),
+      STATUS_LABEL[b.status] || b.status,
+      b.createdAt,
+    ]);
+    handleExport(format, { headers, rows, filename: 'reservations-dashboard' });
+    setShowExportModal(false);
+  }, [bookings]);
+
+  if (error && !stats) {
     return (
-      <div className="p-8 flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div className="p-8 flex items-center justify-center min-h-[60vh]">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 max-w-md text-center">
+          <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+          <h3 className="font-bold text-gray-900 mb-2">Erreur de chargement</h3>
+          <p className="text-sm text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => { setError(null); setLoading(true); loadStats(); loadMonthly(); loadPayout(); loadBookings(); }}
+            className="px-5 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-semibold hover:bg-primary-600 transition-colors"
+          >
+            Réessayer
+          </button>
+        </div>
       </div>
     );
-  }
-
-  if (error) {
-    return <div className="p-8"><p className="text-red-600">{error}</p></div>;
   }
 
   return (
@@ -314,6 +381,17 @@ export const Dashboard: React.FC = () => {
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {loading && [...Array(8)].map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm animate-pulse">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-10 h-10 bg-gray-200 rounded-xl" />
+            </div>
+            <div className="h-7 bg-gray-200 rounded w-20 mb-2" />
+            <div className="h-3 bg-gray-100 rounded w-28" />
+          </div>
+        ))}
+      </div>
+      {!loading && <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           icon={<MapPin className="w-5 h-5" />}
           label="Voyages"
@@ -370,7 +448,7 @@ export const Dashboard: React.FC = () => {
           sub={`${stats?.invitations?.pending ?? 0} en attente · ${stats?.invitations?.accepted ?? 0} acceptées`}
           color="teal"
         />
-      </div>
+      </div>}
 
       {/* Quick actions + Payout balance */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -514,11 +592,118 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {/* Refresh indicator */}
+      <div className="flex items-center justify-end gap-3">
+        <span className="text-[10px] text-gray-400">
+          Mis à jour à {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+        </span>
+        <button
+          onClick={handleRefresh}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          aria-label="Rafraîchir"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Actualiser
+        </button>
+      </div>
+
+      {/* KPI cards */}
+      {kpi && stats && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          {/* Taux de conversion */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-emerald-500" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-gray-900">{kpi.conversionRate.toFixed(1)}%</p>
+            <p className="text-xs text-gray-400">Taux de conversion</p>
+          </div>
+
+          {/* Panier moyen */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center">
+                <Wallet className="w-4 h-4 text-violet-500" />
+              </div>
+            </div>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{fmtFcfa(kpi.averageBookingValue)}</p>
+            <p className="text-xs text-gray-400">Panier moyen</p>
+          </div>
+
+          {/* Prochain départ */}
+          {kpi.nextDeparture && (
+            <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-4 sm:p-5 shadow-sm text-white col-span-2">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-white/60 mb-1">Prochain départ</p>
+                  <p className="font-bold text-base sm:text-lg leading-tight">{kpi.nextDeparture.title}</p>
+                  <p className="text-xs text-white/70 mt-1">{kpi.nextDeparture.destination}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center mb-1">
+                    <MapPin className="w-5 h-5 text-white" />
+                  </div>
+                  <p className="text-sm font-bold">
+                    {(() => {
+                      const days = Math.ceil((new Date(kpi.nextDeparture!.departureDate).getTime() - Date.now()) / 86400000);
+                      return days > 0 ? `${days}j` : 'Aujourd\'hui';
+                    })()}
+                  </p>
+                  <p className="text-[10px] text-white/50">
+                    {new Date(kpi.nextDeparture.departureDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Top destinations */}
+      {kpi?.topDestinations && kpi.topDestinations.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-6 shadow-sm">
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-4">Top destinations</h3>
+          <div className="space-y-3">
+            {kpi.topDestinations.map((dest, i) => {
+              const maxRevenue = kpi.topDestinations![0].revenue || 1;
+              const pct = Math.round((dest.revenue / maxRevenue) * 100);
+              return (
+                <div key={dest.destination} className="flex items-center gap-3">
+                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                    i === 0 ? 'bg-amber-100 text-amber-700' : i === 1 ? 'bg-gray-100 text-gray-600' : 'bg-orange-50 text-orange-600'
+                  }`}>
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-sm font-medium text-gray-900 truncate">{dest.destination}</p>
+                      <div className="flex items-center gap-3 flex-shrink-0 text-xs text-gray-500">
+                        <span>{dest.bookings} rés.</span>
+                        <span className="font-semibold text-gray-900">{fmtFcfa(dest.revenue)}</span>
+                      </div>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          i === 0 ? 'bg-primary-500' : i === 1 ? 'bg-primary-400' : 'bg-primary-300'
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Bookings table */}
       <div className="bg-white rounded-xl shadow-card border border-gray-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 p-3 sm:p-6 border-b border-gray-100">
           <h2 className="text-base sm:text-lg font-bold text-gray-900">Toutes les réservations</h2>
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap items-center">
             <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -541,6 +726,12 @@ export const Dashboard: React.FC = () => {
               <option value="COMPLETED">Complétées</option>
               <option value="CANCELLED">Annulées</option>
             </select>
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Upload className="w-4 h-4" /> Exporter
+            </button>
           </div>
         </div>
 
@@ -645,6 +836,13 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExportFormat}
+        title="Exporter les réservations"
+      />
     </div>
   );
 };
@@ -668,7 +866,7 @@ const colorMap = {
   teal: { bg: 'bg-teal-50', text: 'text-teal-600', icon: 'text-teal-500' },
 };
 
-const StatCard: React.FC<StatCardProps> = ({ icon, label, value, sub, color }) => {
+const StatCard: React.FC<StatCardProps> = React.memo(({ icon, label, value, sub, color }) => {
   const c = colorMap[color];
   return (
     <div className="bg-white rounded-xl p-3 sm:p-5 shadow-card border border-gray-100">
@@ -680,4 +878,4 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, sub, color }) =
       <p className="text-xs text-gray-400 mt-1">{sub}</p>
     </div>
   );
-};
+});

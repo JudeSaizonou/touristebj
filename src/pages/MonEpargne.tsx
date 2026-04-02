@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Calendar, PiggyBank, CheckCircle, Clock,
   Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight, RefreshCw, XCircle,
-  Mail, FileText, Upload, Paperclip, ExternalLink
+  Mail, FileText, Upload, Paperclip, ExternalLink, UserPlus, Send, Copy
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
-import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, getBookingDocumentRequests, submitDocument, markMessageRead, getDocumentLabel } from '../api/trips';
-import type { BookingMessage, DocumentRequest } from '../api/trips';
+import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, getBookingDocumentRequests, submitDocument, markMessageRead, getDocumentLabel, getBookingInvitations, resendInvitation } from '../api/trips';
+import type { BookingMessage, DocumentRequest, MappedInvitation } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import type { MappedBooking, MappedPayment } from '../types';
@@ -53,6 +53,9 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
   const [messages, setMessages] = useState<BookingMessage[]>([]);
   const [docRequests, setDocRequests] = useState<DocumentRequest[]>([]);
   const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+  const [invitations, setInvitations] = useState<MappedInvitation[]>([]);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -66,16 +69,18 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     setLoading(true);
     setError('');
     try {
-      const [b, p, msgsRes, docsRes] = await Promise.all([
+      const [b, p, msgsRes, docsRes, invs] = await Promise.all([
         getBookingById(bookingId),
         getBookingPayments(bookingId),
         getBookingMessages(bookingId).catch(() => ({ messages: [] as BookingMessage[], unreadCount: 0 })),
         getBookingDocumentRequests(bookingId).catch(() => ({ documents: [] as DocumentRequest[], summary: { total: 0, pending: 0, submitted: 0, approved: 0, rejected: 0 } })),
+        getBookingInvitations(bookingId).catch(() => [] as MappedInvitation[]),
       ]);
       setBooking(b);
       setPayments(p);
       setMessages(msgsRes.messages);
       setDocRequests(docsRes.documents);
+      setInvitations(invs);
     } catch (err: any) {
       const msg: string = err?.message || '';
       const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
@@ -415,6 +420,110 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                         )}
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Invitations envoyées */}
+              {invitations.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
+                  <div className="flex items-center gap-2 mb-5">
+                    <UserPlus className="w-5 h-5 text-primary-500" />
+                    <h2 className="font-bold text-dark-800">Invitations envoyées</h2>
+                    <span className="bg-primary-100 text-primary-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {invitations.length}
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {invitations.map(inv => {
+                      const isExpired = inv.status === 'expired';
+                      const isPending = inv.status === 'pending';
+                      const isAccepted = inv.status === 'accepted';
+                      const canResend = isExpired || isPending;
+                      const invLink = `${window.location.origin}/invitation/${inv.inviteToken}`;
+
+                      return (
+                        <div key={inv.id} className={`rounded-xl p-4 border transition-colors ${
+                          isAccepted ? 'bg-green-50 border-green-200' : isExpired ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'
+                        }`}>
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-dark-800 truncate">{inv.guestName}</p>
+                              <p className="text-xs text-dark-800/50 truncate">{inv.guestEmail}</p>
+                            </div>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border flex-shrink-0 ${
+                              isAccepted ? 'bg-green-100 text-green-600 border-green-200'
+                                : isExpired ? 'bg-red-100 text-red-600 border-red-200'
+                                : 'bg-amber-100 text-amber-600 border-amber-200'
+                            }`}>
+                              {isAccepted ? 'Acceptée' : isExpired ? 'Expirée' : 'En attente'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 text-[10px] text-dark-800/40 mb-3">
+                            <Clock className="w-3 h-3" />
+                            Envoyée le {new Date(inv.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {inv.paymentMode === 'pay_all' && (
+                              <span className="ml-1 text-green-600 font-medium">• Place payée</span>
+                            )}
+                          </div>
+
+                          {canResend && (
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  setResendingId(inv.id);
+                                  try {
+                                    const updated = await resendInvitation(bookingId, { name: inv.guestName, email: inv.guestEmail });
+                                    setInvitations(prev => {
+                                      const newIds = new Set(updated.map(u => u.guestEmail));
+                                      return [
+                                        ...prev.filter(p => !newIds.has(p.guestEmail)),
+                                        ...updated,
+                                      ];
+                                    });
+                                  } catch {
+                                    setError('Impossible de relancer l\'invitation.');
+                                  } finally {
+                                    setResendingId(null);
+                                  }
+                                }}
+                                disabled={resendingId === inv.id}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-primary-500 text-white rounded-lg text-xs font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50"
+                              >
+                                {resendingId === inv.id ? (
+                                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Envoi...</>
+                                ) : (
+                                  <><Send className="w-3.5 h-3.5" /> Relancer</>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(invLink);
+                                  setCopiedToken(inv.id);
+                                  setTimeout(() => setCopiedToken(null), 2000);
+                                }}
+                                className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-dark-800/70 rounded-lg text-xs font-medium hover:bg-gray-100 transition-colors"
+                                title="Copier le lien d'invitation"
+                              >
+                                {copiedToken === inv.id ? (
+                                  <><CheckCircle className="w-3.5 h-3.5 text-green-500" /> Copié</>
+                                ) : (
+                                  <><Copy className="w-3.5 h-3.5" /> Lien</>
+                                )}
+                              </button>
+                            </div>
+                          )}
+
+                          {isAccepted && (
+                            <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Acceptée {inv.acceptedAt ? `le ${new Date(inv.acceptedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}` : ''}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
