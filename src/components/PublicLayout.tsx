@@ -33,17 +33,25 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
     setUserMenuOpen(false);
   };
 
-  const scrollToSection = (sectionId: string) => {
+  const navigateToSection = (sectionId: string) => {
     setMobileMenuOpen(false);
-    setTimeout(() => {
-      const el = document.getElementById(sectionId);
-      if (el) el.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      // Not on the home page — navigate there first, then scroll
+      window.history.pushState(null, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      setTimeout(() => {
+        const target = document.getElementById(sectionId);
+        if (target) target.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    }
   };
 
   const navItems = [
     { label: 'ACCUEIL', action: () => { setMobileMenuOpen(false); window.history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
-    { label: 'VOYAGES', action: () => scrollToSection('voyages-section') },
+    { label: 'VOYAGES', action: () => navigateToSection('voyages-section') },
   ];
 
   return (
@@ -415,7 +423,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               <ul className="space-y-2.5">
                 {[
                   { label: 'Accueil', action: () => { window.history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); window.scrollTo({ top: 0 }); } },
-                  { label: 'Nos voyages', action: () => scrollToSection('voyages-section') },
+                  { label: 'Nos voyages', action: () => navigateToSection('voyages-section') },
                   { label: 'Mes voyages', action: onMesVoyages },
                   ...(isAdmin ? [{ label: 'Administration', action: onAdminLogin }] : []),
                 ].map(({ label, action }) => (
