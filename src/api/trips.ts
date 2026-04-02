@@ -921,8 +921,8 @@ function mapBooking(b: BookingBackend): MappedBooking {
   });
   const paidFromPayments = successPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
 
-  // Use payments-based calculation if payments are available, otherwise fall back to backend values
-  const amountPaid = b.payments?.length
+  // Use payments-based calculation if payments array exists, otherwise fall back to backend values
+  const amountPaid = (b.payments && b.payments.length > 0)
     ? paidFromPayments
     : (b.amountPaid ?? 0);
   const remainingAmount = Math.max(0, totalAmount - amountPaid);

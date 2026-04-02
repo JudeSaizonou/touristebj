@@ -152,6 +152,7 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
               placeholder="Ex: Votre visa est prêt"
               value={subject}
               onChange={e => setSubject(e.target.value)}
+              maxLength={200}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-dark-800"
             />
           </div>
@@ -164,6 +165,7 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
               placeholder="Écrivez votre message ici..."
               value={message}
               onChange={e => setMessage(e.target.value)}
+              maxLength={5000}
               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-dark-800 resize-none"
             />
           </div>
@@ -209,7 +211,7 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
           <input
             ref={fileRef}
             type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.webp"
+            accept="application/pdf,image/jpeg,image/png,image/webp"
             multiple
             onChange={handleFileSelect}
             className="hidden"

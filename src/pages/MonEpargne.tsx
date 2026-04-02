@@ -260,7 +260,8 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                                     setRetryPayment({ type: pType, amount: p.amount });
                                     setEpargneOpen(true);
                                   }}
-                                  className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                                  disabled={epargneOpen}
+                                  className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
                                   title="Repayer"
                                 >
                                   <RefreshCw className="w-3.5 h-3.5" />

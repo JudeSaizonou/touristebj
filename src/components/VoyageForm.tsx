@@ -119,9 +119,13 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
     }
 
     if (valid.length > 0) {
-      const previews = await Promise.all(valid.map(previewFile));
-      setNewPhotoFiles(prev => [...prev, ...valid]);
-      setNewPhotoPreviews(prev => [...prev, ...previews]);
+      try {
+        const previews = await Promise.all(valid.map(previewFile));
+        setNewPhotoFiles(prev => [...prev, ...valid]);
+        setNewPhotoPreviews(prev => [...prev, ...previews]);
+      } catch {
+        setPhotoError('Erreur lors de la lecture des fichiers. Réessayez.');
+      }
     }
 
     if (fileInputRef.current) fileInputRef.current.value = '';
