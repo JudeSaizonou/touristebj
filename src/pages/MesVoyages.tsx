@@ -167,20 +167,41 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
         )}
 
         {/* Empty */}
-        {!loading && !error && bookings.length === 0 && (
-          <div className="flex flex-col items-center py-20 gap-5 text-center">
-            <div className="w-20 h-20 bg-primary-50 rounded-full flex items-center justify-center">
-              <Plane className="w-9 h-9 text-primary-400" />
+        {!loading && !error && bookings.length === 0 && invitations.length === 0 && (
+          <div className="flex flex-col items-center py-12 sm:py-20 gap-6 text-center max-w-md mx-auto">
+            <div className="w-24 h-24 bg-primary-50 rounded-full flex items-center justify-center">
+              <Plane className="w-11 h-11 text-primary-400" />
             </div>
             <div>
-              <p className="text-xl font-playfair font-bold text-dark-800 mb-2">Aucune réservation</p>
-              <p className="text-dark-800/50 text-sm max-w-sm">
-                Découvrez nos destinations et réservez votre prochain voyage.
+              <p className="text-2xl font-playfair font-bold text-dark-800 mb-3">Pas encore de voyage</p>
+              <p className="text-dark-800/50 text-sm leading-relaxed">
+                Vous n'avez aucune réservation pour le moment. Parcourez nos destinations, trouvez le voyage qui vous inspire et réservez avec seulement 30% d'acompte.
               </p>
             </div>
-            <button onClick={onBack} className="inline-flex items-center gap-2 px-8 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors">
-              Voir les voyages <ArrowRight className="w-4 h-4" />
-            </button>
+
+            <div className="w-full space-y-3">
+              <button
+                onClick={onBack}
+                className="w-full inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
+              >
+                Découvrir les voyages <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4 pt-4 w-full">
+              <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+                <p className="font-bold text-primary-500 text-lg">30%</p>
+                <p className="text-[10px] text-dark-800/40 mt-0.5">d'acompte seulement</p>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+                <p className="font-bold text-primary-500 text-lg">0%</p>
+                <p className="text-[10px] text-dark-800/40 mt-0.5">de frais cachés</p>
+              </div>
+              <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+                <p className="font-bold text-primary-500 text-lg">100%</p>
+                <p className="text-[10px] text-dark-800/40 mt-0.5">sécurisé</p>
+              </div>
+            </div>
           </div>
         )}
 
