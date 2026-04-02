@@ -44,6 +44,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [epargneOpen, setEpargneOpen] = useState(false);
+  const [retryPayment, setRetryPayment] = useState<{ type: 'DEPOSIT' | 'INSTALLMENT'; amount: number } | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -234,7 +235,11 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                               </div>
                               {(isPending || isFailed) && (
                                 <button
-                                  onClick={() => setEpargneOpen(true)}
+                                  onClick={() => {
+                                    const pType = (p.type || '').toUpperCase().includes('DEPOSIT') ? 'DEPOSIT' as const : 'INSTALLMENT' as const;
+                                    setRetryPayment({ type: pType, amount: p.amount });
+                                    setEpargneOpen(true);
+                                  }}
                                   className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
                                   title="Repayer"
                                 >
@@ -322,8 +327,10 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
       <EpargneModal
         isOpen={epargneOpen}
         booking={booking}
-        onClose={() => setEpargneOpen(false)}
-        onSuccess={loadData}
+        onClose={() => { setEpargneOpen(false); setRetryPayment(null); }}
+        onSuccess={() => { setRetryPayment(null); loadData(); }}
+        forceType={retryPayment?.type}
+        defaultAmount={retryPayment?.amount}
       />
     </PublicLayout>
   );

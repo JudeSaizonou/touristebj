@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, PiggyBank, Loader2, CheckCircle, AlertCircle, RefreshCw, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { payBookingMtn, payInstallmentKkiapay, verifyKkiapayTransaction } from '../api/payments';
+import { payBookingMtn, payDepositKkiapay, payInstallmentKkiapay, verifyKkiapayTransaction } from '../api/payments';
 import { openKkiapay } from '../api/kkiapay';
 import type { MappedBooking } from '../types';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
@@ -12,15 +12,19 @@ interface EpargneModalProps {
   booking: MappedBooking | null;
   onClose: () => void;
   onSuccess?: () => void;
+  /** Force le type de paiement (DEPOSIT pour repayer un acompte, sinon INSTALLMENT par défaut) */
+  forceType?: 'DEPOSIT' | 'INSTALLMENT';
+  /** Montant pré-rempli (pour repayer un paiement pending) */
+  defaultAmount?: number;
 }
 
 type Step = 'form' | 'loading' | 'processing' | 'successful' | 'failed' | 'expired' | 'timeout';
 type PaymentMethod = 'mtn' | 'kkiapay';
 
-export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onClose, onSuccess }) => {
+export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onClose, onSuccess, forceType, defaultAmount }) => {
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('form');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(defaultAmount ? String(defaultAmount) : '');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mtn');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -33,11 +37,14 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
   const canClose = step === 'form' || step === 'successful' || step === 'failed' || step === 'expired' || step === 'timeout';
 
   useEffect(() => {
-    if (isOpen && user?.phoneNumber) {
-      const national = user.phoneNumber.replace(/^\+\d{1,3}/, '').replace(/\D/g, '');
-      setPhoneNumber(national);
+    if (isOpen) {
+      if (user?.phoneNumber) {
+        const national = user.phoneNumber.replace(/^\+\d{1,3}/, '').replace(/\D/g, '');
+        setPhoneNumber(national);
+      }
+      if (defaultAmount) setAmount(String(defaultAmount));
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, defaultAmount]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -62,6 +69,9 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
     ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
 
+  const payType = forceType || 'INSTALLMENT';
+  const isDeposit = payType === 'DEPOSIT';
+
   const handlePayMtn = async () => {
     if (step !== 'form') return;
     setStep('loading');
@@ -71,7 +81,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
         amount: amountNum,
         phoneNumber: phoneNumber.replace(/\D/g, ''),
         countryCode: '229',
-        type: 'INSTALLMENT',
+        type: payType,
       });
       setStep('processing');
       startPolling(res.referenceId);
@@ -90,15 +100,15 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
     setStep('loading');
     setErrorMsg('');
     try {
-      await payInstallmentKkiapay(booking.id, amountNum);
+      const initFn = isDeposit ? payDepositKkiapay : payInstallmentKkiapay;
+      await initFn(booking.id, amountNum);
       const result = await openKkiapay({
         amount: amountNum,
         phone: phoneNumber.replace(/\D/g, '') || undefined,
         name: user?.username || undefined,
-        description: 'Versement épargne voyage',
+        description: isDeposit ? 'Acompte voyage' : 'Versement épargne voyage',
       });
-      // Vérification côté serveur (sécurité anti-fraude)
-      await verifyKkiapayTransaction(booking.id, result.transactionId, 'INSTALLMENT');
+      await verifyKkiapayTransaction(booking.id, result.transactionId, payType);
       setStep('successful');
     } catch (err: any) {
       setErrorMsg(err?.message || 'Paiement KKiaPay échoué.');
@@ -138,7 +148,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
         <div className="bg-forest-800 px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2 text-white">
             <PiggyBank className="w-5 h-5" />
-            <h2 className="font-playfair text-xl font-bold">Épargner</h2>
+            <h2 className="font-playfair text-xl font-bold">{isDeposit ? 'Payer l\'acompte' : 'Épargner'}</h2>
           </div>
           {canClose && (
             <button onClick={handleClose} className="text-white/60 hover:text-white transition-colors">
@@ -186,7 +196,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
 
               {/* Montant */}
               <div>
-                <label className="block text-sm font-semibold text-dark-800 mb-2">Montant à épargner (FCFA)</label>
+                <label className="block text-sm font-semibold text-dark-800 mb-2">{isDeposit ? 'Montant de l\'acompte (FCFA)' : 'Montant à épargner (FCFA)'}</label>
                 <input
                   type="text"
                   inputMode="numeric"
