@@ -4,7 +4,7 @@ import { PageView } from '../types';
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
 
 interface SidebarProps {
-  currentPage: 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'parametres';
+  currentPage: 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
   onNavigate: (page: PageView) => void;
   onLogout?: () => void;
   onRequestRefund?: () => void;
@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLog
     { id: 'voyages' as const, label: 'Voyages', icon: Plane },
     { id: 'reservations' as const, label: 'Réservations', icon: CalendarCheck },
     { id: 'all-voyageurs' as const, label: 'Voyageurs', icon: Users },
+    { id: 'reversements' as const, label: 'Reversements', icon: ArrowRightLeft },
     { id: 'parametres' as const, label: 'Paramètres', icon: Settings },
   ];
 
@@ -56,10 +57,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLog
           {onRequestRefund && (
             <button
               onClick={onRequestRefund}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-600 hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 group"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-forest-800/5 text-forest-800 hover:bg-forest-800/10 transition-all duration-200 group"
             >
-              <ArrowRightLeft className="w-5 h-5 text-gray-400 group-hover:text-primary-500" />
-              <span className="flex-1 text-left font-medium">Reversement</span>
+              <ArrowRightLeft className="w-5 h-5 text-forest-700 group-hover:text-forest-800" />
+              <span className="flex-1 text-left font-medium text-sm">Demander un reversement</span>
             </button>
           )}
           <button
