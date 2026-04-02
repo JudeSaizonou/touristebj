@@ -91,10 +91,11 @@ export async function apiRequest<T>(
           if (retryRes.ok) return retryBody as T;
         }
       }
-      // Refresh failed — clear auth
+      // Refresh failed — clear auth and force logout
       localStorage.removeItem('touriste_token');
       localStorage.removeItem('touriste_refresh');
       localStorage.removeItem('touriste_user');
+      window.dispatchEvent(new CustomEvent('auth:force-logout'));
     }
     const err: ApiError = {
       success: false,

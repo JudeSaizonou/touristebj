@@ -42,6 +42,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ token, user, ready: true });
   }, []);
 
+  // Listen for forced logout (e.g. expired token, failed refresh)
+  useEffect(() => {
+    const handleForceLogout = () => {
+      setState({ token: null, user: null, ready: true });
+      window.history.pushState(null, '', '/');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    };
+    window.addEventListener('auth:force-logout', handleForceLogout);
+    return () => window.removeEventListener('auth:force-logout', handleForceLogout);
+  }, []);
+
   const logoutInProgress = useRef(false);
 
   const setAuth = useCallback((token: string, user: AuthUser, refreshToken?: string) => {
