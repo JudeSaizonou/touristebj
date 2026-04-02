@@ -503,6 +503,27 @@ export async function requestVoyageurDocuments(
   return res.documentRequests;
 }
 
+// ─── Messaging (admin → traveler) ──────────────────────────────────────────
+
+export async function sendTravelerMessage(
+  bookingId: string,
+  data: { subject: string; message: string; attachments?: string[] }
+): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/partner/travelers/${bookingId}/message`,
+    { method: 'POST', body: JSON.stringify(data) }
+  );
+}
+
+export async function uploadTravelerFile(bookingId: string, file: File): Promise<{ url: string; filename: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequestMultipart<{ success: boolean; url: string; filename: string }>(
+    `${TRIPS_PREFIX}/partner/travelers/${bookingId}/upload`,
+    formData
+  );
+}
+
 export async function getAllVoyageurs(params?: {
   tripId?: string;
   status?: string;

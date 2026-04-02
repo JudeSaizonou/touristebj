@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, Upload, Eye, SlidersHorizontal } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Upload, Eye, SlidersHorizontal, Mail } from 'lucide-react';
 import { getAllVoyageurs } from '../api/trips';
 import { ExportModal } from '../components/ExportModal';
+import { SendMessageModal } from '../components/SendMessageModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
 
@@ -42,6 +43,7 @@ export const AllVoyageursList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedTraveler, setSelectedTraveler] = useState<any | null>(null);
+  const [messageTarget, setMessageTarget] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 12;
@@ -274,13 +276,22 @@ export const AllVoyageursList: React.FC = () => {
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 font-medium text-green-600 text-xs sm:text-sm">{fmtPrice(t.amountPaid)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 font-medium text-orange-600 text-xs sm:text-sm hidden sm:table-cell">{fmtPrice(t.remainingAmount)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3">
-                    <button
-                      onClick={() => setSelectedTraveler(t)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Voir détails"
-                    >
-                      <Eye className="w-4 h-4 text-gray-500" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setSelectedTraveler(t)}
+                        className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Voir détails"
+                      >
+                        <Eye className="w-4 h-4 text-gray-500" />
+                      </button>
+                      <button
+                        onClick={() => setMessageTarget(t)}
+                        className="p-1.5 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Envoyer un message"
+                      >
+                        <Mail className="w-4 h-4 text-blue-500" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -313,6 +324,17 @@ export const AllVoyageursList: React.FC = () => {
           </div>
         )}
       </div>
+
+      {messageTarget && (
+        <SendMessageModal
+          isOpen={!!messageTarget}
+          bookingId={messageTarget._id || messageTarget.id}
+          travelerName={messageTarget.nom}
+          travelerEmail={messageTarget.email}
+          onClose={() => setMessageTarget(null)}
+          onSuccess={() => { addToast('success', 'Message envoyé avec succès'); }}
+        />
+      )}
     </div>
   );
 };

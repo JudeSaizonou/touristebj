@@ -45,6 +45,7 @@ export interface ChartData {
 export interface Voyageur {
   id: string;
   nom: string;
+  email?: string;
   date: string;
   statutPaiement: 'acompte-paye' | 'epargne-en-cours' | 'solde' | 'financement-accorde' | 'reservation-annulee';
   moyenUtilise: 'epargne' | 'financement' | 'une-fois' | 'annule';

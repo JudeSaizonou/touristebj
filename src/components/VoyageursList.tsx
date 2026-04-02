@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, SlidersHorizontal, Calendar, Upload, Plus, Eye, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X } from 'lucide-react';
+import { Search, SlidersHorizontal, Calendar, Upload, Plus, Eye, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X, Mail } from 'lucide-react';
 import * as tripsApi from '../api/trips';
 import { ConfirmModal } from './ConfirmModal';
 import { ExportModal } from './ExportModal';
 import { VoyageurDetailsModal } from './VoyageurDetailsModal';
+import { SendMessageModal } from './SendMessageModal';
 import { ToastContainer, useToast } from './Toast';
 import { handleExport } from '../utils/export';
 import { Voyageur, VoyageurDocumentType } from '../types';
@@ -226,6 +227,7 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [showFormModal, setShowFormModal] = useState(false);
   const [activeVoyageur, setActiveVoyageur] = useState<Voyageur | null>(null);
+  const [messageTarget, setMessageTarget] = useState<Voyageur | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -460,6 +462,17 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
         onRequestDocuments={handleRequestDocuments}
       />
 
+      {messageTarget && (
+        <SendMessageModal
+          isOpen={!!messageTarget}
+          bookingId={messageTarget.id}
+          travelerName={messageTarget.nom}
+          travelerEmail={messageTarget.email}
+          onClose={() => setMessageTarget(null)}
+          onSuccess={() => { addToast('success', 'Message envoyé avec succès'); }}
+        />
+      )}
+
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
@@ -657,6 +670,13 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
                         title="Voir détails et documents"
                       >
                         <Eye className="w-4 h-4 text-gray-600" />
+                      </button>
+                      <button
+                        onClick={() => setMessageTarget(voyageur)}
+                        className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Envoyer un message"
+                      >
+                        <Mail className="w-4 h-4 text-blue-500" />
                       </button>
                       <button
                         onClick={() => handleDelete(voyageur.id)}
