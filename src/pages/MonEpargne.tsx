@@ -295,9 +295,9 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   <div className="flex items-center gap-2 mb-5">
                     <Mail className="w-5 h-5 text-blue-500" />
                     <h2 className="font-bold text-dark-800">Messages</h2>
-                    {messages.filter(m => !m.isRead).length > 0 && (
+                    {messages.filter(m => !m.read).length > 0 && (
                       <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {messages.filter(m => !m.isRead).length}
+                        {messages.filter(m => !m.read).length}
                       </span>
                     )}
                   </div>
@@ -305,12 +305,12 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                     {messages.map(msg => (
                       <div
                         key={msg.id}
-                        className={`rounded-xl p-4 border transition-colors ${!msg.isRead ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100'}`}
-                        onClick={() => { if (!msg.isRead) markMessageRead(bookingId, msg.id).then(() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, isRead: true } : m))).catch(() => {}); }}
+                        className={`rounded-xl p-4 border transition-colors ${!msg.read ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100'}`}
+                        onClick={() => { if (!msg.read) markMessageRead(bookingId, msg.id).then(() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))).catch(() => {}); }}
                       >
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <p className="text-sm font-semibold text-dark-800">{msg.subject}</p>
-                          {!msg.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />}
+                          {!msg.read && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />}
                         </div>
                         <p className="text-sm text-dark-800/70 whitespace-pre-line">{msg.message}</p>
                         {msg.attachments && msg.attachments.length > 0 && (
@@ -332,7 +332,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                         )}
                         <div className="flex items-center justify-between mt-2">
                           <p className="text-[10px] text-dark-800/30">
-                            {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                            {msg.sentAt ? new Date(msg.sentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
                           </p>
                           {msg.sender && <p className="text-[10px] text-dark-800/30">{msg.sender}</p>}
                         </div>
@@ -348,9 +348,9 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   <div className="flex items-center gap-2 mb-5">
                     <FileText className="w-5 h-5 text-amber-500" />
                     <h2 className="font-bold text-dark-800">Documents demandés</h2>
-                    {docRequests.filter(d => d.status === 'PENDING').length > 0 && (
+                    {docRequests.filter(d => d.status === 'pending').length > 0 && (
                       <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {docRequests.filter(d => d.status === 'PENDING').length} à fournir
+                        {docRequests.filter(d => d.status === 'pending').length} à fournir
                       </span>
                     )}
                   </div>
@@ -358,28 +358,28 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                     {docRequests.map(doc => (
                       <div key={doc.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-dark-800">{getDocumentLabel(doc.documentType)}</p>
+                          <p className="text-sm font-semibold text-dark-800">{getDocumentLabel(doc)}</p>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
-                            doc.status === 'APPROVED' ? 'bg-green-100 text-green-600 border-green-200'
-                              : doc.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-600 border-blue-200'
-                              : doc.status === 'REJECTED' ? 'bg-red-100 text-red-600 border-red-200'
+                            doc.status === 'approved' ? 'bg-green-100 text-green-600 border-green-200'
+                              : doc.status === 'submitted' ? 'bg-blue-100 text-blue-600 border-blue-200'
+                              : doc.status === 'rejected' ? 'bg-red-100 text-red-600 border-red-200'
                               : 'bg-amber-100 text-amber-600 border-amber-200'
                           }`}>
-                            {doc.status === 'APPROVED' ? 'Validé' : doc.status === 'SUBMITTED' ? 'Soumis' : doc.status === 'REJECTED' ? 'Refusé' : 'À fournir'}
+                            {doc.status === 'approved' ? 'Validé' : doc.status === 'submitted' ? 'Soumis' : doc.status === 'rejected' ? 'Refusé' : 'À fournir'}
                           </span>
                         </div>
                         {doc.notes && <p className="text-xs text-dark-800/50 mb-2">{doc.notes}</p>}
-                        {doc.rejectionReason && doc.status === 'REJECTED' && (
+                        {doc.rejectionReason && doc.status === 'rejected' && (
                           <p className="text-xs text-red-500 mb-3 flex items-center gap-1">
                             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {doc.rejectionReason}
                           </p>
                         )}
-                        {(doc.status === 'PENDING' || doc.status === 'REJECTED') && (
+                        {(doc.status === 'pending' || doc.status === 'rejected') && (
                           <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer">
                             {uploadingDocId === doc.id ? (
                               <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours...</>
                             ) : (
-                              <><Upload className="w-4 h-4" /> {doc.status === 'REJECTED' ? 'Renvoyer le document' : 'Envoyer le document'}</>
+                              <><Upload className="w-4 h-4" /> {doc.status === 'rejected' ? 'Renvoyer le document' : 'Envoyer le document'}</>
                             )}
                             <input
                               type="file"
@@ -392,7 +392,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                                 setUploadingDocId(doc.id);
                                 try {
                                   await submitDocument(bookingId, doc.id, file);
-                                  setDocRequests(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'SUBMITTED' as const } : d));
+                                  setDocRequests(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'submitted' as const } : d));
                                 } catch {
                                   setError('Erreur lors de l\'envoi du document.');
                                 } finally {
@@ -403,12 +403,12 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                             />
                           </label>
                         )}
-                        {doc.status === 'SUBMITTED' && (
+                        {doc.status === 'submitted' && (
                           <p className="text-xs text-blue-500 mt-2 flex items-center gap-1">
                             <CheckCircle className="w-3.5 h-3.5" /> Document envoyé — en attente de validation
                           </p>
                         )}
-                        {doc.status === 'APPROVED' && (
+                        {doc.status === 'approved' && (
                           <p className="text-xs text-green-500 mt-2 flex items-center gap-1">
                             <CheckCircle className="w-3.5 h-3.5" /> Document validé
                           </p>
