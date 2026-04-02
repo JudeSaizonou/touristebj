@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
-import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, getBookingDocumentRequests, submitDocument, markMessageRead } from '../api/trips';
+import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, getBookingDocumentRequests, submitDocument, markMessageRead, getDocumentLabel } from '../api/trips';
 import type { BookingMessage, DocumentRequest } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
@@ -66,16 +66,16 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     setLoading(true);
     setError('');
     try {
-      const [b, p, msgs, docs] = await Promise.all([
+      const [b, p, msgsRes, docsRes] = await Promise.all([
         getBookingById(bookingId),
         getBookingPayments(bookingId),
-        getBookingMessages(bookingId).catch(() => [] as BookingMessage[]),
-        getBookingDocumentRequests(bookingId).catch(() => [] as DocumentRequest[]),
+        getBookingMessages(bookingId).catch(() => ({ messages: [] as BookingMessage[], unreadCount: 0 })),
+        getBookingDocumentRequests(bookingId).catch(() => ({ documents: [] as DocumentRequest[], summary: { total: 0, pending: 0, submitted: 0, approved: 0, rejected: 0 } })),
       ]);
       setBooking(b);
       setPayments(p);
-      setMessages(msgs);
-      setDocRequests(docs);
+      setMessages(msgsRes.messages);
+      setDocRequests(docsRes.documents);
     } catch (err: any) {
       const msg: string = err?.message || '';
       const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
@@ -228,15 +228,18 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                       {payments.map(p => {
                         const isSuccess = ['success', 'completed'].includes((p.status || '').toLowerCase());
                         const isPending = (p.status || '').toLowerCase() === 'pending';
-                        const isFailed = !isSuccess && !isPending;
+                        const isExpired = (p.status || '').toLowerCase() === 'expired';
+                        const isFailed = !isSuccess && !isPending && !isExpired;
                         return (
-                          <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl gap-3 ${isPending || isFailed ? 'bg-gray-50/50' : 'hover:bg-gray-50'} transition-colors`}>
+                          <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl gap-3 ${isPending || isFailed || isExpired ? 'bg-gray-50/50' : 'hover:bg-gray-50'} transition-colors`}>
                             <div className="flex items-center gap-3 min-w-0">
                               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                isPending ? 'bg-amber-100' : isFailed ? 'bg-red-100' : p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-primary-50'
+                                isPending ? 'bg-amber-100' : isExpired ? 'bg-gray-100' : isFailed ? 'bg-red-100' : p.type === 'DEPOSIT' ? 'bg-blue-100' : 'bg-primary-50'
                               }`}>
                                 {isPending
                                   ? <Clock className="w-4 h-4 text-amber-500" />
+                                  : isExpired
+                                  ? <Clock className="w-4 h-4 text-gray-400" />
                                   : isFailed
                                   ? <AlertCircle className="w-4 h-4 text-red-500" />
                                   : p.type === 'DEPOSIT'
@@ -245,24 +248,25 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                                 }
                               </div>
                               <div className="min-w-0">
-                                <p className={`text-sm font-medium ${isPending || isFailed ? 'text-dark-800/50' : 'text-dark-800'}`}>
-                                  {p.type === 'DEPOSIT' ? 'Acompte' : 'Versement'}
+                                <p className={`text-sm font-medium ${isPending || isFailed || isExpired ? 'text-dark-800/50' : 'text-dark-800'}`}>
+                                  {(p.type || '').toUpperCase().includes('DEPOSIT') ? 'Acompte' : 'Versement'}
                                 </p>
                                 <p className="text-xs text-dark-800/40">{p.date}</p>
                               </div>
                             </div>
                             <div className="text-right flex-shrink-0 flex items-center gap-2">
                               <div>
-                                <p className={`font-bold text-sm ${isPending || isFailed ? 'text-dark-800/40 line-through' : 'text-dark-800'}`}>{fmtPrice(p.amount)}</p>
+                                <p className={`font-bold text-sm ${isPending || isFailed || isExpired ? 'text-dark-800/40 line-through' : 'text-dark-800'}`}>{fmtPrice(p.amount)}</p>
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
                                   isSuccess ? 'bg-green-100 text-green-600'
                                     : isPending ? 'bg-amber-100 text-amber-600'
+                                    : isExpired ? 'bg-gray-100 text-gray-500'
                                     : 'bg-red-100 text-red-600'
                                 }`}>
-                                  {isSuccess ? 'Confirmé' : isPending ? 'En attente' : 'Échoué'}
+                                  {isSuccess ? 'Confirmé' : isPending ? 'En attente' : isExpired ? 'Expiré' : 'Échoué'}
                                 </span>
                               </div>
-                              {(isPending || isFailed) && (
+                              {(isPending || isFailed || isExpired) && (
                                 <button
                                   onClick={() => {
                                     const pType = (p.type || '').toUpperCase().includes('DEPOSIT') ? 'DEPOSIT' as const : 'INSTALLMENT' as const;
@@ -291,9 +295,9 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   <div className="flex items-center gap-2 mb-5">
                     <Mail className="w-5 h-5 text-blue-500" />
                     <h2 className="font-bold text-dark-800">Messages</h2>
-                    {messages.filter(m => !m.read).length > 0 && (
+                    {messages.filter(m => !m.isRead).length > 0 && (
                       <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {messages.filter(m => !m.read).length}
+                        {messages.filter(m => !m.isRead).length}
                       </span>
                     )}
                   </div>
@@ -301,12 +305,12 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                     {messages.map(msg => (
                       <div
                         key={msg.id}
-                        className={`rounded-xl p-4 border transition-colors ${!msg.read ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100'}`}
-                        onClick={() => { if (!msg.read) markMessageRead(bookingId, msg.id).then(() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, read: true } : m))).catch(() => {}); }}
+                        className={`rounded-xl p-4 border transition-colors ${!msg.isRead ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100'}`}
+                        onClick={() => { if (!msg.isRead) markMessageRead(bookingId, msg.id).then(() => setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, isRead: true } : m))).catch(() => {}); }}
                       >
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <p className="text-sm font-semibold text-dark-800">{msg.subject}</p>
-                          {!msg.read && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />}
+                          {!msg.isRead && <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1.5" />}
                         </div>
                         <p className="text-sm text-dark-800/70 whitespace-pre-line">{msg.message}</p>
                         {msg.attachments && msg.attachments.length > 0 && (
@@ -326,9 +330,12 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                             ))}
                           </div>
                         )}
-                        <p className="text-[10px] text-dark-800/30 mt-2">
-                          {msg.sentAt ? new Date(msg.sentAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
-                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-[10px] text-dark-800/30">
+                            {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                          </p>
+                          {msg.sender && <p className="text-[10px] text-dark-800/30">{msg.sender}</p>}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -341,9 +348,9 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   <div className="flex items-center gap-2 mb-5">
                     <FileText className="w-5 h-5 text-amber-500" />
                     <h2 className="font-bold text-dark-800">Documents demandés</h2>
-                    {docRequests.filter(d => d.status === 'pending').length > 0 && (
+                    {docRequests.filter(d => d.status === 'PENDING').length > 0 && (
                       <span className="bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                        {docRequests.filter(d => d.status === 'pending').length} à fournir
+                        {docRequests.filter(d => d.status === 'PENDING').length} à fournir
                       </span>
                     )}
                   </div>
@@ -351,23 +358,28 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                     {docRequests.map(doc => (
                       <div key={doc.id} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm font-semibold text-dark-800">{doc.label}</p>
+                          <p className="text-sm font-semibold text-dark-800">{getDocumentLabel(doc.documentType)}</p>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
-                            doc.status === 'approved' ? 'bg-green-100 text-green-600 border-green-200'
-                              : doc.status === 'submitted' ? 'bg-blue-100 text-blue-600 border-blue-200'
-                              : doc.status === 'rejected' ? 'bg-red-100 text-red-600 border-red-200'
+                            doc.status === 'APPROVED' ? 'bg-green-100 text-green-600 border-green-200'
+                              : doc.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-600 border-blue-200'
+                              : doc.status === 'REJECTED' ? 'bg-red-100 text-red-600 border-red-200'
                               : 'bg-amber-100 text-amber-600 border-amber-200'
                           }`}>
-                            {doc.status === 'approved' ? 'Validé' : doc.status === 'submitted' ? 'Soumis' : doc.status === 'rejected' ? 'Refusé' : 'À fournir'}
+                            {doc.status === 'APPROVED' ? 'Validé' : doc.status === 'SUBMITTED' ? 'Soumis' : doc.status === 'REJECTED' ? 'Refusé' : 'À fournir'}
                           </span>
                         </div>
-                        {doc.notes && <p className="text-xs text-dark-800/50 mb-3">{doc.notes}</p>}
-                        {(doc.status === 'pending' || doc.status === 'rejected') && (
+                        {doc.notes && <p className="text-xs text-dark-800/50 mb-2">{doc.notes}</p>}
+                        {doc.rejectionReason && doc.status === 'REJECTED' && (
+                          <p className="text-xs text-red-500 mb-3 flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {doc.rejectionReason}
+                          </p>
+                        )}
+                        {(doc.status === 'PENDING' || doc.status === 'REJECTED') && (
                           <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-semibold hover:bg-primary-600 transition-colors cursor-pointer">
                             {uploadingDocId === doc.id ? (
-                              <><Loader2 className="w-4 h-4 animate-spin" /> Upload...</>
+                              <><Loader2 className="w-4 h-4 animate-spin" /> Envoi en cours...</>
                             ) : (
-                              <><Upload className="w-4 h-4" /> {doc.status === 'rejected' ? 'Renvoyer' : 'Envoyer le document'}</>
+                              <><Upload className="w-4 h-4" /> {doc.status === 'REJECTED' ? 'Renvoyer le document' : 'Envoyer le document'}</>
                             )}
                             <input
                               type="file"
@@ -380,7 +392,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                                 setUploadingDocId(doc.id);
                                 try {
                                   await submitDocument(bookingId, doc.id, file);
-                                  setDocRequests(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'submitted' } : d));
+                                  setDocRequests(prev => prev.map(d => d.id === doc.id ? { ...d, status: 'SUBMITTED' as const } : d));
                                 } catch {
                                   setError('Erreur lors de l\'envoi du document.');
                                 } finally {
@@ -391,12 +403,12 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                             />
                           </label>
                         )}
-                        {doc.status === 'submitted' && (
+                        {doc.status === 'SUBMITTED' && (
                           <p className="text-xs text-blue-500 mt-2 flex items-center gap-1">
                             <CheckCircle className="w-3.5 h-3.5" /> Document envoyé — en attente de validation
                           </p>
                         )}
-                        {doc.status === 'approved' && (
+                        {doc.status === 'APPROVED' && (
                           <p className="text-xs text-green-500 mt-2 flex items-center gap-1">
                             <CheckCircle className="w-3.5 h-3.5" /> Document validé
                           </p>

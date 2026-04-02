@@ -1046,54 +1046,89 @@ export interface BookingMessage {
   subject: string;
   message: string;
   attachments?: { url: string; filename: string }[];
-  sentAt: string;
-  read: boolean;
+  sender?: string;
+  senderRole?: string;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
 }
 
 export interface DocumentRequest {
   id: string;
   documentType: string;
-  label: string;
-  status: 'pending' | 'submitted' | 'approved' | 'rejected';
-  notes?: string;
+  status: 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
   requestedAt: string;
-  submittedUrl?: string;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  fileUrl: string | null;
+  fileName: string | null;
+  notes: string | null;
+  rejectionReason: string | null;
 }
 
-export async function getBookingMessages(bookingId: string): Promise<BookingMessage[]> {
-  const res = await apiRequest<{ success: boolean; messages: any[] }>(
+const DOC_LABELS: Record<string, string> = {
+  PASSPORT: 'Passeport',
+  ID_CARD: 'Copie pièce d\'identité',
+  PHOTO: 'Photo d\'identité',
+};
+
+export async function getBookingMessages(bookingId: string): Promise<{ messages: BookingMessage[]; unreadCount: number }> {
+  const res = await apiRequest<{ success: boolean; messages: any[]; unreadCount: number }>(
     `${TRIPS_PREFIX}/bookings/${bookingId}/messages`
   );
-  return (res.messages || []).map((m: any) => ({
-    id: m._id || m.id,
-    subject: m.subject || '',
-    message: m.message || '',
-    attachments: m.attachments || [],
-    sentAt: m.sentAt || m.createdAt || '',
-    read: m.read ?? false,
-  }));
+  return {
+    messages: (res.messages || []).map((m: any) => ({
+      id: m.id || m._id,
+      subject: m.subject || '',
+      message: m.message || '',
+      attachments: m.attachments || [],
+      sender: m.sender,
+      senderRole: m.senderRole,
+      isRead: m.isRead ?? false,
+      readAt: m.readAt || null,
+      createdAt: m.createdAt || '',
+    })),
+    unreadCount: res.unreadCount ?? 0,
+  };
 }
 
-export async function getBookingDocumentRequests(bookingId: string): Promise<DocumentRequest[]> {
-  const res = await apiRequest<{ success: boolean; documentRequests: any[] }>(
+export async function getBookingDocumentRequests(bookingId: string): Promise<{
+  documents: DocumentRequest[];
+  summary: { total: number; pending: number; submitted: number; approved: number; rejected: number };
+  trip?: { title: string; destination: string };
+  bookingNumber?: string;
+}> {
+  const res = await apiRequest<{ success: boolean; documents: any[]; summary: any; trip?: any; bookingNumber?: string }>(
     `${TRIPS_PREFIX}/bookings/${bookingId}/documents`
   );
-  return (res.documentRequests || []).map((d: any) => ({
-    id: d._id || d.id,
-    documentType: d.documentType || d.type || '',
-    label: d.label || d.documentType || '',
-    status: d.status || 'pending',
-    notes: d.notes,
-    requestedAt: d.requestedAt || d.createdAt || '',
-    submittedUrl: d.submittedUrl || d.fileUrl,
-  }));
+  return {
+    documents: (res.documents || []).map((d: any) => ({
+      id: d.id || d._id,
+      documentType: d.documentType || '',
+      status: d.status || 'PENDING',
+      requestedAt: d.requestedAt || '',
+      submittedAt: d.submittedAt || null,
+      reviewedAt: d.reviewedAt || null,
+      fileUrl: d.fileUrl || null,
+      fileName: d.fileName || null,
+      notes: d.notes || null,
+      rejectionReason: d.rejectionReason || null,
+    })),
+    summary: res.summary || { total: 0, pending: 0, submitted: 0, approved: 0, rejected: 0 },
+    trip: res.trip,
+    bookingNumber: res.bookingNumber,
+  };
 }
 
-export async function submitDocument(bookingId: string, documentId: string, file: File): Promise<{ success: boolean }> {
+export function getDocumentLabel(type: string): string {
+  return DOC_LABELS[type] || type;
+}
+
+export async function submitDocument(bookingId: string, documentId: string, file: File): Promise<{ success: boolean; document?: DocumentRequest }> {
   const formData = new FormData();
   formData.append('file', file);
-  return apiRequestMultipart<{ success: boolean }>(
-    `${TRIPS_PREFIX}/bookings/${bookingId}/documents/${documentId}/submit`,
+  return apiRequestMultipart<{ success: boolean; document?: DocumentRequest }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/documents/${documentId}/upload`,
     formData
   );
 }
