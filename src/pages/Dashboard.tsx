@@ -266,26 +266,30 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const loadBookings = async () => {
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const loadBookings = async (overridePage?: number, overrideSearch?: string) => {
+    setSearchLoading(true);
     try {
       const { bookings: list, pagination: pag } = await getDashboardBookings({
+        search: (overrideSearch ?? search) || undefined,
         status: statusFilter || undefined,
-        page: currentPage,
+        page: overridePage ?? currentPage,
         limit: itemsPerPage,
       });
       setBookings(list);
       setPagination(pag);
     } catch {
       // non critique
+    } finally {
+      setSearchLoading(false);
     }
   };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1);
-    getDashboardBookings({ search, status: statusFilter || undefined, page: 1, limit: itemsPerPage })
-      .then(({ bookings: list, pagination: pag }) => { setBookings(list); setPagination(pag); })
-      .catch(() => {});
+    loadBookings(1, search);
   };
 
   const totalPages = pagination?.pages ?? Math.max(1, Math.ceil((pagination?.total ?? bookings.length) / itemsPerPage));
@@ -559,7 +563,13 @@ export const Dashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {bookings.length === 0 ? (
+              {searchLoading ? (
+                <tr>
+                  <td colSpan={10} className="px-6 py-12 text-center">
+                    <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                  </td>
+                </tr>
+              ) : bookings.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-2 py-8 sm:px-6 sm:py-12 text-center text-gray-400">Aucune réservation</td>
                 </tr>

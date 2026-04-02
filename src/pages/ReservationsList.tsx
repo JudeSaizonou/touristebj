@@ -40,6 +40,7 @@ export const ReservationsList: React.FC = () => {
   const [groupDetail, setGroupDetail] = useState<GroupDetail | null>(null);
   const [groupLoading, setGroupLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 10;
 
@@ -84,13 +85,16 @@ export const ReservationsList: React.FC = () => {
   };
 
   const confirmCancel = async () => {
-    if (!cancelTarget) return;
+    if (!cancelTarget || cancelling) return;
+    setCancelling(true);
     try {
       await cancelBooking(cancelTarget);
       addToast('success', 'Réservation annulée');
       loadBookings();
     } catch (e) {
       addToast('error', (e as { message?: string })?.message || "Impossible d'annuler");
+    } finally {
+      setCancelling(false);
     }
     setCancelTarget(null);
   };
@@ -123,6 +127,7 @@ export const ReservationsList: React.FC = () => {
         title="Annuler la réservation"
         message="Êtes-vous sûr de vouloir annuler cette réservation ? Cette action est irréversible."
         confirmLabel="Annuler la réservation"
+        loading={cancelling}
         onConfirm={confirmCancel}
         onCancel={() => setCancelTarget(null)}
       />

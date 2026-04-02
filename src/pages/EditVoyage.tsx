@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 import { VoyageForm, VoyageFormRef } from '../components/VoyageForm';
 import type { VoyageFormData } from '../components/VoyageForm';
 import { VoyageursList } from '../components/VoyageursList';
@@ -19,6 +20,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
   const [activeTab, setActiveTab] = useState<TabType>('details');
   const [voyage, setVoyage] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
   const formRef = useRef<VoyageFormRef>(null);
   const { toasts, addToast, removeToast } = useToast();
 
@@ -42,7 +44,8 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
   }, [voyageId]);
 
   const handleSubmit = async (data: VoyageFormData) => {
-    if (!voyage) return;
+    if (!voyage || saving) return;
+    setSaving(true);
     try {
       // 1. Supprimer les images retirées
       for (const url of data.removedPhotos) {
@@ -75,6 +78,8 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
       addToast('success', 'Voyage modifié avec succès');
     } catch (e) {
       addToast('error', (e as { message?: string })?.message || 'Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -199,9 +204,14 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
         <div className="flex justify-center mt-6">
           <button
             onClick={() => formRef.current?.triggerSubmit()}
-            className="w-full sm:w-auto px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md"
+            disabled={saving}
+            className="w-full sm:w-auto px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            Enregistrer les modifications
+            {saving ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Enregistrement...</>
+            ) : (
+              'Enregistrer les modifications'
+            )}
           </button>
         </div>
       )}

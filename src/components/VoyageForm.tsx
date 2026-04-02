@@ -72,6 +72,7 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
     initialData?.itinerary?.length ? initialData.itinerary : []
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [photoError, setPhotoError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Image upload ───────────────────────────────────────────────────────────
@@ -83,15 +84,46 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
       reader.readAsDataURL(file);
     });
 
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
+    setPhotoError('');
+
     const totalExisting = existingPhotos.length + newPhotoFiles.length;
     const slots = Math.max(0, 10 - totalExisting);
-    const picked = Array.from(files).slice(0, slots);
-    const previews = await Promise.all(picked.map(previewFile));
-    setNewPhotoFiles(prev => [...prev, ...picked]);
-    setNewPhotoPreviews(prev => [...prev, ...previews]);
+    if (slots === 0) {
+      setPhotoError('Maximum 10 photos atteint.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const all = Array.from(files).slice(0, slots);
+    const rejected: string[] = [];
+    const valid: File[] = [];
+
+    for (const file of all) {
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        rejected.push(`${file.name} : format non supporté (JPG, PNG, WebP uniquement)`);
+      } else if (file.size > MAX_FILE_SIZE) {
+        rejected.push(`${file.name} : trop volumineux (max 5 MB)`);
+      } else {
+        valid.push(file);
+      }
+    }
+
+    if (rejected.length > 0) {
+      setPhotoError(rejected.join(' · '));
+    }
+
+    if (valid.length > 0) {
+      const previews = await Promise.all(valid.map(previewFile));
+      setNewPhotoFiles(prev => [...prev, ...valid]);
+      setNewPhotoPreviews(prev => [...prev, ...previews]);
+    }
+
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -360,10 +392,16 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
           >
             <Upload className="w-8 h-8 text-gray-400 mb-2" />
             <p className="text-sm font-medium text-gray-700">Cliquez pour ajouter des photos</p>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG — max 5 MB/photo — max 10 photos</p>
+            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP — max 5 MB/photo — max 10 photos</p>
           </div>
         )}
-        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" multiple onChange={handleFileUpload} className="hidden" />
+        {photoError && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 mt-2">
+            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-red-600">{photoError}</p>
+          </div>
+        )}
+        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleFileUpload} className="hidden" />
 
         {(existingPhotos.length > 0 || newPhotoFiles.length > 0) && (
           <div className="flex gap-3 flex-wrap">
