@@ -507,10 +507,10 @@ export async function requestVoyageurDocuments(
 
 export async function sendTravelerMessage(
   bookingId: string,
-  data: { subject: string; message: string; attachments?: string[] }
+  data: { subject: string; message: string; attachments?: { url: string; filename: string }[] }
 ): Promise<{ success: boolean }> {
   return apiRequest<{ success: boolean }>(
-    `${TRIPS_PREFIX}/partner/travelers/${bookingId}/message`,
+    `${TRIPS_PREFIX}/partner/dashboard/travelers/${bookingId}/message`,
     { method: 'POST', body: JSON.stringify(data) }
   );
 }
@@ -519,7 +519,7 @@ export async function uploadTravelerFile(bookingId: string, file: File): Promise
   const formData = new FormData();
   formData.append('file', file);
   return apiRequestMultipart<{ success: boolean; url: string; filename: string }>(
-    `${TRIPS_PREFIX}/partner/travelers/${bookingId}/upload`,
+    `${TRIPS_PREFIX}/partner/dashboard/travelers/${bookingId}/upload`,
     formData
   );
 }

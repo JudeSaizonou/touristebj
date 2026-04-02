@@ -77,7 +77,7 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
       await sendTravelerMessage(bookingId, {
         subject: subject.trim(),
         message: message.trim(),
-        attachments: attachments.length > 0 ? attachments.map(a => a.url) : undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
       onSuccess();
       handleClose();
