@@ -449,7 +449,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               <h4 className="text-white font-bold text-xs uppercase tracking-widest mb-3">Paiement s&#233;curis&#233;</h4>
               <div className="flex items-center gap-2.5">
                 <div className="bg-yellow-400 text-yellow-900 rounded-lg px-3 py-1.5 text-xs font-bold">MTN MoMo</div>
-                <div className="bg-green-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold">FedaPay</div>
+                <div className="bg-blue-500 text-white rounded-lg px-3 py-1.5 text-xs font-bold">KKiaPay</div>
               </div>
             </div>
           </div>

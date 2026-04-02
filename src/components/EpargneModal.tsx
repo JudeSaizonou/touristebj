@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, PiggyBank, Loader2, CheckCircle, AlertCircle, RefreshCw, Phone } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { payBookingMtn, payInstallmentFedaPay } from '../api/payments';
-import { openFedaPay } from '../api/fedapay';
+import { payBookingMtn, payInstallmentKkiapay, verifyKkiapayTransaction } from '../api/payments';
+import { openKkiapay } from '../api/kkiapay';
 import type { MappedBooking } from '../types';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
-import { PAYMENT_FEES, FEDAPAY_KEY, FEDAPAY_ENV } from '../config/payments';
+import { PAYMENT_FEES, KKIAPAY_KEY } from '../config/payments';
 
 interface EpargneModalProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ interface EpargneModalProps {
 }
 
 type Step = 'form' | 'loading' | 'processing' | 'successful' | 'failed' | 'expired' | 'timeout';
-type PaymentMethod = 'mtn' | 'fedapay';
+type PaymentMethod = 'mtn' | 'kkiapay';
 
 export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onClose, onSuccess }) => {
   const { user } = useAuth();
@@ -52,17 +52,18 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
 
   const remaining = booking.remainingAmount;
   const amountNum = parseInt(amount.replace(/\D/g, '')) || 0;
-  const fees = Math.round(amountNum * (paymentMethod === 'mtn' ? PAYMENT_FEES.MTN : PAYMENT_FEES.FEDAPAY));
+  const fees = Math.round(amountNum * (paymentMethod === 'mtn' ? PAYMENT_FEES.MTN : PAYMENT_FEES.KKIAPAY));
   const totalDebited = amountNum + fees;
   const isAmountValid = amountNum > 0 && amountNum <= remaining;
   const isPhoneValid = phoneNumber.replace(/\D/g, '').length >= 8;
-  const isValid = isAmountValid && (paymentMethod === 'fedapay' || isPhoneValid);
+  const isValid = isAmountValid && (paymentMethod === 'kkiapay' || isPhoneValid);
 
   const daysLeft = booking.paymentDeadline
     ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
 
   const handlePayMtn = async () => {
+    if (step !== 'form') return;
     setStep('loading');
     setErrorMsg('');
     try {
@@ -80,28 +81,27 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
     }
   };
 
-  const handlePayFedaPay = async () => {
-    if (!FEDAPAY_KEY) {
-      setErrorMsg('FedaPay n\'est pas configuré. Contactez le support.');
+  const handlePayKkiapay = async () => {
+    if (step !== 'form') return;
+    if (!KKIAPAY_KEY) {
+      setErrorMsg('KKiaPay n\'est pas configuré. Contactez le support.');
       return;
     }
     setStep('loading');
     setErrorMsg('');
     try {
-      // 1. Backend crée la transaction et retourne transactionId + montant avec frais
-      const init = await payInstallmentFedaPay(booking.id, amountNum);
-      // 2. Ouvrir le widget FedaPay
-      await openFedaPay({
-        amount: init.amount,
-        publicKey: FEDAPAY_KEY,
-        environment: FEDAPAY_ENV,
+      await payInstallmentKkiapay(booking.id, amountNum);
+      const result = await openKkiapay({
+        amount: amountNum,
+        phone: phoneNumber.replace(/\D/g, '') || undefined,
+        name: user?.username || undefined,
         description: 'Versement épargne voyage',
-        customerPhone: phoneNumber.replace(/\D/g, '') || undefined,
       });
-      // 3. Widget success → webhook backend met à jour automatiquement
+      // Vérification côté serveur (sécurité anti-fraude)
+      await verifyKkiapayTransaction(booking.id, result.transactionId, 'INSTALLMENT');
       setStep('successful');
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Paiement FedaPay échoué.');
+      setErrorMsg(err?.message || 'Paiement KKiaPay échoué.');
       setStep('form');
     }
   };
@@ -109,7 +109,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
   const handlePay = () => {
     if (!isValid) return;
     if (paymentMethod === 'mtn') handlePayMtn();
-    else handlePayFedaPay();
+    else handlePayKkiapay();
   };
 
   const handleClose = () => {
@@ -221,16 +221,16 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('fedapay')}
+                    onClick={() => setPaymentMethod('kkiapay')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
-                      paymentMethod === 'fedapay'
+                      paymentMethod === 'kkiapay'
                         ? 'border-forest-800 bg-green-50 text-green-800'
                         : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
                     }`}
                   >
                     <span className="text-2xl">💳</span>
                     <span>Carte / Mobile</span>
-                    <span className="text-xs font-normal opacity-70">+2% de frais</span>
+                    <span className="text-xs font-normal opacity-70">+0.5% de frais</span>
                   </button>
                 </div>
               </div>
@@ -257,10 +257,10 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                 </div>
               )}
 
-              {/* Info FedaPay */}
-              {paymentMethod === 'fedapay' && (
+              {/* Info KKiaPay */}
+              {paymentMethod === 'kkiapay' && (
                 <div className="bg-green-50 border border-green-200 rounded-xl p-3.5 text-sm text-green-800">
-                  Le widget FedaPay s'ouvrira pour finaliser le paiement. Carte bancaire, Mobile Money et autres moyens acceptés.
+                  Le widget KKiaPay s'ouvrira pour finaliser le paiement. Carte bancaire, Mobile Money et autres moyens acceptés.
                 </div>
               )}
 
@@ -273,7 +273,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                   </div>
                   <div className="flex justify-between">
                     <span className="text-amber-700">
-                      Frais {paymentMethod === 'mtn' ? 'MTN (+2%)' : 'FedaPay (+2%)'}
+                      Frais {paymentMethod === 'mtn' ? 'MTN (+2%)' : 'KKiaPay (+0.5%)'}
                     </span>
                     <span className="font-semibold text-amber-800">{fmtPrice(fees)}</span>
                   </div>
@@ -295,7 +295,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
                 disabled={!isValid}
                 className="w-full py-3.5 bg-forest-800 text-white rounded-xl font-semibold hover:bg-forest-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Payer {amountNum > 0 && isAmountValid ? fmtPrice(totalDebited) : ''} via {paymentMethod === 'mtn' ? 'MTN' : 'FedaPay'}
+                Payer {amountNum > 0 && isAmountValid ? fmtPrice(totalDebited) : ''} via {paymentMethod === 'mtn' ? 'MTN' : 'KKiaPay'}
               </button>
             </div>
           )}
@@ -305,7 +305,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
             <div className="py-12 flex flex-col items-center gap-4">
               <Loader2 className="w-10 h-10 text-forest-800 animate-spin" />
               <p className="text-dark-800/70 font-medium">
-                {paymentMethod === 'mtn' ? 'Initiation du paiement MTN...' : 'Chargement du widget FedaPay...'}
+                {paymentMethod === 'mtn' ? 'Initiation du paiement MTN...' : 'Ouverture de KKiaPay...'}
               </p>
             </div>
           )}

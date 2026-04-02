@@ -85,6 +85,8 @@ export interface DashboardStatsResponse {
     pending?: { amount?: number; count?: number };
     overdue?: { amount?: number; bookings?: number };
     clients?: { total?: number };
+    groups?: { total?: number; payAll?: number; split?: number };
+    invitations?: { total?: number; pending?: number; accepted?: number; expired?: number };
   };
 }
 
@@ -614,6 +616,8 @@ export interface DashboardStats {
   pending: { amount: number; count: number };
   overdue: { amount: number; bookings: number };
   clients: { total: number };
+  groups?: { total: number; payAll: number; split: number };
+  invitations?: { total: number; pending: number; accepted: number; expired: number };
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -650,6 +654,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       bookings: s.overdue?.bookings ?? 0,
     },
     clients: { total: s.clients?.total ?? 0 },
+    groups: s.groups ? {
+      total: s.groups.total ?? 0,
+      payAll: s.groups.payAll ?? 0,
+      split: s.groups.split ?? 0,
+    } : undefined,
+    invitations: s.invitations ? {
+      total: s.invitations.total ?? 0,
+      pending: s.invitations.pending ?? 0,
+      accepted: s.invitations.accepted ?? 0,
+      expired: s.invitations.expired ?? 0,
+    } : undefined,
   };
 }
 
@@ -727,12 +742,18 @@ export interface DashboardBooking {
   paymentDeadline: string;
   status: string;
   createdAt: string;
+  // Group fields
+  paymentMode?: 'pay_all' | 'split' | null;
+  groupId?: string | null;
+  parentBookingId?: string | null;
+  invitationStats?: { total: number; pending: number; accepted: number } | null;
 }
 
 export async function getDashboardBookings(params?: {
   tripId?: string;
   status?: string;
   search?: string;
+  type?: string; // 'solo' | 'group' | 'invited'
   page?: number;
   limit?: number;
 }): Promise<{ bookings: DashboardBooking[]; pagination?: any }> {
@@ -740,6 +761,7 @@ export async function getDashboardBookings(params?: {
   if (params?.tripId) q.set('tripId', params.tripId);
   if (params?.status) q.set('status', params.status);
   if (params?.search) q.set('search', params.search);
+  if (params?.type) q.set('bookingType', params.type);
   if (params?.page) q.set('page', String(params.page));
   if (params?.limit) q.set('limit', String(params.limit));
   const query = q.toString();
@@ -776,10 +798,53 @@ export async function getDashboardBookings(params?: {
         paymentDeadline: r.paymentDeadline ? new Date(r.paymentDeadline).toLocaleDateString('fr-FR') : '',
         status: r.status || 'PENDING_DEPOSIT',
         createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '',
+        paymentMode: r.paymentMode || null,
+        groupId: r.groupId || null,
+        parentBookingId: r.parentBookingId || null,
+        invitationStats: r.invitationStats || null,
       };
     }),
     pagination: res.pagination,
   };
+}
+
+// ─── Group Details (admin) ────────────────────────────────────────────────
+
+export interface GroupDetail {
+  groupId: string;
+  paymentMode: 'pay_all' | 'split';
+  organizer: {
+    name: string;
+    phone: string;
+    email: string;
+    bookingId: string;
+    depositPaid: boolean;
+    amountPaid: number;
+  };
+  invitations: Array<{
+    id: string;
+    guestName: string;
+    guestEmail: string;
+    status: string;
+    acceptedAt: string | null;
+    bookingId: string | null;
+    depositPaid: boolean;
+    amountPaid: number;
+  }>;
+  summary: {
+    totalParticipants: number;
+    confirmed: number;
+    pending: number;
+    totalCollected: number;
+    totalExpected: number;
+  };
+}
+
+export async function getGroupDetail(bookingId: string): Promise<GroupDetail> {
+  const res = await apiRequest<{ success: boolean; group: GroupDetail }>(
+    `${TRIPS_PREFIX}/partner/bookings/${bookingId}/group`
+  );
+  return res.group;
 }
 
 // ─── Bookings ────────────────────────────────────────────────────────────────
@@ -874,11 +939,13 @@ export async function createBooking(
     email?: string;
     phone?: string;
   },
-  specialRequests?: string
+  specialRequests?: string,
+  paymentMode?: 'pay_all' | 'split'
 ): Promise<MappedBooking> {
   const body: Record<string, unknown> = { tripId, numberOfParticipants };
   if (contactInfo && Object.values(contactInfo).some(Boolean)) body.contactInfo = contactInfo;
   if (specialRequests?.trim()) body.specialRequests = specialRequests.trim();
+  if (paymentMode && numberOfParticipants > 1) body.paymentMode = paymentMode;
   const res = await apiRequest<{ success: boolean; booking: BookingBackend }>(
     `${TRIPS_PREFIX}/bookings`,
     { method: 'POST', body: JSON.stringify(body) }
@@ -1050,4 +1117,94 @@ export async function getChartsData(): Promise<{ month: string; value: number }[
     }));
   }
   return months.map((month) => ({ month, value: 0 }));
+}
+
+// ─── Group Invitations ────────────────────────────────────────────────────
+
+export interface InvitationBackend {
+  _id: string;
+  bookingId: string;
+  tripId: string;
+  trip?: TripBackend;
+  invitedBy?: { username?: string; referralCode?: string };
+  paymentMode: 'pay_all' | 'split';
+  guestName: string;
+  guestEmail: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  inviteToken: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
+function mapInvitation(inv: InvitationBackend) {
+  const trip = inv.trip;
+  return {
+    id: inv._id,
+    bookingId: inv.bookingId,
+    tripId: inv.tripId,
+    trip: trip ? {
+      title: trip.title || '',
+      destination: trip.destination || '',
+      totalPrice: trip.totalPrice ?? 0,
+      depositAmount: trip.depositAmount ?? 0,
+      images: trip.images || [],
+      departureDate: trip.departureDate
+        ? new Date(trip.departureDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '',
+    } : undefined,
+    invitedBy: inv.invitedBy,
+    paymentMode: inv.paymentMode,
+    guestName: inv.guestName,
+    guestEmail: inv.guestEmail,
+    status: inv.status,
+    inviteToken: inv.inviteToken,
+    acceptedAt: inv.acceptedAt,
+    createdAt: inv.createdAt,
+  };
+}
+
+export type MappedInvitation = ReturnType<typeof mapInvitation>;
+
+export async function inviteGuests(
+  bookingId: string,
+  invitees: { name: string; email: string }[]
+): Promise<MappedInvitation[]> {
+  const res = await apiRequest<{ success: boolean; invitations: InvitationBackend[] }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/invite`,
+    { method: 'POST', body: JSON.stringify({ invitees }) }
+  );
+  return (res.invitations || []).map(mapInvitation);
+}
+
+export async function getInvitationByToken(token: string): Promise<MappedInvitation> {
+  const res = await apiRequest<{ success: boolean; invitation: InvitationBackend }>(
+    `${TRIPS_PREFIX}/invitations/${token}`,
+    { skipAuth: true } as any
+  );
+  return mapInvitation(res.invitation);
+}
+
+export async function acceptInvitation(token: string): Promise<{ invitation: MappedInvitation; booking?: MappedBooking }> {
+  const res = await apiRequest<{ success: boolean; invitation: InvitationBackend; booking?: BookingBackend }>(
+    `${TRIPS_PREFIX}/invitations/${token}/accept`,
+    { method: 'POST' }
+  );
+  return {
+    invitation: mapInvitation(res.invitation),
+    booking: res.booking ? mapBooking(res.booking) : undefined,
+  };
+}
+
+export async function getMyInvitations(): Promise<MappedInvitation[]> {
+  const res = await apiRequest<{ success: boolean; invitations: InvitationBackend[] }>(
+    `${TRIPS_PREFIX}/invitations/mine`
+  );
+  return (res.invitations || []).map(mapInvitation);
+}
+
+export async function getBookingInvitations(bookingId: string): Promise<MappedInvitation[]> {
+  const res = await apiRequest<{ success: boolean; invitations: InvitationBackend[] }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/invitations`
+  );
+  return (res.invitations || []).map(mapInvitation);
 }

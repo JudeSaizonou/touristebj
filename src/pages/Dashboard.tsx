@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, X, TrendingUp, Users, MapPin, CreditCard, Clock, AlertTriangle, Plus, Wallet, Eye } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, X, TrendingUp, Users, MapPin, CreditCard, Clock, AlertTriangle, Plus, Wallet, Eye, UserPlus, Mail } from 'lucide-react';
 import { BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip, LineChart, Line, CartesianGrid, YAxis, PieChart, Pie } from 'recharts';
-import { getDashboardStats, getDashboardBookings, getMonthlyStats, getPayoutBalance } from '../api/trips';
-import type { DashboardStats, DashboardBooking, MonthlyPoint, PayoutBalance } from '../api/trips';
+import { getDashboardStats, getDashboardBookings, getMonthlyStats, getPayoutBalance, getGroupDetail } from '../api/trips';
+import type { DashboardStats, DashboardBooking, MonthlyPoint, PayoutBalance, GroupDetail } from '../api/trips';
 
 const fmt = (n: number) =>
   n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n);
@@ -50,6 +50,20 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, onClos
     ? Math.round((booking.amountPaid / booking.totalAmount) * 100)
     : 0;
 
+  const [groupDetail, setGroupDetail] = useState<GroupDetail | null>(null);
+  const [groupLoading, setGroupLoading] = useState(false);
+  const isGroupOrganizer = booking.groupId && !booking.parentBookingId;
+
+  useEffect(() => {
+    if (isGroupOrganizer) {
+      setGroupLoading(true);
+      getGroupDetail(booking.id)
+        .then(setGroupDetail)
+        .catch(() => {})
+        .finally(() => setGroupLoading(false));
+    }
+  }, [booking.id, isGroupOrganizer]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -78,6 +92,14 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, onClos
             <p className="font-semibold text-gray-900">{booking.voyage.destination || booking.voyage.titre}</p>
             {booking.voyage.departureDate && <p className="text-sm text-gray-600">Départ : {booking.voyage.departureDate}</p>}
             <p className="text-sm text-gray-600">{booking.nombrePersonnes} participant{booking.nombrePersonnes > 1 ? 's' : ''}</p>
+            {booking.paymentMode && (
+              <p className="text-sm text-gray-600 mt-1">
+                Mode : {booking.parentBookingId ? 'Invité' : booking.paymentMode === 'pay_all' ? 'Groupe · payé pour tous' : 'Groupe · chacun paye'}
+                {booking.invitationStats && !booking.parentBookingId && (
+                  <span className="text-gray-400"> — {booking.invitationStats.accepted}/{booking.invitationStats.total} invité{booking.invitationStats.total > 1 ? 's' : ''} confirmé{booking.invitationStats.accepted > 1 ? 's' : ''}</span>
+                )}
+              </p>
+            )}
           </div>
 
           {/* Paiements */}
@@ -110,6 +132,59 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, onClos
             </div>
             <p className="text-xs text-gray-500 mt-1">{progressPct}% payé</p>
           </div>
+
+          {/* Groupe detail */}
+          {isGroupOrganizer && (
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Groupe</p>
+              {groupLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                  Chargement...
+                </div>
+              ) : groupDetail ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Mode</span>
+                    <span className="font-medium text-gray-900">
+                      {groupDetail.paymentMode === 'pay_all' ? 'Payé pour tous' : 'Chacun paye sa part'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">Progression</span>
+                    <span className="font-medium text-gray-900">
+                      {groupDetail.summary.confirmed}/{groupDetail.summary.totalParticipants} confirmés
+                    </span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-3 space-y-2">
+                    {groupDetail.invitations.map(inv => (
+                      <div key={inv.id} className="flex items-center justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{inv.guestName}</p>
+                          <p className="text-xs text-gray-400 truncate">{inv.guestEmail}</p>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border flex-shrink-0 ${
+                          inv.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200'
+                            : inv.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                            : 'bg-gray-50 text-gray-500 border-gray-200'
+                        }`}>
+                          {inv.status === 'accepted' ? 'Accepté' : inv.status === 'pending' ? 'En attente' : inv.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {groupDetail.summary.totalCollected > 0 && (
+                    <div className="border-t border-gray-200 pt-2 flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Total collecté (groupe)</span>
+                      <span className="font-bold text-green-600">{fmtFcfa(groupDetail.summary.totalCollected)}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">Détails du groupe non disponibles</p>
+              )}
+            </div>
+          )}
 
           {/* Statut */}
           <div className="flex items-center justify-between">
@@ -234,7 +309,7 @@ export const Dashboard: React.FC = () => {
       )}
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           icon={<MapPin className="w-5 h-5" />}
           label="Voyages"
@@ -277,6 +352,20 @@ export const Dashboard: React.FC = () => {
           sub={`${stats?.overdue.bookings ?? 0} réservations`}
           color="red"
         />
+        <StatCard
+          icon={<UserPlus className="w-5 h-5" />}
+          label="Groupes"
+          value={stats?.groups?.total ?? 0}
+          sub={`${stats?.groups?.payAll ?? 0} payé tout · ${stats?.groups?.split ?? 0} split`}
+          color="indigo"
+        />
+        <StatCard
+          icon={<Mail className="w-5 h-5" />}
+          label="Invitations"
+          value={stats?.invitations?.total ?? 0}
+          sub={`${stats?.invitations?.pending ?? 0} en attente · ${stats?.invitations?.accepted ?? 0} acceptées`}
+          color="teal"
+        />
       </div>
 
       {/* Quick actions + Payout balance */}
@@ -292,7 +381,7 @@ export const Dashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900">Nouveau voyage</p>
-              <p className="text-xs text-gray-400">Creer une destination</p>
+              <p className="text-xs text-gray-400">Créer une destination</p>
             </div>
           </a>
           <a
@@ -316,7 +405,7 @@ export const Dashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-semibold text-gray-900">Reversements</p>
-              <p className="text-xs text-gray-400">Gerer vos fonds</p>
+              <p className="text-xs text-gray-400">Gérer vos fonds</p>
             </div>
           </a>
         </div>
@@ -460,6 +549,7 @@ export const Dashboard: React.FC = () => {
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Client</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Voyage</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Pers.</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Mode</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Total</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Acompte</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Solde</th>
@@ -471,7 +561,7 @@ export const Dashboard: React.FC = () => {
             <tbody className="divide-y divide-gray-50">
               {bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-2 py-8 sm:px-6 sm:py-12 text-center text-gray-400">Aucune réservation</td>
+                  <td colSpan={10} className="px-2 py-8 sm:px-6 sm:py-12 text-center text-gray-400">Aucune réservation</td>
                 </tr>
               ) : bookings.map(b => (
                 <tr
@@ -490,6 +580,17 @@ export const Dashboard: React.FC = () => {
                     {b.voyage.departureDate && <p className="text-xs text-gray-400">{b.voyage.departureDate}</p>}
                   </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700">{b.nombrePersonnes}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden lg:table-cell">
+                    {b.parentBookingId ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-teal-50 text-teal-700 border border-teal-200">Invité</span>
+                    ) : b.paymentMode === 'pay_all' ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">Groupe · payé</span>
+                    ) : b.paymentMode === 'split' ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200">Groupe · split</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-200">Solo</span>
+                    )}
+                  </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">{fmt(b.totalAmount)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-blue-600">{fmt(b.depositAmount)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-orange-600">{fmt(b.remainingAmount)}</td>
@@ -545,7 +646,7 @@ interface StatCardProps {
   label: string;
   value: string | number;
   sub: string;
-  color: 'orange' | 'blue' | 'green' | 'purple' | 'amber' | 'red';
+  color: 'orange' | 'blue' | 'green' | 'purple' | 'amber' | 'red' | 'indigo' | 'teal';
 }
 
 const colorMap = {
@@ -555,6 +656,8 @@ const colorMap = {
   purple: { bg: 'bg-purple-50', text: 'text-purple-600', icon: 'text-purple-500' },
   amber: { bg: 'bg-amber-50', text: 'text-amber-600', icon: 'text-amber-500' },
   red: { bg: 'bg-red-50', text: 'text-red-600', icon: 'text-red-500' },
+  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-600', icon: 'text-indigo-500' },
+  teal: { bg: 'bg-teal-50', text: 'text-teal-600', icon: 'text-teal-500' },
 };
 
 const StatCard: React.FC<StatCardProps> = ({ icon, label, value, sub, color }) => {

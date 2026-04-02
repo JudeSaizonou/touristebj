@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   MapPin, Calendar, Clock, PiggyBank, Eye, AlertCircle, Loader2,
-  Plane, ChevronDown, ArrowRight, TrendingUp, Wallet, ChevronLeft
+  Plane, ChevronDown, ArrowRight, TrendingUp, Wallet, ChevronLeft, Mail, UserPlus, CheckCircle
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
-import { getMyBookings } from '../api/trips';
+import { getMyBookings, getMyInvitations } from '../api/trips';
+import type { MappedInvitation } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
 import type { MappedBooking } from '../types';
 import type { AuthMode } from './Auth';
@@ -48,6 +49,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
 }) => {
   const { user } = useAuth();
   const [bookings, setBookings] = useState<MappedBooking[]>([]);
+  const [invitations, setInvitations] = useState<MappedInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [epargneBooking, setEpargneBooking] = useState<MappedBooking | null>(null);
@@ -67,8 +69,12 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
     setLoading(true);
     setError('');
     try {
-      const data = await getMyBookings();
+      const [data, invs] = await Promise.all([
+        getMyBookings(),
+        getMyInvitations().catch(() => [] as MappedInvitation[]),
+      ]);
       setBookings(data);
+      setInvitations(invs.filter(i => i.status === 'pending'));
     } catch (err: any) {
       const msg: string = err?.message || '';
       const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
@@ -175,6 +181,53 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
             <button onClick={onBack} className="inline-flex items-center gap-2 px-8 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors">
               Voir les voyages <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        )}
+
+        {/* Pending invitations */}
+        {!loading && invitations.length > 0 && (
+          <div className="mb-8">
+            <h2 className="font-playfair font-bold text-dark-800 text-lg mb-4 flex items-center gap-2">
+              <Mail className="w-5 h-5 text-primary-500" /> Invitations reçues
+            </h2>
+            <div className="space-y-3">
+              {invitations.map(inv => (
+                <div key={inv.id} className="bg-white rounded-2xl border border-primary-200 overflow-hidden hover:shadow-md transition-all">
+                  <div className="flex flex-col sm:flex-row">
+                    {inv.trip?.images?.[0] && (
+                      <div className="sm:w-32 h-24 sm:h-auto overflow-hidden flex-shrink-0">
+                        <img src={inv.trip.images[0]} alt={inv.trip.title} className="w-full h-full object-cover" loading="lazy" />
+                      </div>
+                    )}
+                    <div className="flex-1 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-playfair font-bold text-dark-800 text-base truncate">{inv.trip?.title || 'Voyage'}</p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-dark-800/50">
+                          {inv.trip?.destination && (
+                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-primary-500" />{inv.trip.destination}</span>
+                          )}
+                          {inv.trip?.departureDate && (
+                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{inv.trip.departureDate}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-dark-800/50 mt-1">
+                          Invité par <strong>{inv.invitedBy?.username || 'un ami'}</strong>
+                          {inv.paymentMode === 'pay_all' && (
+                            <span className="ml-1 text-green-600 font-medium">— Place déjà payée</span>
+                          )}
+                        </p>
+                      </div>
+                      <a
+                        href={`/invitation/${inv.inviteToken}`}
+                        className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm whitespace-nowrap"
+                      >
+                        <UserPlus className="w-4 h-4" /> Accepter
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -11,6 +11,7 @@ const routes: Array<{ pattern: RegExp; keys: string[]; path: string }> = [
   { pattern: /^\/auth$/,                        keys: [],           path: '/auth' },
   { pattern: /^\/mes-voyages$/,                 keys: [],           path: '/mes-voyages' },
   { pattern: /^\/epargne\/([^/]+)$/,            keys: ['bookingId'],path: '/epargne/:bookingId' },
+  { pattern: /^\/invitation\/([^/]+)$/,         keys: ['token'],    path: '/invitation/:token' },
   { pattern: /^\/admin\/dashboard$/,            keys: [],           path: '/admin/dashboard' },
   { pattern: /^\/admin\/voyages$/,              keys: [],           path: '/admin/voyages' },
   { pattern: /^\/admin\/voyages\/new$/,         keys: [],           path: '/admin/voyages/new' },

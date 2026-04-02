@@ -66,6 +66,33 @@ export interface Reservation {
   statut: 'confirmee' | 'en-attente' | 'annulee';
 }
 
+export type GroupPaymentMode = 'pay_all' | 'split';
+
+export interface Invitation {
+  id: string;
+  bookingId: string;
+  tripId: string;
+  trip?: {
+    title: string;
+    destination: string;
+    totalPrice: number;
+    depositAmount: number;
+    images: string[];
+    departureDate: string;
+  };
+  invitedBy?: {
+    username: string;
+    referralCode?: string;
+  };
+  paymentMode: GroupPaymentMode;
+  guestName: string;
+  guestEmail: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  inviteToken: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
 export type PageView = 'dashboard' | 'voyages' | 'create-voyage' | 'edit-voyage' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
 
 export interface MappedBooking {

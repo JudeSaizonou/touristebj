@@ -405,7 +405,10 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                         <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                           <button
                             onClick={() => {
-                              navigator.clipboard.writeText(window.location.href);
+                              const shareUrl = user?.referralCode
+                                ? `${window.location.href}?ref=${user.referralCode}`
+                                : window.location.href;
+                              navigator.clipboard.writeText(shareUrl);
                               addToast('success', 'Lien copié dans le presse-papier !');
                               setShowShareOptions(false);
                             }}
@@ -416,8 +419,21 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                           </button>
                           <button
                             onClick={() => {
-                              const text = encodeURIComponent(`Découvrez ce voyage : ${voyage.titre} - ${fmtPrice(basePrice)} !\n${window.location.href}`);
-                              window.open(`https://wa.me/?text=${text}`, '_blank');
+                              const shareUrl = user?.referralCode
+                                ? `${window.location.href}?ref=${user.referralCode}`
+                                : window.location.href;
+                              const lines = [
+                                `🌍 *${voyage.titre}*${voyage.destination ? ` — ${voyage.destination}` : ''}`,
+                                '',
+                                `💰 ${fmtPrice(basePrice)}/pers.`,
+                                voyage.dateDebut ? `📅 Départ : ${voyage.dateDebut}` : '',
+                                voyage.availableSpots != null ? `⏳ ${voyage.availableSpots} places restantes` : '',
+                                '',
+                                '✅ Réservez maintenant avec seulement 30% d\'acompte !',
+                                '',
+                                `👉 ${shareUrl}`,
+                              ].filter(Boolean).join('\n');
+                              window.open(`https://wa.me/?text=${encodeURIComponent(lines)}`, '_blank');
                               setShowShareOptions(false);
                             }}
                             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-dark-800/70 hover:bg-gray-50 transition-colors border-t border-gray-100"
@@ -433,7 +449,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
 
                 {/* Trust info */}
                 <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5 space-y-2 text-xs text-dark-800/50">
-                  <p>Paiement 100% sécurisé via MTN MoMo et FedaPay</p>
+                  <p>Paiement 100% sécurisé via MTN MoMo et KKiaPay</p>
                   <p>Épargne flexible avec ZePargn</p>
                   <p>Voyage de groupe organisé</p>
                 </div>

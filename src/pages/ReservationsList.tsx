@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, Upload, X, Eye } from 'lucide-react';
-import { getDashboardBookings, cancelBooking } from '../api/trips';
-import type { DashboardBooking } from '../api/trips';
+import { getDashboardBookings, cancelBooking, getGroupDetail } from '../api/trips';
+import type { DashboardBooking, GroupDetail } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -32,10 +32,13 @@ export const ReservationsList: React.FC = () => {
   const [pagination, setPagination] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<DashboardBooking | null>(null);
+  const [groupDetail, setGroupDetail] = useState<GroupDetail | null>(null);
+  const [groupLoading, setGroupLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 10;
@@ -46,6 +49,7 @@ export const ReservationsList: React.FC = () => {
       const { bookings: list, pagination: pag } = await getDashboardBookings({
         search: searchQuery || undefined,
         status: statusFilter || undefined,
+        type: typeFilter || undefined,
         page: currentPage,
         limit: itemsPerPage,
       });
@@ -60,7 +64,18 @@ export const ReservationsList: React.FC = () => {
 
   useEffect(() => {
     loadBookings();
-  }, [currentPage, statusFilter]);
+  }, [currentPage, statusFilter, typeFilter]);
+
+  useEffect(() => {
+    setGroupDetail(null);
+    if (selectedBooking?.groupId && !selectedBooking?.parentBookingId) {
+      setGroupLoading(true);
+      getGroupDetail(selectedBooking.id)
+        .then(setGroupDetail)
+        .catch(() => {})
+        .finally(() => setGroupLoading(false));
+    }
+  }, [selectedBooking]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,6 +171,59 @@ export const ReservationsList: React.FC = () => {
                   <div className="bg-primary-500 h-2 rounded-full transition-all" style={{ width: `${selectedBooking.totalAmount > 0 ? Math.round((selectedBooking.amountPaid / selectedBooking.totalAmount) * 100) : 0}%` }} />
                 </div>
               </div>
+              {/* Groupe */}
+              {selectedBooking.groupId && !selectedBooking.parentBookingId && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Groupe</p>
+                  {groupLoading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                      Chargement...
+                    </div>
+                  ) : groupDetail ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Mode</span>
+                        <span className="font-medium text-gray-900">
+                          {groupDetail.paymentMode === 'pay_all' ? 'Payé pour tous' : 'Chacun paye'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Confirmés</span>
+                        <span className="font-medium text-gray-900">
+                          {groupDetail.summary.confirmed}/{groupDetail.summary.totalParticipants}
+                        </span>
+                      </div>
+                      <div className="border-t border-gray-200 pt-3 space-y-2">
+                        {groupDetail.invitations.map(inv => (
+                          <div key={inv.id} className="flex items-center justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{inv.guestName}</p>
+                              <p className="text-xs text-gray-400 truncate">{inv.guestEmail}</p>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border flex-shrink-0 ${
+                              inv.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200'
+                                : inv.status === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-gray-50 text-gray-500 border-gray-200'
+                            }`}>
+                              {inv.status === 'accepted' ? 'Accepté' : inv.status === 'pending' ? 'En attente' : inv.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {groupDetail.summary.totalCollected > 0 && (
+                        <div className="border-t border-gray-200 pt-2 flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Total collecté</span>
+                          <span className="font-bold text-green-600">{fmtPrice(groupDetail.summary.totalCollected)}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400">Détails du groupe non disponibles</p>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-gray-500">Date de réservation</p>
@@ -209,6 +277,16 @@ export const ReservationsList: React.FC = () => {
           <option value="COMPLETED">Complétés</option>
           <option value="CANCELLED">Annulés</option>
         </select>
+        <select
+          value={typeFilter}
+          onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
+          className="text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        >
+          <option value="">Tous les types</option>
+          <option value="solo">Solo</option>
+          <option value="group">Groupe</option>
+          <option value="invited">Invités</option>
+        </select>
       </div>
 
       <div className="bg-white rounded-xl shadow-card overflow-hidden border border-gray-100">
@@ -219,6 +297,7 @@ export const ReservationsList: React.FC = () => {
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Client</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Voyage</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Pers.</th>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Mode</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Total</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Payé</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Solde</th>
@@ -230,13 +309,13 @@ export const ReservationsList: React.FC = () => {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
+                  <td colSpan={10} className="px-6 py-12 text-center">
                     <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
                   </td>
                 </tr>
               ) : bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400">Aucune réservation</td>
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-400">Aucune réservation</td>
                 </tr>
               ) : bookings.map(b => (
                 <tr key={b.id} className="hover:bg-gray-50 transition-colors">
@@ -249,6 +328,17 @@ export const ReservationsList: React.FC = () => {
                     {b.voyage.departureDate && <p className="text-xs text-gray-400">{b.voyage.departureDate}</p>}
                   </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 hidden sm:table-cell">{b.nombrePersonnes}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 hidden lg:table-cell">
+                    {b.parentBookingId ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-teal-50 text-teal-700 border border-teal-200">Invité</span>
+                    ) : b.paymentMode === 'pay_all' ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">Groupe · payé</span>
+                    ) : b.paymentMode === 'split' ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-purple-50 text-purple-700 border border-purple-200">Groupe · split</span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-200">Solo</span>
+                    )}
+                  </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">{fmtPrice(b.totalAmount)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-green-600 hidden sm:table-cell">{fmtPrice(b.amountPaid)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-orange-600 hidden sm:table-cell">{fmtPrice(b.remainingAmount)}</td>

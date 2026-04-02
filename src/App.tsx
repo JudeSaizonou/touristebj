@@ -16,6 +16,7 @@ import { Parametres } from './pages/Parametres';
 import { Auth, AuthMode } from './pages/Auth';
 import { MesVoyages } from './pages/MesVoyages';
 import { MonEpargne } from './pages/MonEpargne';
+import { InvitationPage } from './pages/Invitation';
 import { useAuth } from './context/AuthContext';
 import { useRouter } from './hooks/useRouter';
 import { SEO, buildOrganizationJsonLd } from './components/SEO';
@@ -161,6 +162,17 @@ function App() {
         onOpenAuth={handleOpenAuth}
         onMesVoyages={() => navigate('/mes-voyages')}
         onLogout={handleLogout}
+      />
+    );
+  }
+
+  if (route.path === '/invitation/:token') {
+    return (
+      <InvitationPage
+        token={route.params.token}
+        onOpenAuth={handleOpenAuth}
+        onMesVoyages={() => navigate('/mes-voyages')}
+        onBack={() => navigate('/')}
       />
     );
   }

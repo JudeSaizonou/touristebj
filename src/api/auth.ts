@@ -12,6 +12,7 @@ export interface AuthUser {
   twoFactorEnabled?: boolean;
   kycStatus?: string;
   campaignCode?: string;
+  referralCode?: string;
 }
 
 export interface SendCodeResponse {

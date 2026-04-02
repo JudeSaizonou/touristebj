@@ -42,10 +42,10 @@ export async function payBookingMtn(
   );
 }
 
-export interface FedaPayInitResponse {
+export interface KkiapayInitResponse {
   success: boolean;
   message?: string;
-  transactionId: string;
+  transactionId?: string;
   amount: number;
   netAmount: number;
   fee: number;
@@ -54,24 +54,39 @@ export interface FedaPayInitResponse {
   booking?: any;
 }
 
-/** Initie un paiement FedaPay pour l'acompte. Retourne transactionId à passer au widget. */
-export async function payDepositFedaPay(bookingId: string, amount: number): Promise<FedaPayInitResponse> {
-  return apiRequest<FedaPayInitResponse>(
+/** Initie un paiement KKiaPay pour l'acompte. */
+export async function payDepositKkiapay(bookingId: string, amount: number): Promise<KkiapayInitResponse> {
+  return apiRequest<KkiapayInitResponse>(
     `${TRIPS_PREFIX}/bookings/${bookingId}/pay-deposit`,
     {
       method: 'POST',
-      body: JSON.stringify({ paymentMethod: 'mobile_money', amount, tripBookingId: bookingId }),
+      body: JSON.stringify({ paymentMethod: 'kkiapay', amount, tripBookingId: bookingId }),
     }
   );
 }
 
-/** Initie un paiement FedaPay pour un versement échelonné. Retourne transactionId à passer au widget. */
-export async function payInstallmentFedaPay(bookingId: string, amount: number): Promise<FedaPayInitResponse> {
-  return apiRequest<FedaPayInitResponse>(
+/** Initie un paiement KKiaPay pour un versement échelonné. */
+export async function payInstallmentKkiapay(bookingId: string, amount: number): Promise<KkiapayInitResponse> {
+  return apiRequest<KkiapayInitResponse>(
     `${TRIPS_PREFIX}/bookings/${bookingId}/pay-installment`,
     {
       method: 'POST',
-      body: JSON.stringify({ paymentMethod: 'mobile_money', amount, tripBookingId: bookingId }),
+      body: JSON.stringify({ paymentMethod: 'kkiapay', amount, tripBookingId: bookingId }),
+    }
+  );
+}
+
+/** Vérifie un paiement KKiaPay côté serveur après succès widget. */
+export async function verifyKkiapayTransaction(
+  bookingId: string,
+  transactionId: string,
+  type: 'DEPOSIT' | 'INSTALLMENT'
+): Promise<{ success: boolean; booking?: any }> {
+  return apiRequest<{ success: boolean; booking?: any }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/verify-kkiapay`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ transactionId, type }),
     }
   );
 }
@@ -81,6 +96,5 @@ export async function getTransactionStatus(referenceId: string): Promise<Transac
   const res = await apiRequest<TransactionStatus & { success: boolean; data?: TransactionStatus }>(
     `${API_BASE}/payment/transaction/status?paymentMethod=mtn&referenceId=${encodeURIComponent(referenceId)}`
   );
-  // Backend returns status at top level, not nested in data
   return res.data || res;
 }

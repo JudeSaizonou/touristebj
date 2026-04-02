@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle, Mail, ChevronRight } from 'lucide-react';
+import { X, Users, Calendar, AlertTriangle, CheckCircle, Loader2, Phone, RefreshCw, AlertCircle, Mail, ChevronRight, UserPlus, Send, CreditCard, Wallet } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { createBooking } from '../api/trips';
-import { payBookingMtn, payDepositFedaPay } from '../api/payments';
-import { openFedaPay } from '../api/fedapay';
+import { createBooking, inviteGuests } from '../api/trips';
+import { payBookingMtn, payDepositKkiapay, verifyKkiapayTransaction } from '../api/payments';
+import { openKkiapay } from '../api/kkiapay';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
-import { PAYMENT_FEES, FEDAPAY_KEY, FEDAPAY_ENV } from '../config/payments';
+import { PAYMENT_FEES, KKIAPAY_KEY } from '../config/payments';
+import type { GroupPaymentMode } from '../types';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -16,15 +17,19 @@ interface ReservationModalProps {
 
 type Step =
   | 'summary'
+  | 'group-mode'
   | 'contact-form'
   | 'creating'
   | 'payment-form'
   | 'paying'
   | 'processing'
   | 'successful'
+  | 'invite-guests'
+  | 'inviting'
+  | 'invites-sent'
   | 'error';
 
-type PaymentMethod = 'mtn' | 'fedapay';
+type PaymentMethod = 'mtn' | 'kkiapay';
 
 export const ReservationModal: React.FC<ReservationModalProps> = ({
   isOpen,
@@ -45,6 +50,13 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     onSuccess: () => setStep('successful'),
     onFailed: (status) => { setMtnStatus(status); setStep('error'); },
   });
+
+  // Group mode
+  const [groupMode, setGroupMode] = useState<GroupPaymentMode>('pay_all');
+
+  // Invite guests
+  const [guests, setGuests] = useState<{ name: string; email: string }[]>([]);
+  const [inviteError, setInviteError] = useState('');
 
   // Contact info fields
   const [contactEmail, setContactEmail] = useState('');
@@ -75,14 +87,20 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     ? voyage.totalPrice
     : parseFloat(String(voyage.prix || '0').replace(/[^\d]/g, '')) || 0;
 
-  const sousTotal = basePrice * nombrePersonnes;
   const depositPerPerson = typeof voyage.depositAmount === 'number' ? voyage.depositAmount : Math.round(basePrice * 0.3);
-  const acompte = depositPerPerson * nombrePersonnes;
+  const isGroup = nombrePersonnes > 1;
+  const isSplit = isGroup && groupMode === 'split';
+
+  const payingCount = isSplit ? 1 : nombrePersonnes;
+  const sousTotal = basePrice * payingCount;
+  const acompte = depositPerPerson * payingCount;
   const soldeRestant = sousTotal - acompte;
 
+  const sousTotalGroupe = basePrice * nombrePersonnes;
+
   const mtnFees = Math.round(acompte * PAYMENT_FEES.MTN);
-  const fedapayFees = Math.round(acompte * PAYMENT_FEES.FEDAPAY);
-  const fees = paymentMethod === 'mtn' ? mtnFees : fedapayFees;
+  const kkiapayFees = Math.round(acompte * PAYMENT_FEES.KKIAPAY);
+  const fees = paymentMethod === 'mtn' ? mtnFees : kkiapayFees;
   const totalDebited = acompte + fees;
 
   const isPhoneValid = phoneNumber.replace(/\D/g, '').length >= 8;
@@ -90,6 +108,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const handleConfirmReservation = async () => {
+    if (step !== 'contact-form') return;
     setStep('creating');
     setErrorMsg('');
     try {
@@ -101,7 +120,8 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         voyage._id || voyage.id,
         nombrePersonnes,
         contactInfo,
-        specialRequests || undefined
+        specialRequests || undefined,
+        isGroup ? groupMode : undefined
       );
       setBookingId(booking.id);
       setStep('payment-form');
@@ -112,7 +132,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   };
 
   const handlePayMtn = async () => {
-    if (!isPhoneValid || !bookingId) return;
+    if (!isPhoneValid || !bookingId || step !== 'payment-form') return;
     setStep('paying');
     setErrorMsg('');
     try {
@@ -130,39 +150,63 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     }
   };
 
-  const handlePayFedaPay = async () => {
-    if (!bookingId || !FEDAPAY_KEY) {
-      setErrorMsg('FedaPay n\'est pas configuré. Contactez le support.');
+  const handlePayKkiapay = async () => {
+    if (step !== 'payment-form') return;
+    if (!bookingId || !KKIAPAY_KEY) {
+      setErrorMsg('KKiaPay n\'est pas configuré. Contactez le support.');
       return;
     }
     setStep('paying');
     setErrorMsg('');
     try {
-      const init = await payDepositFedaPay(bookingId, acompte);
-      await openFedaPay({
-        amount: init.amount,
-        publicKey: FEDAPAY_KEY,
-        environment: FEDAPAY_ENV,
+      await payDepositKkiapay(bookingId, acompte);
+      const result = await openKkiapay({
+        amount: acompte,
+        phone: phoneNumber.replace(/\D/g, '') || undefined,
+        email: contactEmail || undefined,
+        name: user?.username || undefined,
         description: 'Acompte voyage',
-        customerPhone: phoneNumber.replace(/\D/g, '') || undefined,
-        customerEmail: contactEmail || undefined,
       });
+      // Vérification côté serveur (sécurité anti-fraude)
+      await verifyKkiapayTransaction(bookingId, result.transactionId, 'DEPOSIT');
       setStep('successful');
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Paiement FedaPay échoué.');
+      setErrorMsg(err?.message || 'Paiement KKiaPay échoué.');
       setStep('payment-form');
     }
   };
 
   const handlePay = () => {
     if (paymentMethod === 'mtn') handlePayMtn();
-    else handlePayFedaPay();
+    else handlePayKkiapay();
+  };
+
+  const initGuestSlots = (count: number) => {
+    setGuests(Array.from({ length: Math.max(0, count - 1) }, () => ({ name: '', email: '' })));
+  };
+
+  const handleSendInvites = async () => {
+    if (step !== 'invite-guests') return;
+    const valid = guests.every(g => g.name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim()));
+    if (!valid) { setInviteError('Remplissez le nom et un email valide pour chaque invité.'); return; }
+    setStep('inviting');
+    setInviteError('');
+    try {
+      await inviteGuests(bookingId, guests.map(g => ({ name: g.name.trim(), email: g.email.trim() })));
+      setStep('invites-sent');
+    } catch (err: any) {
+      setInviteError(err?.message || "Erreur lors de l'envoi des invitations.");
+      setStep('invite-guests');
+    }
   };
 
   const handleClose = () => {
     clearTimers();
     setStep('summary');
     setNombrePersonnes(1);
+    setGroupMode('pay_all');
+    setGuests([]);
+    setInviteError('');
     setErrorMsg('');
     setMtnStatus(null);
     setContactEmail('');
@@ -247,11 +291,101 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
               </div>
 
               <button
-                onClick={() => setStep('contact-form')}
+                onClick={() => setStep(isGroup ? 'group-mode' : 'contact-form')}
                 className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
               >
                 Continuer <ChevronRight className="w-4 h-4" />
               </button>
+            </div>
+          )}
+
+          {/* STEP: group mode choice */}
+          {step === 'group-mode' && (
+            <div className="space-y-5">
+              <p className="text-sm font-semibold text-dark-800">
+                Vous réservez pour <strong>{nombrePersonnes} personnes</strong>. Comment souhaitez-vous gérer le paiement ?
+              </p>
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setGroupMode('pay_all')}
+                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                    groupMode === 'pay_all'
+                      ? 'border-primary-500 bg-orange-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <CreditCard className={`w-5 h-5 mt-0.5 flex-shrink-0 ${groupMode === 'pay_all' ? 'text-primary-500' : 'text-dark-800/40'}`} />
+                  <div>
+                    <p className={`font-semibold text-sm ${groupMode === 'pay_all' ? 'text-primary-600' : 'text-dark-800'}`}>
+                      Je paye pour tout le monde
+                    </p>
+                    <p className="text-xs text-dark-800/60 mt-1">
+                      Vous payez l'acompte total de <strong>{fmtPrice(depositPerPerson * nombrePersonnes)}</strong> pour {nombrePersonnes} personnes. Vous inviterez vos compagnons ensuite.
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setGroupMode('split')}
+                  className={`w-full flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left ${
+                    groupMode === 'split'
+                      ? 'border-primary-500 bg-orange-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <Users className={`w-5 h-5 mt-0.5 flex-shrink-0 ${groupMode === 'split' ? 'text-primary-500' : 'text-dark-800/40'}`} />
+                  <div>
+                    <p className={`font-semibold text-sm ${groupMode === 'split' ? 'text-primary-600' : 'text-dark-800'}`}>
+                      Chacun paye sa part
+                    </p>
+                    <p className="text-xs text-dark-800/60 mt-1">
+                      Vous payez uniquement votre acompte de <strong>{fmtPrice(depositPerPerson)}</strong>. Vos {nombrePersonnes - 1} compagnon{nombrePersonnes > 2 ? 's' : ''} recevront une invitation pour payer leur part.
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Récap prix selon mode */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-dark-800/60">Prix par personne</span>
+                  <span className="font-semibold text-dark-800">{fmtPrice(basePrice)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-dark-800/60">
+                    {isSplit ? 'Votre acompte (30%)' : `Acompte total (30% × ${nombrePersonnes})`}
+                  </span>
+                  <span className="font-bold text-primary-500">{fmtPrice(acompte)}</span>
+                </div>
+                {!isSplit && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-dark-800/60">Solde à épargner</span>
+                    <span className="font-semibold text-dark-800">{fmtPrice(soldeRestant)}</span>
+                  </div>
+                )}
+                <div className="border-t border-gray-200 pt-2.5 flex justify-between">
+                  <span className="font-bold text-dark-800">{isSplit ? 'Vous payez maintenant' : 'Total voyage (groupe)'}</span>
+                  <span className="font-bold text-dark-800">{fmtPrice(isSplit ? acompte : sousTotalGroupe)}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('summary')}
+                  className="flex-1 py-3 border border-gray-200 text-dark-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Retour
+                </button>
+                <button
+                  onClick={() => setStep('contact-form')}
+                  className="flex-1 py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  Continuer <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -311,7 +445,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep('summary')}
+                  onClick={() => setStep(isGroup ? 'group-mode' : 'summary')}
                   className="flex-1 py-3 border border-gray-200 text-dark-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
                 >
                   Retour
@@ -369,16 +503,16 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPaymentMethod('fedapay')}
+                    onClick={() => setPaymentMethod('kkiapay')}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-sm font-medium ${
-                      paymentMethod === 'fedapay'
+                      paymentMethod === 'kkiapay'
                         ? 'border-primary-500 bg-orange-50 text-orange-800'
                         : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
                     }`}
                   >
                     <span className="text-2xl">💳</span>
                     <span>Carte / Mobile</span>
-                    <span className="text-xs font-normal opacity-70">+2% de frais</span>
+                    <span className="text-xs font-normal opacity-70">+0.5% de frais</span>
                   </button>
                 </div>
               </div>
@@ -405,10 +539,10 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </div>
               )}
 
-              {/* Info FedaPay */}
-              {paymentMethod === 'fedapay' && (
+              {/* Info KKiaPay */}
+              {paymentMethod === 'kkiapay' && (
                 <div className="bg-orange-50 border border-orange-200 rounded-xl p-3.5 text-sm text-orange-800">
-                  Le widget FedaPay s'ouvrira pour finaliser le paiement. Vous pouvez utiliser carte bancaire, Mobile Money et d'autres moyens.
+                  Le widget KKiaPay s'ouvrira pour finaliser le paiement. Carte bancaire, Mobile Money et autres moyens acceptés.
                 </div>
               )}
 
@@ -420,7 +554,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-amber-700">
-                    Frais {paymentMethod === 'mtn' ? 'MTN (+2%)' : 'FedaPay (+2%)'}
+                    Frais {paymentMethod === 'mtn' ? 'MTN (+2%)' : 'KKiaPay (+0.5%)'}
                   </span>
                   <span className="font-semibold text-amber-800">{fmtPrice(fees)}</span>
                 </div>
@@ -441,7 +575,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 disabled={paymentMethod === 'mtn' && !isPhoneValid}
                 className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Payer {fmtPrice(totalDebited)} via {paymentMethod === 'mtn' ? 'MTN' : 'FedaPay'}
+                Payer {fmtPrice(totalDebited)} via {paymentMethod === 'mtn' ? 'MTN' : 'KKiaPay'}
               </button>
 
               <button
@@ -458,7 +592,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             <div className="py-12 flex flex-col items-center gap-4">
               <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
               <p className="text-dark-800/70 font-medium">
-                {paymentMethod === 'mtn' ? 'Connexion à MTN Mobile Money...' : 'Chargement du widget FedaPay...'}
+                {paymentMethod === 'mtn' ? 'Connexion à MTN Mobile Money...' : 'Ouverture de KKiaPay...'}
               </p>
             </div>
           )}
@@ -515,9 +649,137 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                   )}
                 </div>
               </div>
-              <div className="bg-forest-800/5 rounded-xl p-4 text-sm text-center text-dark-800/70">
-                Il vous reste <strong>{fmtPrice(soldeRestant)}</strong> à épargner avant le voyage.
+              {!isSplit && soldeRestant > 0 && (
+                <div className="bg-forest-800/5 rounded-xl p-4 text-sm text-center text-dark-800/70">
+                  Il vous reste <strong>{fmtPrice(soldeRestant)}</strong> à épargner avant le voyage.
+                </div>
+              )}
+              {isGroup ? (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => { initGuestSlots(nombrePersonnes); setStep('invite-guests'); }}
+                    className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Inviter mes {nombrePersonnes - 1} compagnon{nombrePersonnes > 2 ? 's' : ''}
+                  </button>
+                  <button
+                    onClick={() => onSuccess(bookingId)}
+                    className="w-full text-center text-sm text-dark-800/50 hover:text-dark-800 transition-colors"
+                  >
+                    Inviter plus tard depuis "Mes Voyages"
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => onSuccess(bookingId)}
+                  className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
+                >
+                  Voir mes voyages
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* STEP: invite guests form */}
+          {step === 'invite-guests' && (
+            <div className="space-y-5">
+              <div className="text-center">
+                <p className="font-playfair font-bold text-dark-800 text-lg">Inviter vos compagnons</p>
+                <p className="text-sm text-dark-800/60 mt-1">
+                  {isSplit
+                    ? 'Ils recevront un email pour s\'inscrire et payer leur acompte.'
+                    : 'Leur place est déjà réservée. Ils recevront un email pour rejoindre le voyage.'}
+                </p>
               </div>
+
+              <div className="space-y-3 max-h-[40vh] overflow-y-auto">
+                {guests.map((guest, i) => (
+                  <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2">
+                    <p className="text-xs font-semibold text-dark-800/50">Voyageur {i + 2}</p>
+                    <input
+                      type="text"
+                      placeholder="Nom complet"
+                      value={guest.name}
+                      onChange={e => {
+                        const updated = [...guests];
+                        updated[i] = { ...updated[i], name: e.target.value };
+                        setGuests(updated);
+                      }}
+                      className="w-full px-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-dark-800"
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email"
+                      value={guest.email}
+                      onChange={e => {
+                        const updated = [...guests];
+                        updated[i] = { ...updated[i], email: e.target.value };
+                        setGuests(updated);
+                      }}
+                      className="w-full px-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500 text-sm text-dark-800"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {inviteError && (
+                <p className="text-sm text-red-500 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" /> {inviteError}
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => onSuccess(bookingId)}
+                  className="flex-1 py-3 border border-gray-200 text-dark-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors text-sm"
+                >
+                  Plus tard
+                </button>
+                <button
+                  onClick={handleSendInvites}
+                  disabled={guests.some(g => !g.name.trim() || !g.email.trim())}
+                  className="flex-1 py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" /> Envoyer
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP: sending invites */}
+          {step === 'inviting' && (
+            <div className="py-12 flex flex-col items-center gap-4">
+              <Loader2 className="w-10 h-10 text-primary-500 animate-spin" />
+              <p className="text-dark-800/70 font-medium">Envoi des invitations...</p>
+            </div>
+          )}
+
+          {/* STEP: invites sent */}
+          {step === 'invites-sent' && (
+            <div className="py-6 space-y-5">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <Send className="w-8 h-8 text-green-500" />
+                </div>
+                <div>
+                  <p className="font-playfair font-bold text-dark-800 text-xl">Invitations envoyées !</p>
+                  <p className="text-sm text-dark-800/60 mt-1">
+                    Vos {guests.length} compagnon{guests.length > 1 ? 's' : ''} recevront un email avec les instructions pour rejoindre le voyage.
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                {guests.map((g, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span className="text-dark-800">{g.name}</span>
+                    <span className="text-dark-800/40">— {g.email}</span>
+                  </div>
+                ))}
+              </div>
+
               <button
                 onClick={() => onSuccess(bookingId)}
                 className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
