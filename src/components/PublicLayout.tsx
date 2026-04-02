@@ -51,7 +51,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
 
   const navItems = [
     { label: 'ACCUEIL', action: () => { setMobileMenuOpen(false); window.history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); window.scrollTo({ top: 0, behavior: 'smooth' }); } },
-    { label: 'VOYAGES', action: () => navigateToSection('voyages-section') },
+    { label: 'VOYAGES', action: () => { setMobileMenuOpen(false); window.history.pushState(null, '', '/voyages'); window.dispatchEvent(new PopStateEvent('popstate')); } },
   ];
 
   return (
@@ -423,7 +423,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
               <ul className="space-y-2.5">
                 {[
                   { label: 'Accueil', action: () => { window.history.pushState(null, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); window.scrollTo({ top: 0 }); } },
-                  { label: 'Nos voyages', action: () => navigateToSection('voyages-section') },
+                  { label: 'Nos voyages', action: () => { window.history.pushState(null, '', '/voyages'); window.dispatchEvent(new PopStateEvent('popstate')); } },
                   { label: 'Mes voyages', action: onMesVoyages },
                   ...(isAdmin ? [{ label: 'Administration', action: onAdminLogin }] : []),
                 ].map(({ label, action }) => (

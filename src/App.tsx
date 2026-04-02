@@ -17,6 +17,7 @@ import { Auth, AuthMode } from './pages/Auth';
 import { MesVoyages } from './pages/MesVoyages';
 import { MonEpargne } from './pages/MonEpargne';
 import { InvitationPage } from './pages/Invitation';
+import { VoyagesPage } from './pages/Voyages.public';
 import { useAuth } from './context/AuthContext';
 import { useRouter } from './hooks/useRouter';
 import { SEO, buildOrganizationJsonLd } from './components/SEO';
@@ -127,11 +128,24 @@ function App() {
     );
   }
 
+  if (route.path === '/voyages') {
+    return (
+      <VoyagesPage
+        onViewDetails={(id) => navigate(`/voyage/${id}`)}
+        onBack={() => navigate('/')}
+        onAdminLogin={handleAdminLogin}
+        onOpenAuth={handleOpenAuth}
+        onMesVoyages={() => navigate('/mes-voyages')}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   if (route.path === '/voyage/:id') {
     return (
       <VoyageDetails
         voyageId={route.params.id}
-        onBack={() => navigate('/')}
+        onBack={() => navigate('/voyages')}
         onAdminLogin={handleAdminLogin}
         onOpenAuth={handleOpenAuth}
         onMesVoyages={() => navigate('/mes-voyages')}

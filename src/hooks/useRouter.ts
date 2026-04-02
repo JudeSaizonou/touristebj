@@ -7,6 +7,7 @@ export interface RouteInfo {
 
 const routes: Array<{ pattern: RegExp; keys: string[]; path: string }> = [
   { pattern: /^\/$/,                            keys: [],           path: '/' },
+  { pattern: /^\/voyages$/,                      keys: [],           path: '/voyages' },
   { pattern: /^\/voyage\/([^/]+)$/,             keys: ['id'],       path: '/voyage/:id' },
   { pattern: /^\/auth$/,                        keys: [],           path: '/auth' },
   { pattern: /^\/mes-voyages$/,                 keys: [],           path: '/mes-voyages' },
