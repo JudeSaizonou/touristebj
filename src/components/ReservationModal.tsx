@@ -69,8 +69,12 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
 
   useEffect(() => {
     if (isOpen && user?.phoneNumber) {
-      const national = user.phoneNumber.replace(/^\+\d{1,3}/, '').replace(/\D/g, '');
-      setPhoneNumber(national);
+      // Only pre-fill if it's a Benin number (+229)
+      const phone = user.phoneNumber;
+      if (phone.startsWith('+229') || phone.startsWith('229')) {
+        const national = phone.replace(/^\+?229/, '').replace(/\D/g, '');
+        setPhoneNumber(national);
+      }
     }
   }, [isOpen, user]);
 
