@@ -914,8 +914,10 @@ function mapBooking(b: BookingBackend): MappedBooking {
   const totalAmount = b.totalAmount ?? 0;
   const depositAmount = b.depositAmount ?? Math.round(totalAmount * 0.5);
 
-  // When payments array is present (detail view), recalculate from successful payments only.
-  // When payments array is absent (list view), trust backend values directly.
+  // Calculate amountPaid / remainingAmount:
+  // 1. If payments array present → recalculate from successful payments only
+  // 2. If isFullyPaid flag set → trust it (totalAmount paid, 0 remaining)
+  // 3. Otherwise → use backend values as fallback
   const hasPayments = b.payments && b.payments.length > 0;
   let amountPaid: number;
   let remainingAmount: number;
@@ -927,8 +929,15 @@ function mapBooking(b: BookingBackend): MappedBooking {
     });
     amountPaid = successPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
     remainingAmount = Math.max(0, totalAmount - amountPaid);
+  } else if (b.isFullyPaid) {
+    // Fully paid — no ambiguity
+    amountPaid = totalAmount;
+    remainingAmount = 0;
+  } else if (!b.depositPaid && b.status === 'PENDING_DEPOSIT') {
+    // Deposit not paid — nothing counted yet
+    amountPaid = 0;
+    remainingAmount = totalAmount;
   } else {
-    // Trust backend-computed values (backend already filters by success)
     amountPaid = b.amountPaid ?? 0;
     remainingAmount = b.remainingAmount ?? Math.max(0, totalAmount - amountPaid);
   }
