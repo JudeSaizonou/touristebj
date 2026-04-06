@@ -141,6 +141,12 @@ export const Catalog: React.FC<CatalogProps> = ({
       const to = new Date(dateTo);
       result = result.filter(v => v.rawDepartureDate && new Date(v.rawDepartureDate) <= to);
     }
+    if (filterDestination) {
+      result = result.filter(v => v.destination === filterDestination);
+    }
+    if (filterTripType) {
+      result = result.filter(v => v.tripType === filterTripType);
+    }
     switch (sortBy) {
       case 'price-low':
         result.sort((a, b) => (a.totalPrice ?? 0) - (b.totalPrice ?? 0));
@@ -154,7 +160,7 @@ export const Catalog: React.FC<CatalogProps> = ({
     }
     setFilteredVoyages(result);
     setCurrentPage(1);
-  }, [debouncedSearch, sortBy, voyages, priceMin, priceMax, dateFrom, dateTo]);
+  }, [debouncedSearch, sortBy, voyages, priceMin, priceMax, dateFrom, dateTo, filterDestination, filterTripType]);
 
   const totalPages = Math.ceil(filteredVoyages.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -205,12 +211,7 @@ export const Catalog: React.FC<CatalogProps> = ({
 
             {/* Stats */}
             <div className="flex flex-wrap justify-center gap-6 sm:gap-10 mb-10">
-              {[
-                { value: '500+', label: 'voyageurs partis' },
-                { value: '50+', label: 'destinations' },
-                { value: '0', label: 'blocage financier' },
-                { value: '18', label: 'pays disponibles' },
-              ].map((stat) => (
+              {heroStats.map((stat) => (
                 <div key={stat.label} className="text-center">
                   <p className="text-2xl sm:text-3xl font-bold text-white font-sans">{stat.value}</p>
                   <p className="text-sm text-gray-400 font-sans">{stat.label}</p>
@@ -476,7 +477,7 @@ export const Catalog: React.FC<CatalogProps> = ({
 
               {/* Filter panel */}
               {showFilters && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-6">
                   <div>
                     <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Prix min (FCFA)</label>
                     <input type="number" value={priceMin} onChange={(e) => setPriceMin(e.target.value)} placeholder="0"
@@ -486,6 +487,26 @@ export const Catalog: React.FC<CatalogProps> = ({
                     <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Prix max (FCFA)</label>
                     <input type="number" value={priceMax} onChange={(e) => setPriceMax(e.target.value)} placeholder="1 000 000"
                       className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Destination</label>
+                    <select value={filterDestination} onChange={(e) => setFilterDestination(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans">
+                      <option value="">Toutes les destinations</option>
+                      {uniqueDestinations.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Type de voyage</label>
+                    <select value={filterTripType} onChange={(e) => setFilterTripType(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-sans">
+                      <option value="">Tous les types</option>
+                      {uniqueTripTypes.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-dark-800/50 mb-1.5 font-sans">Départ après</label>

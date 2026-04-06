@@ -1217,6 +1217,13 @@ export async function submitDocument(bookingId: string, documentId: string, file
   );
 }
 
+export async function sendBookingMessage(bookingId: string, message: string): Promise<{ success: boolean }> {
+  return apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/bookings/${bookingId}/messages`,
+    { method: 'POST', body: JSON.stringify({ message }) }
+  );
+}
+
 export async function markMessageRead(bookingId: string, messageId: string): Promise<void> {
   await apiRequest<{ success: boolean }>(
     `${TRIPS_PREFIX}/bookings/${bookingId}/messages/${messageId}/read`,

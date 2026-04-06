@@ -71,6 +71,69 @@ export const ReservationsList: React.FC = () => {
     setCurrentPage(1);
   };
 
+  // ─── Bulk selection helpers ────────────────────────────────────────────
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === bookings.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(bookings.map(b => b.id)));
+    }
+  };
+
+  const selectedBookings = bookings.filter(b => selectedIds.has(b.id));
+
+  const handleBulkExport = (format: 'csv' | 'pdf' | 'xlsx') => {
+    const headers = ['Client', 'Voyage', 'Personnes', 'Total', 'Acompte', 'Payé', 'Solde', 'Date', 'Statut'];
+    const rows = selectedBookings.map(b => [
+      b.client.nom,
+      b.voyage.destination || b.voyage.titre,
+      b.nombrePersonnes,
+      fmtPrice(b.totalAmount),
+      fmtPrice(b.depositAmount),
+      fmtPrice(b.amountPaid),
+      fmtPrice(b.remainingAmount),
+      b.createdAt,
+      getBookingStatus(b.status).label,
+    ]);
+    handleExport(format, { headers, rows, filename: 'reservations_selection_export' });
+    addToast('success', `Export ${format.toUpperCase()} de ${selectedBookings.length} réservation(s) téléchargé`);
+  };
+
+  const handleBulkReminder = async () => {
+    if (sendingReminders || selectedBookings.length === 0) return;
+    setSendingReminders(true);
+    let sent = 0;
+    let failed = 0;
+    for (const b of selectedBookings) {
+      try {
+        await sendTravelerMessage(b.id, {
+          subject: 'Rappel de paiement',
+          message: `Bonjour ${b.client.nom},\n\nNous vous rappelons qu'un solde de ${fmtPrice(b.remainingAmount)} reste à régler pour votre réservation "${b.voyage.destination || b.voyage.titre}".\n\nMerci de procéder au paiement dans les meilleurs délais.\n\nCordialement.`,
+        });
+        sent++;
+      } catch {
+        failed++;
+      }
+    }
+    setSendingReminders(false);
+    if (sent > 0) addToast('success', `Rappel envoyé à ${sent} client(s)`);
+    if (failed > 0) addToast('error', `Échec d'envoi pour ${failed} client(s)`);
+  };
+
+  // Clear selection when page/filters change
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, statusFilter, typeFilter, debouncedSearch]);
+
   const confirmCancel = async () => {
     if (!cancelTarget || cancelling) return;
     setCancelling(true);
@@ -124,6 +187,13 @@ export const ReservationsList: React.FC = () => {
         onClose={() => setShowExportModal(false)}
         onExport={handleExportFormat}
         title="Exporter les réservations"
+      />
+
+      <ExportModal
+        isOpen={showBulkExportModal}
+        onClose={() => setShowBulkExportModal(false)}
+        onExport={handleBulkExport}
+        title={`Exporter ${selectedIds.size} réservation(s)`}
       />
 
       {selectedBooking && (
@@ -279,11 +349,50 @@ export const ReservationsList: React.FC = () => {
         </div>
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="sticky top-0 z-10 mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-primary-50 border border-primary-200 px-4 py-3 shadow-sm">
+          <span className="text-sm font-semibold text-primary-700">{selectedIds.size} sélectionné{selectedIds.size > 1 ? 's' : ''}</span>
+          <button
+            onClick={() => setShowBulkExportModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Upload className="w-4 h-4" />
+            Exporter la sélection
+          </button>
+          <button
+            onClick={handleBulkReminder}
+            disabled={sendingReminders}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+          >
+            {sendingReminders ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Mail className="w-4 h-4" />
+            )}
+            Envoyer un rappel
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Tout désélectionner
+          </button>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl shadow-card overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
+                <th className="px-2 py-1.5 sm:px-4 sm:py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={bookings.length > 0 && selectedIds.size === bookings.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                </th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide">Client</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Voyage</th>
                 <th className="px-2 py-1.5 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Pers.</th>
@@ -299,16 +408,24 @@ export const ReservationsList: React.FC = () => {
             <tbody className="divide-y divide-gray-50">
               {loading ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center">
+                  <td colSpan={11} className="px-6 py-12 text-center">
                     <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
                   </td>
                 </tr>
               ) : bookings.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center text-gray-400">Aucune réservation</td>
+                  <td colSpan={11} className="px-6 py-12 text-center text-gray-400">Aucune réservation</td>
                 </tr>
               ) : bookings.map(b => (
-                <tr key={b.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={b.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(b.id) ? 'bg-primary-50/40' : ''}`}>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(b.id)}
+                      onChange={() => toggleSelect(b.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                  </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3">
                     <p className="font-medium text-gray-900 text-xs sm:text-sm">{b.client.nom}</p>
                     {b.client.telephone && <p className="text-xs text-gray-400 hidden sm:block">{b.client.telephone}</p>}

@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   Calendar, PiggyBank, CheckCircle, Clock,
   Loader2, AlertCircle, TrendingUp, CreditCard, ChevronLeft, Users, ArrowRight, RefreshCw, XCircle,
-  Mail, FileText, Upload, Paperclip, ExternalLink, UserPlus, Send, Copy
+  Mail, FileText, Upload, Paperclip, ExternalLink, UserPlus, Send, Copy, Download
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
-import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, getBookingDocumentRequests, submitDocument, markMessageRead, getDocumentLabel, getBookingInvitations, resendInvitation } from '../api/trips';
+import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, sendBookingMessage, getBookingDocumentRequests, submitDocument, markMessageRead, getDocumentLabel, getBookingInvitations, resendInvitation } from '../api/trips';
 import type { BookingMessage, DocumentRequest, MappedInvitation } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +48,8 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
   const [invitations, setInvitations] = useState<MappedInvitation[]>([]);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -116,6 +119,65 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     } finally {
       setCancelling(false);
     }
+  };
+
+  const handleSendReply = async () => {
+    if (!replyText.trim() || sendingReply) return;
+    setSendingReply(true);
+    try {
+      await sendBookingMessage(bookingId, replyText.trim());
+      setReplyText('');
+      const msgsRes = await getBookingMessages(bookingId);
+      setMessages(msgsRes.messages);
+    } catch {
+      setError('Impossible d\'envoyer le message.');
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const generatePaymentReceipt = (bk: MappedBooking, payment: MappedPayment) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Reçu de paiement — Le Touriste.bj', pageWidth / 2, 30, { align: 'center' });
+
+    // Separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 38, pageWidth - 20, 38);
+
+    // Content
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    let y = 55;
+    const lineHeight = 10;
+
+    const addLine = (label: string, value: string) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, 25, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, 90, y);
+      y += lineHeight;
+    };
+
+    addLine('Référence :', bk.bookingNumber || bk.id);
+    addLine('Voyage :', bk.voyage?.titre || '—');
+    addLine('Montant :', fmtPrice(payment.amount));
+    addLine('Méthode :', payment.paymentMethod || '—');
+    addLine('Date :', payment.date || '—');
+    addLine('Statut :', 'Confirmé');
+
+    // Footer
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, y + 10, pageWidth - 20, y + 10);
+    doc.setFontSize(9);
+    doc.setTextColor(130, 130, 130);
+    doc.text('Généré automatiquement par Le Touriste.bj', pageWidth / 2, y + 20, { align: 'center' });
+
+    doc.save(`recu-${bk.bookingNumber || bk.id}-${payment.id}.pdf`);
   };
 
   return (
@@ -286,6 +348,15 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                                   {isSuccess ? 'Confirmé' : isPending ? 'En attente' : isExpired ? 'Expiré' : 'Échoué'}
                                 </span>
                               </div>
+                              {isSuccess && booking && (
+                                <button
+                                  onClick={() => generatePaymentReceipt(booking, p)}
+                                  className="p-2 bg-gray-100 text-dark-800/60 rounded-lg hover:bg-gray-200 transition-colors"
+                                  title="Télécharger le reçu"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                               {(isPending || isFailed || isExpired) && (
                                 <button
                                   onClick={() => {
@@ -358,6 +429,26 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                         </div>
                       </div>
                     ))}
+                  </div>
+
+                  {/* Reply form */}
+                  <div className="mt-4 flex gap-2">
+                    <textarea
+                      value={replyText}
+                      onChange={e => setReplyText(e.target.value)}
+                      placeholder="Répondre..."
+                      rows={2}
+                      className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+                      disabled={sendingReply}
+                    />
+                    <button
+                      onClick={handleSendReply}
+                      disabled={sendingReply || !replyText.trim()}
+                      className="self-end p-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors disabled:opacity-50"
+                      title="Envoyer"
+                    >
+                      {sendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               )}
