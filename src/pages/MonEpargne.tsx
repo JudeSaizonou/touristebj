@@ -421,8 +421,13 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   {booking.depositPaid && <p className="text-[9px] text-emerald-500 mt-0.5">Non remboursable</p>}
                 </div>
                 <div className="text-center p-3 bg-green-50 rounded-xl">
-                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Total épargné</p>
+                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Total payé</p>
                   <p className="font-bold text-green-600 text-sm">{fmtPrice(booking.amountPaid)}</p>
+                  {booking.depositPaid && booking.amountPaid > booking.depositAmount && (
+                    <p className="text-[9px] text-green-500 mt-0.5">
+                      Acompte + {fmtPrice(booking.amountPaid - booking.depositAmount)} épargne
+                    </p>
+                  )}
                 </div>
                 <div className={`text-center p-3 rounded-xl ${booking.remainingAmount > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
                   <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Restant</p>

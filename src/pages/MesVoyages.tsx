@@ -272,7 +272,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                   </div>
                 </div>
                 <p className="text-lg sm:text-2xl font-bold text-dark-800">{fmtPrice(stats.totalEpargne)}</p>
-                <p className="text-xs text-dark-800/40">Total épargné</p>
+                <p className="text-xs text-dark-800/40">Total payé</p>
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
                 <div className="flex items-center gap-2 mb-2">
@@ -384,7 +384,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                           <div className="mb-4">
                             <div className="flex justify-between text-xs mb-1.5">
                               <span className="text-dark-800/50">
-                                {fmtPrice(booking.amountPaid)} épargnés
+                                {fmtPrice(booking.amountPaid)} payés
                               </span>
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-dark-800">{percent}%</span>

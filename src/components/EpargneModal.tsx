@@ -171,7 +171,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               {/* Barre de progression */}
               <div>
                 <div className="flex justify-between text-xs text-dark-800/60 mb-1.5">
-                  <span>Épargné : {fmtPrice(booking.amountPaid)}</span>
+                  <span>Payé : {fmtPrice(booking.amountPaid)}</span>
                   <span>Total : {fmtPrice(booking.totalPrice)}</span>
                 </div>
                 <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
