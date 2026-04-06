@@ -3,21 +3,28 @@ import { LayoutDashboard, Plane, ChevronRight, CalendarCheck, Users, Settings, L
 import { PageView } from '../types';
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
 
+interface BadgeCounts {
+  reservations?: number;
+  voyageurs?: number;
+  reversements?: number;
+}
+
 interface SidebarProps {
   currentPage: 'dashboard' | 'voyages' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
   onNavigate: (page: PageView) => void;
   onLogout?: () => void;
   onRequestRefund?: () => void;
+  badges?: BadgeCounts;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLogout, onRequestRefund }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLogout, onRequestRefund, badges }) => {
   const menuItems = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'voyages' as const, label: 'Voyages', icon: Plane },
-    { id: 'reservations' as const, label: 'Réservations', icon: CalendarCheck },
-    { id: 'all-voyageurs' as const, label: 'Voyageurs', icon: Users },
-    { id: 'reversements' as const, label: 'Reversements', icon: ArrowRightLeft },
-    { id: 'parametres' as const, label: 'Paramètres', icon: Settings },
+    { id: 'dashboard' as const, label: 'Dashboard', icon: LayoutDashboard, badge: 0 },
+    { id: 'voyages' as const, label: 'Voyages', icon: Plane, badge: 0 },
+    { id: 'reservations' as const, label: 'Réservations', icon: CalendarCheck, badge: badges?.reservations || 0 },
+    { id: 'all-voyageurs' as const, label: 'Voyageurs', icon: Users, badge: badges?.voyageurs || 0 },
+    { id: 'reversements' as const, label: 'Reversements', icon: ArrowRightLeft, badge: badges?.reversements || 0 },
+    { id: 'parametres' as const, label: 'Paramètres', icon: Settings, badge: 0 },
   ];
 
   return (
@@ -45,6 +52,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, onLog
             >
               <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'}`} />
               <span className="flex-1 text-left font-medium">{item.label}</span>
+              {item.badge > 0 && !isActive && (
+                <span className="min-w-[20px] h-5 flex items-center justify-center px-1.5 text-[10px] font-bold bg-red-500 text-white rounded-full">
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
+              )}
               {isActive && <ChevronRight className="w-4 h-4" />}
             </button>
           );

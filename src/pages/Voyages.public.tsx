@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { SEO } from '../components/SEO';
 import type { AuthMode } from './Auth';
+import { fmtPrice } from '../utils/format';
 
 interface VoyagesPageProps {
   onViewDetails: (voyageId: string) => void;
@@ -45,8 +46,6 @@ export const VoyagesPage: React.FC<VoyagesPageProps> = ({
     setPriceMin(''); setPriceMax(''); setDateFrom(''); setDateTo('');
     setSearchQuery(''); setSortBy('default');
   };
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const loadVoyages = async () => {
     setLoading(true);

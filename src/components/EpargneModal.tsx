@@ -6,6 +6,7 @@ import { openKkiapay } from '../api/kkiapay';
 import type { MappedBooking } from '../types';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
 import { PAYMENT_FEES, KKIAPAY_KEY } from '../config/payments';
+import { fmtPrice } from '../utils/format';
 
 interface EpargneModalProps {
   isOpen: boolean;
@@ -57,8 +58,6 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
   }, [isOpen, canClose, onClose]);
 
   if (!isOpen || !booking) return null;
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const remaining = booking.remainingAmount;
   const amountNum = parseInt(amount.replace(/\D/g, '')) || 0;
@@ -200,6 +199,42 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
               {/* Montant */}
               <div>
                 <label className="block text-sm font-semibold text-dark-800 mb-2">{isDeposit ? 'Montant de l\'acompte (FCFA)' : 'Montant à épargner (FCFA)'}</label>
+                {/* Suggestions rapides */}
+                {remaining > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {!isDeposit && booking.depositAmount > 0 && !booking.depositPaid && (
+                      <button
+                        type="button"
+                        onClick={() => setAmount(String(booking.depositAmount))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          amountNum === booking.depositAmount ? 'border-forest-800 bg-forest-800/10 text-forest-800' : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
+                        }`}
+                      >
+                        Acompte · {fmtPrice(booking.depositAmount)}
+                      </button>
+                    )}
+                    {remaining !== booking.totalPrice && (
+                      <button
+                        type="button"
+                        onClick={() => setAmount(String(Math.round(remaining / 2)))}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          amountNum === Math.round(remaining / 2) ? 'border-forest-800 bg-forest-800/10 text-forest-800' : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
+                        }`}
+                      >
+                        50% · {fmtPrice(Math.round(remaining / 2))}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setAmount(String(remaining))}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        amountNum === remaining ? 'border-forest-800 bg-forest-800/10 text-forest-800' : 'border-gray-200 text-dark-800/60 hover:border-gray-300'
+                      }`}
+                    >
+                      Tout solder · {fmtPrice(remaining)}
+                    </button>
+                  </div>
+                )}
                 <input
                   type="text"
                   inputMode="numeric"

@@ -1,31 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, Upload, X, Eye } from 'lucide-react';
-import { getDashboardBookings, cancelBooking, getGroupDetail } from '../api/trips';
+import { ChevronLeft, ChevronRight, Upload, X, Eye, Mail } from 'lucide-react';
+import { useDebounce } from '../hooks/useDebounce';
+import { SearchInput } from '../components/SearchInput';
+import { getDashboardBookings, cancelBooking, getGroupDetail, sendTravelerMessage } from '../api/trips';
 import type { DashboardBooking, GroupDetail } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING_DEPOSIT: 'En attente',
-  DEPOSIT_PAID: 'Acompte payé',
-  IN_PROGRESS: 'En cours',
-  COMPLETED: 'Complété',
-  CANCELLED: 'Annulée',
-  REFUNDED: 'Remboursée',
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  PENDING_DEPOSIT: 'bg-amber-100 text-amber-700 border-amber-200',
-  DEPOSIT_PAID: 'bg-blue-100 text-blue-700 border-blue-200',
-  IN_PROGRESS: 'bg-purple-100 text-purple-700 border-purple-200',
-  COMPLETED: 'bg-green-100 text-green-700 border-green-200',
-  CANCELLED: 'bg-red-100 text-red-700 border-red-200',
-  REFUNDED: 'bg-gray-100 text-gray-700 border-gray-200',
-};
-
-const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
+import { fmtPrice } from '../utils/format';
+import { getBookingStatus } from '../utils/statusConfig';
 
 export const ReservationsList: React.FC = () => {
   const [bookings, setBookings] = useState<DashboardBooking[]>([]);
@@ -41,8 +25,12 @@ export const ReservationsList: React.FC = () => {
   const [groupLoading, setGroupLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sendingReminders, setSendingReminders] = useState(false);
+  const [showBulkExportModal, setShowBulkExportModal] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 10;
+  const debouncedSearch = useDebounce(searchQuery, 400);
 
   const loadBookings = async () => {
     setLoading(true);
@@ -65,7 +53,7 @@ export const ReservationsList: React.FC = () => {
 
   useEffect(() => {
     loadBookings();
-  }, [currentPage, statusFilter, typeFilter]);
+  }, [currentPage, statusFilter, typeFilter, debouncedSearch]);
 
   useEffect(() => {
     setGroupDetail(null);
@@ -78,10 +66,9 @@ export const ReservationsList: React.FC = () => {
     }
   }, [selectedBooking]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
     setCurrentPage(1);
-    loadBookings();
   };
 
   const confirmCancel = async () => {
@@ -112,7 +99,7 @@ export const ReservationsList: React.FC = () => {
       fmtPrice(b.amountPaid),
       fmtPrice(b.remainingAmount),
       b.createdAt,
-      STATUS_LABEL[b.status] || b.status,
+      getBookingStatus(b.status).label,
     ]);
     handleExport(format, { headers, rows, filename: 'reservations_export' });
     addToast('success', `Export ${format.toUpperCase()} téléchargé`);
@@ -234,8 +221,8 @@ export const ReservationsList: React.FC = () => {
                   <p className="text-xs text-gray-500">Date de réservation</p>
                   <p className="text-sm font-medium text-gray-700">{selectedBooking.createdAt}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[selectedBooking.status] || STATUS_STYLE['PENDING_DEPOSIT']}`}>
-                  {STATUS_LABEL[selectedBooking.status] || selectedBooking.status}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getBookingStatus(selectedBooking.status).style}`}>
+                  {getBookingStatus(selectedBooking.status).label}
                 </span>
               </div>
               {selectedBooking.isPaymentOverdue && (
@@ -260,16 +247,12 @@ export const ReservationsList: React.FC = () => {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        <form onSubmit={handleSearch} className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher client, voyage..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-colors"
-          />
-        </form>
+        <SearchInput
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Rechercher client, voyage..."
+          className="w-full sm:w-80"
+        />
         <div className="flex gap-2 sm:gap-3">
           <select
             value={statusFilter}
@@ -350,8 +333,8 @@ export const ReservationsList: React.FC = () => {
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-green-600 hidden sm:table-cell">{fmtPrice(b.amountPaid)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-orange-600 hidden sm:table-cell">{fmtPrice(b.remainingAmount)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[b.status] || STATUS_STYLE['PENDING_DEPOSIT']}`}>
-                      {STATUS_LABEL[b.status] || b.status}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getBookingStatus(b.status).style}`}>
+                      {getBookingStatus(b.status).label}
                     </span>
                     {b.isPaymentOverdue && (
                       <span className="ml-1 inline-block w-2 h-2 rounded-full bg-red-500" title="En retard" />

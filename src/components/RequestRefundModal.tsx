@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { getPayoutBalance, requestPayout } from '../api/trips';
 import type { PayoutBalance } from '../api/trips';
+import { fmtPrice } from '../utils/format';
 
 interface RequestRefundModalProps {
   isOpen: boolean;
@@ -54,8 +55,6 @@ export const RequestRefundModal: React.FC<RequestRefundModalProps> = ({
   const isOverBalance = isAmountValid && balance && parsedAmount > balance.availableBalance;
   const isPhoneValid = phoneNumber.replace(/\D/g, '').length >= 8;
   const canSubmit = isAmountValid && !isOverBalance && isPhoneValid && !submitting;
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const handleSubmit = async () => {
     if (!canSubmit) return;

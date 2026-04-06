@@ -7,31 +7,13 @@ import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
 import { useDebounce } from '../hooks/useDebounce';
+import { VOYAGE_STATUS, getBookingStatus } from '../utils/statusConfig';
+import { StatusBadge } from '../components/StatusBadge';
 
 interface VoyagesProps {
   onCreateVoyage: () => void;
   onEditVoyage: (voyageId: string) => void;
 }
-
-const StatusBadge: React.FC<{ status: VoyageStatus }> = ({ status }) => {
-  const styles = {
-    'pause': 'bg-success-100 text-success-600 border-success-200',
-    'en-cours': 'bg-purple-100 text-purple-600 border-purple-200',
-    'complet': 'bg-gray-100 text-gray-600 border-gray-200',
-  };
-
-  const labels = {
-    'pause': 'Pause',
-    'en-cours': 'En cours',
-    'complet': 'Complet',
-  };
-
-  return (
-    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${styles[status]}`}>
-      {labels[status]}
-    </span>
-  );
-};
 
 type SortField = 'destination' | 'date' | 'auteur' | 'etat' | 'prix' | 'acomptesRecus' | 'placesRestantes';
 type SortDirection = 'asc' | 'desc' | null;
@@ -470,7 +452,7 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
                     <span className="text-gray-700">{voyage.auteur}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <StatusBadge status={voyage.etat} />
+                    <StatusBadge status={VOYAGE_STATUS[voyage.etat] || getBookingStatus(voyage.etat)} />
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-gray-900 font-medium">{voyage.prix}</span>

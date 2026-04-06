@@ -6,6 +6,7 @@ import { payBookingMtn, payDepositKkiapay, verifyKkiapayTransaction } from '../a
 import { openKkiapay } from '../api/kkiapay';
 import { usePaymentPolling } from '../hooks/usePaymentPolling';
 import { PAYMENT_FEES, KKIAPAY_KEY } from '../config/payments';
+import { fmtPrice } from '../utils/format';
 import type { GroupPaymentMode } from '../types';
 
 interface ReservationModalProps {
@@ -108,8 +109,6 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const totalDebited = acompte + fees;
 
   const isPhoneValid = phoneNumber.replace(/\D/g, '').length >= 8;
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const handleConfirmReservation = async () => {
     if (step !== 'contact-form') return;

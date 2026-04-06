@@ -5,23 +5,8 @@ import type { PayoutBalance, PayoutRequest } from '../api/trips';
 import { ExportModal } from '../components/ExportModal';
 import { handleExport } from '../utils/export';
 import { ToastContainer, useToast } from '../components/Toast';
-
-const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
-const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'En attente',
-  approved: 'Approuvé',
-  processed: 'Traité',
-  rejected: 'Rejeté',
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700 border-amber-200',
-  approved: 'bg-blue-100 text-blue-700 border-blue-200',
-  processed: 'bg-green-100 text-green-700 border-green-200',
-  rejected: 'bg-red-100 text-red-700 border-red-200',
-};
+import { fmtPrice, fmtDate } from '../utils/format';
+import { getPayoutStatus } from '../utils/statusConfig';
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
   pending: <Clock className="w-5 h-5 text-amber-500" />,
@@ -92,7 +77,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
       new Date(p.createdAt).toLocaleDateString('fr-FR'),
       fmtPrice(p.amount),
       METHOD_LABEL[p.paymentMethod] || p.paymentMethod,
-      STATUS_LABEL[p.status] || p.status,
+      getPayoutStatus(p.status).label,
     ]);
     handleExport(format, { headers, rows, filename: 'reversements' });
     setShowExportModal(false);
@@ -216,8 +201,8 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
                       {METHOD_LABEL[p.paymentMethod] || p.paymentMethod}
                     </td>
                     <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-center">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_STYLE[p.status] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                        {STATUS_LABEL[p.status] || p.status}
+                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPayoutStatus(p.status).style}`}>
+                        {getPayoutStatus(p.status).label}
                       </span>
                     </td>
                   </tr>
@@ -267,8 +252,8 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
               </div>
               <p className="text-3xl font-bold">{fmtPrice(selectedPayout.amount)}</p>
               <div className="mt-2">
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[selectedPayout.status] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
-                  {STATUS_LABEL[selectedPayout.status] || selectedPayout.status}
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getPayoutStatus(selectedPayout.status).style}`}>
+                  {getPayoutStatus(selectedPayout.status).label}
                 </span>
               </div>
             </div>
@@ -302,7 +287,7 @@ export const Reversements: React.FC<ReversementsProps> = ({ onRequestRefund }) =
                   <span className="text-sm text-gray-500">Statut</span>
                   <span className="flex items-center gap-1.5 text-sm font-medium">
                     {STATUS_ICON[selectedPayout.status]}
-                    {STATUS_LABEL[selectedPayout.status] || selectedPayout.status}
+                    {getPayoutStatus(selectedPayout.status).label}
                   </span>
                 </div>
                 {selectedPayout.transactionId && (

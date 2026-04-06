@@ -12,6 +12,8 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import type { MappedBooking, MappedPayment } from '../types';
 import type { AuthMode } from './Auth';
+import { fmtPrice } from '../utils/format';
+import { getBookingStatus } from '../utils/statusConfig';
 
 interface MonEpargneProps {
   bookingId: string;
@@ -21,17 +23,6 @@ interface MonEpargneProps {
   onMesVoyages?: () => void;
   onLogout?: () => void;
 }
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'text-amber-700 bg-amber-50 border-amber-200' },
-  DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'text-blue-700 bg-blue-50 border-blue-200' },
-  IN_PROGRESS:     { label: 'Paiement en cours',   color: 'text-blue-700 bg-blue-50 border-blue-200' },
-  SAVING:          { label: 'Épargne en cours',    color: 'text-forest-800 bg-forest-800/5 border-forest-800/20' },
-  FULLY_PAID:      { label: 'Voyage payé',         color: 'text-green-700 bg-green-50 border-green-200' },
-  COMPLETED:       { label: 'Voyage payé',         color: 'text-green-700 bg-green-50 border-green-200' },
-  CANCELLED:       { label: 'Annulé',              color: 'text-red-600 bg-red-50 border-red-200' },
-  REFUNDED:        { label: 'Remboursé',           color: 'text-gray-600 bg-gray-50 border-gray-200' },
-};
 
 export const MonEpargne: React.FC<MonEpargneProps> = ({
   bookingId,
@@ -97,8 +88,6 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
 
   useEffect(() => { if (bookingId && user) loadData(); }, [bookingId, user]);
 
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
-
   const percent = booking && booking.totalPrice > 0
     ? Math.min(100, Math.round((booking.amountPaid / booking.totalPrice) * 100))
     : 0;
@@ -108,7 +97,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
     : null;
 
   const isUrgent = daysLeft !== null && daysLeft <= 14;
-  const status = booking ? (STATUS_LABELS[booking.status] ?? { label: booking.status, color: 'text-gray-600 bg-gray-50 border-gray-200' }) : null;
+  const status = booking ? getBookingStatus(booking.status) : null;
   const isComplete = booking && ['FULLY_PAID', 'COMPLETED'].includes(booking.status);
   const isCancelled = booking && booking.status === 'CANCELLED';
   const needsDeposit = booking && booking.status === 'PENDING_DEPOSIT';
@@ -163,7 +152,7 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   <p className="text-white/50 text-sm mt-1">{booking.voyage?.destination}</p>
                 </div>
                 {status && (
-                  <span className={`self-start sm:self-center text-xs font-semibold px-3 py-1.5 rounded-full border ${status.color}`}>
+                  <span className={`self-start sm:self-center text-xs font-semibold px-3 py-1.5 rounded-full border ${status.style}`}>
                     {status.label}
                   </span>
                 )}
@@ -210,6 +199,32 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                   </p>
                 </div>
               </div>
+
+              {/* Projection d'épargne */}
+              {booking.remainingAmount > 0 && daysLeft !== null && daysLeft > 0 && (
+                <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <p className="text-xs font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4" /> Projection d'épargne
+                  </p>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: '/semaine', weeks: Math.max(1, Math.ceil(daysLeft / 7)) },
+                      { label: '/2 sem.', weeks: Math.max(1, Math.ceil(daysLeft / 14)) },
+                      { label: '/mois', weeks: Math.max(1, Math.ceil(daysLeft / 30)) },
+                    ].map(({ label, weeks }) => (
+                      <div key={label} className="bg-white rounded-lg p-2.5">
+                        <p className="text-[10px] text-blue-600/60 mb-0.5">{label}</p>
+                        <p className="text-sm font-bold text-blue-800">
+                          {fmtPrice(Math.ceil(booking.remainingAmount / weeks))}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-blue-600/50 mt-2 text-center">
+                    Pour solder avant l'échéance ({daysLeft} jours restants)
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

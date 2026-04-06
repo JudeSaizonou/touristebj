@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import type { AuthMode } from './Auth';
+import { fmtPrice } from '../utils/format';
 
 interface VoyageDetailsProps {
   voyageId: string;
@@ -58,8 +59,6 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
     };
     load();
   }, [voyageId]);
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const handleReservationClick = () => {
     if (!user) {

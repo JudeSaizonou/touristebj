@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MapPin, Star, Search, Loader2, SlidersHorizontal, X, ArrowRight, Clock, Users, Calendar, ChevronRight, ChevronDown, Quote, MessageSquare } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { getVoyages } from '../api/trips';
@@ -9,6 +9,7 @@ import { useDebounce } from '../hooks/useDebounce';
 import { SEO, buildFAQJsonLd } from '../components/SEO';
 
 import type { AuthMode } from './Auth';
+import { fmtPrice } from '../utils/format';
 
 const FAQ_DATA = [
   { q: "C'est quoi exactement l'acompte de 30% ?", a: "C'est le montant minimum pour confirmer votre place dans le groupe. Il est non remboursable mais garantit votre réservation. Le solde est dû 10 jours avant le départ." },
@@ -50,16 +51,41 @@ export const Catalog: React.FC<CatalogProps> = ({
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [filterDestination, setFilterDestination] = useState('');
+  const [filterTripType, setFilterTripType] = useState('');
 
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
-  const activeFilterCount = [priceMin, priceMax, dateFrom, dateTo].filter(Boolean).length;
+  const activeFilterCount = [priceMin, priceMax, dateFrom, dateTo, filterDestination, filterTripType].filter(Boolean).length;
+
+  const uniqueDestinations = useMemo(() => {
+    const dests = new Set(voyages.map(v => v.destination as string).filter(Boolean));
+    return Array.from(dests).sort();
+  }, [voyages]);
+
+  const uniqueTripTypes = useMemo(() => {
+    const types = new Set(voyages.map(v => v.tripType as string).filter(Boolean));
+    return Array.from(types).sort();
+  }, [voyages]);
+
+  const heroStats = useMemo(() => {
+    const tripCount = voyages.length;
+    const destCount = uniqueDestinations.length;
+    return [
+      { value: tripCount > 0 ? `${tripCount}+` : '0', label: 'voyages disponibles' },
+      { value: destCount > 0 ? `${destCount}+` : '0', label: 'destinations' },
+      { value: '0', label: 'blocage financier' },
+      { value: uniqueTripTypes.length > 0 ? String(uniqueTripTypes.length) : '0', label: 'types de voyage' },
+    ];
+  }, [voyages, uniqueDestinations, uniqueTripTypes]);
 
   const resetFilters = () => {
     setPriceMin('');
     setPriceMax('');
     setDateFrom('');
     setDateTo('');
+    setFilterDestination('');
+    setFilterTripType('');
     setSearchQuery('');
     setSortBy('default');
   };
@@ -134,8 +160,6 @@ export const Catalog: React.FC<CatalogProps> = ({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedVoyages = filteredVoyages.slice(startIndex, startIndex + itemsPerPage);
   const endIndex = Math.min(startIndex + itemsPerPage, filteredVoyages.length);
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   return (
     <PublicLayout

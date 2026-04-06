@@ -1,30 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, Upload, Eye, SlidersHorizontal, Mail } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Upload, Eye, SlidersHorizontal, Mail } from 'lucide-react';
+import { useDebounce } from '../hooks/useDebounce';
+import { SearchInput } from '../components/SearchInput';
 import { getAllVoyageurs } from '../api/trips';
 import { ExportModal } from '../components/ExportModal';
 import { SendMessageModal } from '../components/SendMessageModal';
 import { ToastContainer, useToast } from '../components/Toast';
 import { handleExport } from '../utils/export';
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING_DEPOSIT: 'En attente',
-  DEPOSIT_PAID: 'Acompte payé',
-  IN_PROGRESS: 'En cours',
-  COMPLETED: 'Payé',
-  CANCELLED: 'Annulé',
-  REFUNDED: 'Remboursé',
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  PENDING_DEPOSIT: 'bg-amber-100 text-amber-700 border-amber-200',
-  DEPOSIT_PAID: 'bg-blue-100 text-blue-700 border-blue-200',
-  IN_PROGRESS: 'bg-purple-100 text-purple-700 border-purple-200',
-  COMPLETED: 'bg-green-100 text-green-700 border-green-200',
-  CANCELLED: 'bg-red-100 text-red-700 border-red-200',
-  REFUNDED: 'bg-gray-100 text-gray-700 border-gray-200',
-};
-
-const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
+import { fmtPrice } from '../utils/format';
+import { getBookingStatus } from '../utils/statusConfig';
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: '', label: 'Tous les statuts' },
@@ -47,6 +31,7 @@ export const AllVoyageursList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { toasts, addToast, removeToast } = useToast();
   const itemsPerPage = 12;
+  const debouncedSearch = useDebounce(searchQuery, 400);
 
   const loadVoyageurs = async () => {
     setLoading(true);
@@ -69,12 +54,11 @@ export const AllVoyageursList: React.FC = () => {
 
   useEffect(() => {
     loadVoyageurs();
-  }, [currentPage, statusFilter, paymentFilter]);
+  }, [currentPage, statusFilter, paymentFilter, debouncedSearch]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
     setCurrentPage(1);
-    loadVoyageurs();
   };
 
   const totalPages = pagination?.pages ?? 1;
@@ -86,7 +70,7 @@ export const AllVoyageursList: React.FC = () => {
       t.telephone,
       t.email,
       t.tripDestination || t.tripTitle,
-      STATUS_LABEL[t.status] || t.status,
+      getBookingStatus(t.status).label,
       fmtPrice(t.amountPaid),
       fmtPrice(t.remainingAmount),
     ]);
@@ -171,8 +155,8 @@ export const AllVoyageursList: React.FC = () => {
                 <div>
                   <p className="text-xs text-gray-500">{selectedTraveler.isFullyPaid ? 'Entièrement payé' : 'En cours'}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[selectedTraveler.status] || ''}`}>
-                  {STATUS_LABEL[selectedTraveler.status] || selectedTraveler.status}
+                <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getBookingStatus(selectedTraveler.status).style}`}>
+                  {getBookingStatus(selectedTraveler.status).label}
                 </span>
               </div>
             </div>
@@ -193,16 +177,12 @@ export const AllVoyageursList: React.FC = () => {
 
       {/* Search & Filters */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-4">
-        <form onSubmit={handleSearch} className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher par nom, email, téléphone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-colors"
-          />
-        </form>
+        <SearchInput
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Rechercher par nom, email, téléphone..."
+          className="w-full sm:w-80"
+        />
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
@@ -268,8 +248,8 @@ export const AllVoyageursList: React.FC = () => {
                   </td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm text-gray-700 hidden sm:table-cell">{t.telephone || '—'}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3">
-                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[t.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                      {STATUS_LABEL[t.status] || t.status}
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getBookingStatus(t.status).style}`}>
+                      {getBookingStatus(t.status).label}
                     </span>
                     {t.isOverdue && <span className="ml-1 px-2 py-0.5 bg-red-100 text-red-600 rounded text-xs">Retard</span>}
                   </td>

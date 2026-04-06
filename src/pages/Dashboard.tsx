@@ -5,30 +5,8 @@ import { getDashboardStats, getDashboardBookings, getMonthlyStats, getPayoutBala
 import type { DashboardStats, DashboardBooking, MonthlyPoint, PayoutBalance, GroupDetail } from '../api/trips';
 import { ExportModal } from '../components/ExportModal';
 import { handleExport } from '../utils/export';
-
-const fmt = (n: number) =>
-  n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n);
-
-const fmtFcfa = (n: number) =>
-  n.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING_DEPOSIT: 'En attente',
-  DEPOSIT_PAID: 'Acompte payé',
-  IN_PROGRESS: 'En cours',
-  COMPLETED: 'Complété',
-  CANCELLED: 'Annulée',
-  REFUNDED: 'Remboursée',
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  PENDING_DEPOSIT: 'bg-amber-100 text-amber-700 border-amber-200',
-  DEPOSIT_PAID: 'bg-blue-100 text-blue-700 border-blue-200',
-  IN_PROGRESS: 'bg-purple-100 text-purple-700 border-purple-200',
-  COMPLETED: 'bg-green-100 text-green-700 border-green-200',
-  CANCELLED: 'bg-red-100 text-red-700 border-red-200',
-  REFUNDED: 'bg-gray-100 text-gray-700 border-gray-200',
-};
+import { fmtCompact, fmtPrice } from '../utils/format';
+import { getBookingStatus } from '../utils/statusConfig';
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -110,19 +88,19 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, onClos
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
                 <p className="text-xs text-gray-500">Total</p>
-                <p className="font-bold text-gray-900">{fmtFcfa(booking.totalAmount)}</p>
+                <p className="font-bold text-gray-900">{fmtPrice(booking.totalAmount)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Acompte</p>
-                <p className="font-bold text-blue-600">{fmtFcfa(booking.depositAmount)}</p>
+                <p className="font-bold text-blue-600">{fmtPrice(booking.depositAmount)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Payé</p>
-                <p className="font-bold text-green-600">{fmtFcfa(booking.amountPaid)}</p>
+                <p className="font-bold text-green-600">{fmtPrice(booking.amountPaid)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500">Solde restant</p>
-                <p className="font-bold text-orange-600">{fmtFcfa(booking.remainingAmount)}</p>
+                <p className="font-bold text-orange-600">{fmtPrice(booking.remainingAmount)}</p>
               </div>
             </div>
             {/* Progress bar */}
@@ -178,7 +156,7 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, onClos
                   {groupDetail.summary.totalCollected > 0 && (
                     <div className="border-t border-gray-200 pt-2 flex items-center justify-between text-sm">
                       <span className="text-gray-500">Total collecté (groupe)</span>
-                      <span className="font-bold text-green-600">{fmtFcfa(groupDetail.summary.totalCollected)}</span>
+                      <span className="font-bold text-green-600">{fmtPrice(groupDetail.summary.totalCollected)}</span>
                     </div>
                   )}
                 </div>
@@ -196,8 +174,8 @@ const BookingDetailModal: React.FC<BookingDetailModalProps> = ({ booking, onClos
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-500 mb-1">Statut</p>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[booking.status] || STATUS_STYLE['PENDING_DEPOSIT']}`}>
-                {STATUS_LABEL[booking.status] || booking.status}
+              <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getBookingStatus(booking.status).style}`}>
+                {getBookingStatus(booking.status).label}
               </span>
             </div>
           </div>
@@ -345,10 +323,10 @@ export const Dashboard: React.FC = () => {
       b.client.nom,
       b.voyage.destination || b.voyage.titre,
       String(b.nombrePersonnes),
-      fmtFcfa(b.totalAmount),
-      fmtFcfa(b.amountPaid),
-      fmtFcfa(b.remainingAmount),
-      STATUS_LABEL[b.status] || b.status,
+      fmtPrice(b.totalAmount),
+      fmtPrice(b.amountPaid),
+      fmtPrice(b.remainingAmount),
+      getBookingStatus(b.status).label,
       b.createdAt,
     ]);
     handleExport(format, { headers, rows, filename: 'reservations-dashboard' });
@@ -409,28 +387,28 @@ export const Dashboard: React.FC = () => {
         <StatCard
           icon={<CreditCard className="w-5 h-5" />}
           label="Acomptes collectés"
-          value={fmt(stats?.revenue.deposits ?? 0)}
+          value={fmtCompact(stats?.revenue.deposits ?? 0)}
           sub={`${stats?.bookings.depositPaid ?? 0} confirmées`}
           color="green"
         />
         <StatCard
           icon={<TrendingUp className="w-5 h-5" />}
           label="Revenu total"
-          value={fmt(stats?.revenue.total ?? 0)}
+          value={fmtCompact(stats?.revenue.total ?? 0)}
           sub={`${stats?.revenue.transactions ?? 0} transactions`}
           color="purple"
         />
         <StatCard
           icon={<Clock className="w-5 h-5" />}
           label="En attente"
-          value={fmt(stats?.pending.amount ?? 0)}
+          value={fmtCompact(stats?.pending.amount ?? 0)}
           sub={`${stats?.pending.count ?? 0} paiements`}
           color="amber"
         />
         <StatCard
           icon={<AlertTriangle className="w-5 h-5" />}
           label="En retard"
-          value={fmt(stats?.overdue.amount ?? 0)}
+          value={fmtCompact(stats?.overdue.amount ?? 0)}
           sub={`${stats?.overdue.bookings ?? 0} réservations`}
           color="red"
         />
@@ -496,10 +474,10 @@ export const Dashboard: React.FC = () => {
         {payoutBalance && (
           <div className="bg-gradient-to-br from-forest-800 to-forest-800/80 rounded-xl p-5 text-white">
             <p className="text-xs text-white/60 mb-1">Solde disponible</p>
-            <p className="text-2xl font-bold mb-3">{fmtFcfa(payoutBalance.availableBalance)}</p>
+            <p className="text-2xl font-bold mb-3">{fmtPrice(payoutBalance.availableBalance)}</p>
             <div className="flex gap-3 text-xs text-white/50">
-              <span>Collecté : {fmtFcfa(payoutBalance.totalRevenue)}</span>
-              <span>Reversé : {fmtFcfa(payoutBalance.totalPayouts)}</span>
+              <span>Collecté : {fmtPrice(payoutBalance.totalRevenue)}</span>
+              <span>Reversé : {fmtPrice(payoutBalance.totalPayouts)}</span>
             </div>
             <a
               href="/admin/reversements"
@@ -516,7 +494,7 @@ export const Dashboard: React.FC = () => {
         {/* Revenue chart */}
         <div className="bg-white rounded-xl p-3 sm:p-6 shadow-card border border-gray-100 overflow-hidden">
           <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1">Revenus par mois</h3>
-          <p className="text-2xl font-bold text-gray-900 mb-4">{fmtFcfa(stats?.revenue.total ?? 0)}</p>
+          <p className="text-2xl font-bold text-gray-900 mb-4">{fmtPrice(stats?.revenue.total ?? 0)}</p>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
@@ -526,7 +504,7 @@ export const Dashboard: React.FC = () => {
                     active && payload?.length ? (
                       <div className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm shadow-lg">
                         <p className="text-gray-400 text-xs mb-1">{label}</p>
-                        <p>{fmtFcfa(payload[0].value as number)}</p>
+                        <p>{fmtPrice(payload[0].value as number)}</p>
                       </div>
                     ) : null
                   }
@@ -627,7 +605,7 @@ export const Dashboard: React.FC = () => {
                 <Wallet className="w-4 h-4 text-violet-500" />
               </div>
             </div>
-            <p className="text-lg sm:text-2xl font-bold text-gray-900">{fmtFcfa(kpi.averageBookingValue)}</p>
+            <p className="text-lg sm:text-2xl font-bold text-gray-900">{fmtPrice(kpi.averageBookingValue)}</p>
             <p className="text-xs text-gray-400">Panier moyen</p>
           </div>
 
@@ -680,7 +658,7 @@ export const Dashboard: React.FC = () => {
                       <p className="text-sm font-medium text-gray-900 truncate">{dest.destination}</p>
                       <div className="flex items-center gap-3 flex-shrink-0 text-xs text-gray-500">
                         <span>{dest.bookings} rés.</span>
-                        <span className="font-semibold text-gray-900">{fmtFcfa(dest.revenue)}</span>
+                        <span className="font-semibold text-gray-900">{fmtPrice(dest.revenue)}</span>
                       </div>
                     </div>
                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -790,12 +768,12 @@ export const Dashboard: React.FC = () => {
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-50 text-gray-500 border border-gray-200">Solo</span>
                     )}
                   </td>
-                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">{fmt(b.totalAmount)}</td>
-                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-blue-600">{fmt(b.depositAmount)}</td>
-                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-orange-600">{fmt(b.remainingAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-gray-900">{fmtCompact(b.totalAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-blue-600">{fmtCompact(b.depositAmount)}</td>
+                  <td className="px-2 py-1.5 sm:px-4 sm:py-3 text-xs sm:text-sm font-medium text-orange-600">{fmtCompact(b.remainingAmount)}</td>
                   <td className="px-2 py-1.5 sm:px-4 sm:py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[b.status] || STATUS_STYLE['PENDING_DEPOSIT']}`}>
-                      {STATUS_LABEL[b.status] || b.status}
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getBookingStatus(b.status).style}`}>
+                      {getBookingStatus(b.status).label}
                     </span>
                     {b.isPaymentOverdue && (
                       <span className="ml-1 inline-block w-2 h-2 rounded-full bg-red-500" title="Retard de paiement" />

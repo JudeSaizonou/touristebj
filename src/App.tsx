@@ -22,6 +22,7 @@ import { useAuth } from './context/AuthContext';
 import { useRouter } from './hooks/useRouter';
 import { SEO, buildOrganizationJsonLd } from './components/SEO';
 import { StorageService } from './utils/storage';
+import { getDashboardStats } from './api/trips';
 import { PageView } from './types';
 
 function App() {
@@ -31,10 +32,23 @@ function App() {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [authMode, setAuthMode] = useState<AuthMode>('connexion');
   const { toasts, addToast, removeToast } = useToast();
+  const [sidebarBadges, setSidebarBadges] = useState<{ reservations?: number; voyageurs?: number; reversements?: number }>({});
 
   useEffect(() => {
     StorageService.initialize();
   }, []);
+
+  // Load sidebar badge counts from dashboard stats
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+    getDashboardStats().then(stats => {
+      setSidebarBadges({
+        reservations: (stats?.overdue?.bookings || 0) + (stats?.bookings?.pendingDeposit || 0),
+        voyageurs: stats?.overdue?.bookings || 0,
+        reversements: 0,
+      });
+    }).catch(() => {});
+  }, [user, isAdmin]);
 
   // Redirect to catalog if not authenticated or not admin when accessing admin routes
   useEffect(() => {
@@ -237,6 +251,7 @@ function App() {
           onNavigate={handleNavigate}
           onLogout={handleLogout}
           onRequestRefund={() => setShowRefundModal(true)}
+          badges={sidebarBadges}
         />
       </div>
 

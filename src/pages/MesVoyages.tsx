@@ -10,6 +10,8 @@ import type { MappedInvitation } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
 import type { MappedBooking } from '../types';
 import type { AuthMode } from './Auth';
+import { fmtPrice } from '../utils/format';
+import { getBookingStatus } from '../utils/statusConfig';
 
 interface MesVoyagesProps {
   onBack: () => void;
@@ -19,16 +21,6 @@ interface MesVoyagesProps {
   onMesVoyages?: () => void;
   onLogout?: () => void;
 }
-
-const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING_DEPOSIT: { label: 'Acompte en attente', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-  DEPOSIT_PAID:    { label: 'Acompte payé',        color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
-  SAVING:          { label: 'Épargne en cours',    color: 'text-forest-800', bg: 'bg-forest-800/5 border-forest-800/20' },
-  IN_PROGRESS:     { label: 'En cours',            color: 'text-indigo-700', bg: 'bg-indigo-50 border-indigo-200' },
-  FULLY_PAID:      { label: 'Voyage payé',         color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
-  COMPLETED:       { label: 'Terminé',             color: 'text-emerald-700', bg: 'bg-emerald-50 border-emerald-200' },
-  CANCELLED:       { label: 'Annulé',              color: 'text-red-600', bg: 'bg-red-50 border-red-200' },
-};
 
 const FILTER_TABS: { key: string; label: string; statuses: string[] }[] = [
   { key: '',          label: 'Tous',    statuses: [] },
@@ -90,8 +82,6 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
   };
 
   useEffect(() => { if (user) loadBookings(); }, [user]);
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   // Stats globales
   const stats = useMemo(() => {
@@ -341,7 +331,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
             {/* Booking cards */}
             <div className="space-y-4">
               {filteredBookings.map(booking => {
-                const status = STATUS_LABELS[booking.status] ?? { label: booking.status, color: 'text-gray-600', bg: 'bg-gray-50 border-gray-200' };
+                const status = getBookingStatus(booking.status);
                 const percent = booking.totalPrice > 0 ? Math.min(100, Math.round((booking.amountPaid / booking.totalPrice) * 100)) : 0;
                 const daysLeft = booking.paymentDeadline
                   ? Math.max(0, Math.ceil((new Date(booking.paymentDeadline).getTime() - Date.now()) / 86400000))

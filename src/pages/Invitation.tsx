@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 
 import type { AuthMode } from './Auth';
+import { fmtPrice } from '../utils/format';
 
 interface InvitationPageProps {
   token: string;
@@ -61,8 +62,6 @@ export const InvitationPage: React.FC<InvitationPageProps> = ({
       setAccepting(false);
     }
   };
-
-  const fmtPrice = (v: number) => v.toLocaleString('fr-FR').replace(/\s/g, '.') + ' FCFA';
 
   const trip = invitation?.trip;
   const isPaid = invitation?.paymentMode === 'pay_all';
