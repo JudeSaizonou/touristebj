@@ -16,6 +16,20 @@ export interface VoyageurDocumentInfo {
   updatedAt?: string;
 }
 
+// Backend document request model (from TripBooking.documentRequests)
+export interface DocumentRequestBackend {
+  _id: string;
+  documentType: string;
+  status: 'PENDING' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  notes?: string;
+  fileUrl?: string;
+  fileName?: string;
+  rejectionReason?: string;
+  requestedAt?: string;
+  submittedAt?: string;
+  reviewedAt?: string;
+}
+
 export interface Voyage {
   id: string;
   destination: string;
@@ -120,6 +134,9 @@ export interface MappedBooking {
   status: string;
   createdAt: string;
   payments?: MappedPayment[];
+  paymentMode?: 'pay_all' | 'split' | null;
+  groupId?: string | null;
+  invitationStats?: { total: number; pending: number; accepted: number };
 }
 
 export interface MappedPayment {

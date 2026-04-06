@@ -457,9 +457,11 @@ export const VoyageursList: React.FC<VoyageursListProps> = ({ voyageId }) => {
       <VoyageurDetailsModal
         isOpen={!!activeVoyageur}
         voyageur={activeVoyageur}
+        voyageId={voyageId}
         voyageDestination={voyageDestination}
         onClose={() => setActiveVoyageur(null)}
         onRequestDocuments={handleRequestDocuments}
+        onDocumentsChanged={loadVoyageurs}
       />
 
       {messageTarget && (

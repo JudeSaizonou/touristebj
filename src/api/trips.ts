@@ -509,6 +509,32 @@ export async function requestVoyageurDocuments(
   return res.documentRequests;
 }
 
+export async function getVoyageurDocuments(
+  voyageId: string,
+  bookingId: string
+): Promise<any[]> {
+  const res = await apiRequest<{ success: boolean; documentRequests?: any[] }>(
+    `${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/travelers/${bookingId}/documents`
+  );
+  return res.documentRequests || [];
+}
+
+export async function reviewVoyageurDocument(
+  voyageId: string,
+  bookingId: string,
+  documentId: string,
+  action: 'approve' | 'reject',
+  rejectionReason?: string
+): Promise<any> {
+  const body: Record<string, string> = { action };
+  if (action === 'reject' && rejectionReason) body.rejectionReason = rejectionReason;
+  const res = await apiRequest<{ success: boolean; document?: any }>(
+    `${TRIPS_PREFIX}/partner/dashboard/trips/${voyageId}/travelers/${bookingId}/documents/${documentId}`,
+    { method: 'PATCH', body: JSON.stringify(body) }
+  );
+  return res.document;
+}
+
 // ─── Messaging (admin → traveler) ──────────────────────────────────────────
 
 export async function sendTravelerMessage(
@@ -935,6 +961,9 @@ export interface BookingBackend {
   status?: string;
   createdAt?: string;
   payments?: PaymentBackend[];
+  paymentMode?: 'pay_all' | 'split' | null;
+  groupId?: string | null;
+  invitationStats?: { total: number; pending: number; accepted: number };
 }
 
 export interface PaymentBackend {
@@ -955,31 +984,30 @@ function mapBooking(b: BookingBackend): MappedBooking {
   const depositAmount = b.depositAmount ?? Math.round(totalAmount * 0.5);
 
   // Calculate amountPaid / remainingAmount:
-  // 1. If payments array present → recalculate from successful payments only
-  // 2. If isFullyPaid flag set → trust it (totalAmount paid, 0 remaining)
-  // 3. Otherwise → use backend values as fallback
-  const hasPayments = b.payments && b.payments.length > 0;
+  // Priority order matters — backend flags are authoritative over local recalculation
+  // because payment amounts may be net (after fees) while totalAmount is gross.
   let amountPaid: number;
   let remainingAmount: number;
 
-  if (hasPayments) {
-    const successPayments = b.payments!.filter(p => {
+  if (b.isFullyPaid) {
+    amountPaid = totalAmount;
+    remainingAmount = 0;
+  } else if (!b.depositPaid && b.status === 'PENDING_DEPOSIT') {
+    amountPaid = 0;
+    remainingAmount = totalAmount;
+  } else if (b.amountPaid != null) {
+    amountPaid = b.amountPaid;
+    remainingAmount = b.remainingAmount ?? Math.max(0, totalAmount - amountPaid);
+  } else if (b.payments && b.payments.length > 0) {
+    const successPayments = b.payments.filter(p => {
       const s = (p.status || '').toLowerCase();
       return s === 'success' || s === 'completed';
     });
     amountPaid = successPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
     remainingAmount = Math.max(0, totalAmount - amountPaid);
-  } else if (b.isFullyPaid) {
-    // Fully paid — no ambiguity
-    amountPaid = totalAmount;
-    remainingAmount = 0;
-  } else if (!b.depositPaid && b.status === 'PENDING_DEPOSIT') {
-    // Deposit not paid — nothing counted yet
+  } else {
     amountPaid = 0;
     remainingAmount = totalAmount;
-  } else {
-    amountPaid = b.amountPaid ?? 0;
-    remainingAmount = b.remainingAmount ?? Math.max(0, totalAmount - amountPaid);
   }
   return {
     id: b._id,
@@ -1007,6 +1035,9 @@ function mapBooking(b: BookingBackend): MappedBooking {
     status: b.status ?? 'PENDING_DEPOSIT',
     createdAt: b.createdAt ?? '',
     payments: b.payments?.map(mapPayment),
+    paymentMode: b.paymentMode,
+    groupId: b.groupId,
+    invitationStats: b.invitationStats,
   };
 }
 

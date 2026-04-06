@@ -422,7 +422,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                         )}
 
                         {/* Actions */}
-                        <div className="flex gap-2 mt-auto">
+                        <div className="flex flex-wrap gap-2 mt-auto">
                           <button
                             onClick={() => onViewBooking(booking.id)}
                             className="flex items-center gap-1.5 px-4 py-2.5 border border-gray-200 text-dark-800 rounded-xl hover:bg-gray-50 transition-colors font-medium text-sm"
@@ -435,6 +435,20 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                               className="flex items-center gap-1.5 px-4 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm"
                             >
                               <PiggyBank className="w-4 h-4" /> Épargner
+                            </button>
+                          )}
+                          {booking.nombrePersonnes > 1 && booking.depositPaid && !['CANCELLED'].includes(booking.status) && (
+                            <button
+                              onClick={() => onViewBooking(booking.id)}
+                              className="flex items-center gap-1.5 px-4 py-2.5 border border-primary-200 text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-medium text-sm"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                              Inviter
+                              {booking.invitationStats && booking.invitationStats.accepted > 0 && (
+                                <span className="flex items-center gap-0.5 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">
+                                  <CheckCircle className="w-3 h-3" /> {booking.invitationStats.accepted}
+                                </span>
+                              )}
                             </button>
                           )}
                         </div>
