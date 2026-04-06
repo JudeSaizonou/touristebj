@@ -984,12 +984,15 @@ function mapBooking(b: BookingBackend): MappedBooking {
   const depositAmount = b.depositAmount ?? Math.round(totalAmount * 0.5);
 
   // Calculate amountPaid / remainingAmount:
-  // Priority order matters — backend flags are authoritative over local recalculation
-  // because payment amounts may be net (after fees) while totalAmount is gross.
+  // Priority order matters — backend flags AND status are authoritative.
+  // Payment amounts may be net (after fees) while totalAmount is gross,
+  // so we trust backend flags over local recalculation.
   let amountPaid: number;
   let remainingAmount: number;
 
-  if (b.isFullyPaid) {
+  const fullyPaidByStatus = b.status === 'FULLY_PAID' || b.status === 'COMPLETED';
+
+  if (b.isFullyPaid || fullyPaidByStatus) {
     amountPaid = totalAmount;
     remainingAmount = 0;
   } else if (!b.depositPaid && b.status === 'PENDING_DEPOSIT') {
@@ -1029,7 +1032,7 @@ function mapBooking(b: BookingBackend): MappedBooking {
     depositPaid: b.depositPaid,
     amountPaid,
     remainingAmount,
-    isFullyPaid: b.isFullyPaid,
+    isFullyPaid: b.isFullyPaid || fullyPaidByStatus,
     isPaymentOverdue: b.isPaymentOverdue,
     paymentDeadline: b.paymentDeadline ?? '',
     status: b.status ?? 'PENDING_DEPOSIT',
