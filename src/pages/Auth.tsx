@@ -683,44 +683,55 @@ export const Auth: React.FC<AuthProps> = ({
         )}
 
         <div className="relative bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
-          {/* Tabs */}
+          {/* Header — connexion only */}
           <div className="flex border-b border-gray-100">
-            {(['inscription', 'connexion'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => {
-                  setMode(m);
-                  if (m === 'inscription') {
-                    setInscriptionStep('phone');
-                  }
-                  setConnexionStep('phone');
-                  setConnexionRole(null);
-                  setConnexionOtp('');
-                  setConnexionPassword('');
-                }}
-                className={`flex-1 py-3.5 text-sm font-semibold transition-all duration-200 ${
-                  mode === m
-                    ? 'text-orange-600 border-b-2 border-orange-500 bg-orange-50/40'
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                {m === 'inscription' ? 'Inscription' : 'Connexion'}
-              </button>
-            ))}
+            <div className="flex-1 py-3.5 text-sm font-semibold text-center text-orange-600 border-b-2 border-orange-500 bg-orange-50/40">
+              Connexion
+            </div>
           </div>
 
           <div className="p-5 sm:p-7">
-            {/* ═══ INSCRIPTION ═══ */}
+            {/* ═══ INSCRIPTION → Télécharger Zepargn ═══ */}
             {mode === 'inscription' && (
-              <div className="space-y-0">
-                <StepProgress
-                  current={inscriptionStepIndex}
-                  total={2}
-                  labels={['Téléphone', 'Profil & PIN']}
-                />
-
-                {/* Step 1: Phone */}
+              <div className="space-y-5 text-center py-4">
+                <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto">
+                  <Phone className="w-8 h-8 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="font-playfair text-xl font-bold text-gray-900">Créez votre compte sur Zepargn</h3>
+                  <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                    Téléchargez l'application Zepargn pour créer votre compte, puis revenez ici pour vous connecter et réserver vos voyages.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.zepargn"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    📱 Google Play (Android)
+                  </a>
+                  <a
+                    href="https://apps.apple.com/app/zepargn/id6504804982"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    🍎 App Store (iPhone)
+                  </a>
+                </div>
+                <button
+                  onClick={() => setMode('connexion')}
+                  className="text-sm text-orange-500 hover:underline font-medium"
+                >
+                  J'ai déjà un compte — Me connecter
+                </button>
+              </div>
+            )}
+            {/* Old inscription form — kept as dead code reference */}
+            {false && (
+              <div>
                 {inscriptionStep === 'phone' && (
                   <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div>

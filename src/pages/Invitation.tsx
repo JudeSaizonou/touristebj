@@ -189,20 +189,22 @@ export const InvitationPage: React.FC<InvitationPageProps> = ({
                 ) : !user ? (
                   <div className="space-y-3">
                     <p className="text-sm text-dark-800/60 text-center">
-                      Créez un compte ou connectez-vous pour accepter cette invitation.
+                      Connectez-vous pour accepter cette invitation. Pas encore de compte ? Téléchargez Zepargn.
                     </p>
                     <button
-                      onClick={() => onOpenAuth?.('inscription')}
+                      onClick={() => onOpenAuth?.('connexion')}
                       className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
                     >
-                      <UserPlus className="w-4 h-4" /> Créer un compte
+                      <UserPlus className="w-4 h-4" /> Se connecter
                     </button>
-                    <button
-                      onClick={() => onOpenAuth?.('connexion')}
-                      className="w-full py-2.5 border border-gray-200 text-dark-800/70 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors"
+                    <a
+                      href="https://play.google.com/store/apps/details?id=com.zepargn"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 border border-gray-200 text-dark-800/70 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors block text-center"
                     >
-                      J'ai déjà un compte — Me connecter
-                    </button>
+                      Pas de compte ? Télécharger Zepargn
+                    </a>
                   </div>
                 ) : (
                   <div className="space-y-3">

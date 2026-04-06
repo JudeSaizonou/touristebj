@@ -189,12 +189,14 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                       >
                         Connexion
                       </button>
-                      <button
-                        onClick={() => onOpenAuth('inscription')}
+                      <a
+                        href="https://play.google.com/store/apps/details?id=com.zepargn"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="hidden sm:block px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm"
                       >
-                        S'inscrire
-                      </button>
+                        Télécharger Zepargn
+                      </a>
                     </>
                   ) : (
                     <button
@@ -285,12 +287,15 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                       >
                         Connexion
                       </button>
-                      <button
-                        onClick={() => { setMobileMenuOpen(false); onOpenAuth('inscription'); }}
-                        className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center"
+                      <a
+                        href="https://play.google.com/store/apps/details?id=com.zepargn"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm text-center block"
                       >
-                        S'inscrire
-                      </button>
+                        Télécharger Zepargn
+                      </a>
                     </>
                   ) : (
                     <button

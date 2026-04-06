@@ -391,12 +391,14 @@ export const Catalog: React.FC<CatalogProps> = ({
                   >
                     Se connecter
                   </button>
-                  <button
-                    onClick={() => onOpenAuth?.('inscription')}
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.zepargn"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="px-5 py-2.5 border border-white/30 text-white rounded-xl text-sm font-semibold hover:bg-white/10 transition-colors font-sans"
                   >
-                    S'inscrire
-                  </button>
+                    Télécharger Zepargn
+                  </a>
                 </div>
               </div>
               {/* Placeholder cards */}
