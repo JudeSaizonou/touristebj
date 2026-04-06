@@ -198,7 +198,7 @@ export const InvitationPage: React.FC<InvitationPageProps> = ({
                       <UserPlus className="w-4 h-4" /> Se connecter
                     </button>
                     <a
-                      href="https://play.google.com/store/apps/details?id=com.zepargn"
+                      href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full py-2.5 border border-gray-200 text-dark-800/70 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors block text-center"

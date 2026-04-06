@@ -703,22 +703,30 @@ export const Auth: React.FC<AuthProps> = ({
                     Téléchargez l'application Zepargn pour créer votre compte, puis revenez ici pour vous connecter et réserver vos voyages.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                   <a
-                    href="https://play.google.com/store/apps/details?id=com.zepargn"
+                    href="https://apps.apple.com/us/app/zepargn/id6474701827"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm"
+                    className="flex items-center gap-3 w-full px-5 py-3.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors"
                   >
-                    📱 Google Play (Android)
+                    <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+                    <div>
+                      <p className="text-[10px] text-white/50 leading-none">Télécharger sur</p>
+                      <p className="text-base font-bold leading-tight">App Store</p>
+                    </div>
                   </a>
                   <a
-                    href="https://apps.apple.com/app/zepargn/id6504804982"
+                    href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm"
+                    className="flex items-center gap-3 w-full px-5 py-3.5 bg-dark-800 text-white rounded-xl hover:bg-dark-700 transition-colors"
                   >
-                    🍎 App Store (iPhone)
+                    <svg className="w-6 h-6 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.04c.17.3.44.54.77.67.1.04.2.06.31.08l.13.01h.04c.11 0 .22-.02.33-.05.05-.02.09-.03.14-.05l8.05-4.56-3.32-3.32-6.45 7.22zm-.81-1.38L13.3 10.73 10.9 8.33 2.09 20.3c-.15.24-.22.52-.22.79 0 .2.04.39.12.57h-.01l.39-.01zM21.81 11.06l-3.37-1.91-3.63 3.18 3.47 3.47 3.53-2c.57-.32.94-.87.94-1.37 0-.51-.36-1.05-.94-1.37zM13.3 10.73L17.37 7 5.76.42c-.12-.07-.25-.12-.39-.16C5.22.2 5.07.17 4.92.18c-.08 0-.16.01-.24.03-.33.06-.63.23-.84.48l.05-.04 9.41 10.08z"/></svg>
+                    <div>
+                      <p className="text-[10px] text-white/50 leading-none">Disponible sur</p>
+                      <p className="text-base font-bold leading-tight">Google Play</p>
+                    </div>
                   </a>
                 </div>
                 <button

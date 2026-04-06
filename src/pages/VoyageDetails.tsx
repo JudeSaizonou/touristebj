@@ -389,7 +389,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                           Se connecter
                         </button>
                         {' '}ou{' '}
-                        <a href="https://play.google.com/store/apps/details?id=com.zepargn" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline font-medium">
+                        <a href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp" target="_blank" rel="noopener noreferrer" className="text-primary-500 hover:underline font-medium">
                           télécharger Zepargn
                         </a>
                       </p>

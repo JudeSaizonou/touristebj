@@ -190,7 +190,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                         Connexion
                       </button>
                       <a
-                        href="https://play.google.com/store/apps/details?id=com.zepargn"
+                        href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="hidden sm:block px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors font-semibold text-sm"
@@ -288,7 +288,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, onAdminLog
                         Connexion
                       </button>
                       <a
-                        href="https://play.google.com/store/apps/details?id=com.zepargn"
+                        href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp"
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => setMobileMenuOpen(false)}

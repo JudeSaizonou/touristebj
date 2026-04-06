@@ -392,7 +392,7 @@ export const Catalog: React.FC<CatalogProps> = ({
                     Se connecter
                   </button>
                   <a
-                    href="https://play.google.com/store/apps/details?id=com.zepargn"
+                    href="https://play.google.com/store/apps/details?id=com.digitalelevate.zepargnmobileapp"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-5 py-2.5 border border-white/30 text-white rounded-xl text-sm font-semibold hover:bg-white/10 transition-colors font-sans"
