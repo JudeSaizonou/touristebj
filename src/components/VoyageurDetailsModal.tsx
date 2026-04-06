@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Check, Download, Eye, FileCheck2, Loader2, Send, X, XCircle } from 'lucide-react';
 import { Voyageur, VoyageurDocumentType, DocumentRequestBackend } from '../types';
 import * as tripsApi from '../api/trips';
@@ -67,6 +67,33 @@ export const VoyageurDetailsModal: React.FC<VoyageurDetailsModalProps> = ({
   ]);
   const [documents, setDocuments] = useState<DocumentRequestBackend[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = useCallback(async (doc: DocumentRequestBackend) => {
+    if (!doc.fileUrl) return;
+    setDownloadingId(doc._id);
+    try {
+      const token = localStorage.getItem('touriste_token');
+      const res = await fetch(doc.fileUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.fileName || 'document';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // Fallback: open in new tab (for external URLs that don't need auth)
+      window.open(doc.fileUrl, '_blank');
+    } finally {
+      setDownloadingId(null);
+    }
+  }, []);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [rejectingDoc, setRejectingDoc] = useState<DocumentRequestBackend | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -247,15 +274,14 @@ export const VoyageurDetailsModal: React.FC<VoyageurDetailsModalProps> = ({
                                     <span className="text-gray-700 truncate max-w-[200px]">{doc.fileName || 'Fichier'}</span>
                                   </div>
                                 )}
-                                <a
-                                  href={doc.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                                <button
+                                  onClick={() => handleDownload(doc)}
+                                  disabled={downloadingId === doc._id}
+                                  className="inline-flex items-center gap-1.5 mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
                                 >
-                                  <Download className="w-4 h-4" />
-                                  T\u00e9l\u00e9charger
-                                </a>
+                                  {downloadingId === doc._id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                                  {downloadingId === doc._id ? 'T\u00e9l\u00e9chargement...' : 'T\u00e9l\u00e9charger'}
+                                </button>
                               </div>
                             )}
                           </div>

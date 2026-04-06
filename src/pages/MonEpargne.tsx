@@ -7,7 +7,7 @@ import {
 import jsPDF from 'jspdf';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
-import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, sendBookingMessage, getBookingDocumentRequests, submitDocument, markMessageRead, getDocumentLabel, getBookingInvitations, resendInvitation } from '../api/trips';
+import { getBookingById, getBookingPayments, cancelBooking, getBookingMessages, sendBookingMessage, getBookingDocumentRequests, submitDocument, markMessageRead, getDocumentLabel, getBookingInvitations, resendInvitation, inviteGuests } from '../api/trips';
 import type { BookingMessage, DocumentRequest, MappedInvitation } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,105 @@ import type { MappedBooking, MappedPayment } from '../types';
 import type { AuthMode } from './Auth';
 import { fmtPrice } from '../utils/format';
 import { getBookingStatus } from '../utils/statusConfig';
+
+// ─── Invite Guests Form ──────────────────────────────────────────────────────
+
+const InviteGuestsForm: React.FC<{
+  bookingId: string;
+  maxGuests: number;
+  onInvited: () => void;
+}> = ({ bookingId, maxGuests, onInvited }) => {
+  const [guests, setGuests] = useState([{ name: '', email: '' }]);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const addRow = () => {
+    if (guests.length < Math.max(1, maxGuests)) setGuests([...guests, { name: '', email: '' }]);
+  };
+
+  const updateGuest = (i: number, field: 'name' | 'email', value: string) => {
+    setGuests(prev => prev.map((g, idx) => idx === i ? { ...g, [field]: value } : g));
+  };
+
+  const removeRow = (i: number) => {
+    if (guests.length > 1) setGuests(prev => prev.filter((_, idx) => idx !== i));
+  };
+
+  const isValid = guests.every(g => g.name.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email));
+
+  const handleSubmit = async () => {
+    if (!isValid || sending) return;
+    setSending(true);
+    setError('');
+    setSuccess('');
+    try {
+      await inviteGuests(bookingId, guests.map(g => ({ name: g.name.trim(), email: g.email.trim() })));
+      setSuccess(`${guests.length} invitation(s) envoyée(s) !`);
+      setGuests([{ name: '', email: '' }]);
+      onInvited();
+    } catch (e: any) {
+      setError(e?.message || 'Impossible d\'envoyer les invitations.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (maxGuests <= 0) return null;
+
+  return (
+    <div className="bg-primary-50/50 border border-primary-100 rounded-xl p-4">
+      <p className="text-sm font-semibold text-dark-800 mb-3">
+        Inviter vos compagnons de voyage
+      </p>
+      <div className="space-y-2">
+        {guests.map((g, i) => (
+          <div key={i} className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Nom complet"
+              value={g.name}
+              onChange={e => updateGuest(i, 'name', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={g.email}
+              onChange={e => updateGuest(i, 'email', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            />
+            {guests.length > 1 && (
+              <button onClick={() => removeRow(i)} className="p-2 text-gray-400 hover:text-red-500">
+                <XCircle className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 mt-3">
+        {guests.length < maxGuests && (
+          <button onClick={addRow} className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+            + Ajouter un invité
+          </button>
+        )}
+        <div className="flex-1" />
+        <button
+          onClick={handleSubmit}
+          disabled={!isValid || sending}
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50"
+        >
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {sending ? 'Envoi...' : 'Envoyer'}
+        </button>
+      </div>
+      {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
+      {success && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> {success}</p>}
+    </div>
+  );
+};
+
+// ─── Main Component ──────────────────────────────────────────────────────────
 
 interface MonEpargneProps {
   bookingId: string;
@@ -138,46 +237,110 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
 
   const generatePaymentReceipt = (bk: MappedBooking, payment: MappedPayment) => {
     const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+    const pw = doc.internal.pageSize.getWidth();
+    const userPhone = user?.phoneNumber || '';
+    const userName = user?.username || '';
 
-    // Title
-    doc.setFontSize(20);
+    // Header bar
+    doc.setFillColor(36, 36, 36);
+    doc.rect(0, 0, pw, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Reçu de paiement — Le Touriste.bj', pageWidth / 2, 30, { align: 'center' });
-
-    // Separator
-    doc.setDrawColor(200, 200, 200);
-    doc.line(20, 38, pageWidth - 20, 38);
-
-    // Content
-    doc.setFontSize(12);
+    doc.text('Le Touriste.bj', 20, 22);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    let y = 55;
-    const lineHeight = 10;
+    doc.text('Reçu de paiement', 20, 32);
 
-    const addLine = (label: string, value: string) => {
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, 25, y);
+    // Receipt number
+    doc.setTextColor(130, 130, 130);
+    doc.setFontSize(9);
+    const receiptNum = `REC-${(bk.bookingNumber || bk.id).slice(-8).toUpperCase()}`;
+    doc.text(receiptNum, pw - 20, 28, { align: 'right' });
+
+    // Status badge
+    doc.setFillColor(34, 197, 94);
+    doc.roundedRect(pw - 58, 10, 38, 12, 3, 3, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CONFIRME', pw - 39, 18, { align: 'center' });
+
+    // Body
+    doc.setTextColor(60, 60, 60);
+    let y = 56;
+    const lh = 12;
+    const labelX = 25;
+    const valX = 95;
+
+    const addRow = (label: string, value: string) => {
       doc.setFont('helvetica', 'normal');
-      doc.text(value, 90, y);
-      y += lineHeight;
+      doc.setFontSize(10);
+      doc.setTextColor(130, 130, 130);
+      doc.text(label, labelX, y);
+      doc.setTextColor(40, 40, 40);
+      doc.setFont('helvetica', 'bold');
+      doc.text(value, valX, y);
+      y += lh;
     };
 
-    addLine('Référence :', bk.bookingNumber || bk.id);
-    addLine('Voyage :', bk.voyage?.titre || '—');
-    addLine('Montant :', fmtPrice(payment.amount));
-    addLine('Méthode :', payment.paymentMethod || '—');
-    addLine('Date :', payment.date || '—');
-    addLine('Statut :', 'Confirmé');
+    // Client info section
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('Client', labelX, y);
+    y += 8;
+
+    if (userName) addRow('Nom', userName);
+    if (userPhone) addRow('Telephone', userPhone);
+    y += 4;
+
+    // Separator
+    doc.setDrawColor(220, 220, 220);
+    doc.line(labelX, y, pw - 25, y);
+    y += 10;
+
+    // Booking info section
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(40, 40, 40);
+    doc.text('Details du paiement', labelX, y);
+    y += 8;
+
+    addRow('Reference', bk.bookingNumber || bk.id.slice(-10).toUpperCase());
+    addRow('Voyage', bk.voyage?.titre || '-');
+    addRow('Destination', bk.voyage?.destination || '-');
+    addRow('Type', (payment.type || '').toUpperCase().includes('DEPOSIT') ? 'Acompte' : 'Versement epargne');
+    addRow('Montant', fmtPrice(payment.amount));
+    addRow('Methode', payment.paymentMethod === 'mtn' ? 'MTN Mobile Money' : payment.paymentMethod === 'kkiapay' ? 'KKiaPay (Carte/Mobile)' : (payment.paymentMethod || '-'));
+    addRow('Date', payment.date || '-');
+
+    // Amount highlight box
+    y += 6;
+    doc.setFillColor(245, 245, 245);
+    doc.roundedRect(labelX, y, pw - 50, 22, 4, 4, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('Total paye', labelX + 8, y + 9);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(34, 197, 94);
+    doc.text(fmtPrice(payment.amount), pw - 33, y + 15, { align: 'right' });
 
     // Footer
-    doc.setDrawColor(200, 200, 200);
-    doc.line(20, y + 10, pageWidth - 20, y + 10);
-    doc.setFontSize(9);
-    doc.setTextColor(130, 130, 130);
-    doc.text('Généré automatiquement par Le Touriste.bj', pageWidth / 2, y + 20, { align: 'center' });
+    y += 36;
+    doc.setDrawColor(220, 220, 220);
+    doc.line(labelX, y, pw - 25, y);
+    y += 8;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(150, 150, 150);
+    doc.text('Ce recu est genere automatiquement par Le Touriste.bj', pw / 2, y, { align: 'center' });
+    doc.text('Paiement securise via MTN MoMo / KKiaPay', pw / 2, y + 5, { align: 'center' });
+    doc.text(`Genere le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, pw / 2, y + 10, { align: 'center' });
 
-    doc.save(`recu-${bk.bookingNumber || bk.id}-${payment.id}.pdf`);
+    doc.save(`recu-${receiptNum}-${payment.date?.replace(/\//g, '-') || payment.id}.pdf`);
   };
 
   return (
@@ -245,13 +408,20 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
               </div>
 
               {/* Stats en ligne */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="text-center p-3 bg-gray-50 rounded-xl">
                   <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Total voyage</p>
                   <p className="font-bold text-dark-800 text-sm">{fmtPrice(booking.totalPrice)}</p>
                 </div>
+                <div className={`text-center p-3 rounded-xl ${booking.depositPaid ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Acompte {booking.depositPaid ? 'versé' : 'requis'}</p>
+                  <p className={`font-bold text-sm ${booking.depositPaid ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {fmtPrice(booking.depositAmount)}
+                  </p>
+                  {booking.depositPaid && <p className="text-[9px] text-emerald-500 mt-0.5">Non remboursable</p>}
+                </div>
                 <div className="text-center p-3 bg-green-50 rounded-xl">
-                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Épargné</p>
+                  <p className="text-[10px] sm:text-xs text-dark-800/40 mb-1">Total épargné</p>
                   <p className="font-bold text-green-600 text-sm">{fmtPrice(booking.amountPaid)}</p>
                 </div>
                 <div className={`text-center p-3 rounded-xl ${booking.remainingAmount > 0 ? 'bg-amber-50' : 'bg-green-50'}`}>
@@ -530,17 +700,35 @@ export const MonEpargne: React.FC<MonEpargneProps> = ({
                 </div>
               )}
 
-              {/* Invitations envoyées */}
-              {invitations.length > 0 && (
+              {/* Invitations */}
+              {booking.nombrePersonnes > 1 && booking.depositPaid && !['CANCELLED'].includes(booking.status) && (
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 sm:p-6 shadow-sm">
                   <div className="flex items-center gap-2 mb-5">
                     <UserPlus className="w-5 h-5 text-primary-500" />
-                    <h2 className="font-bold text-dark-800">Invitations envoyées</h2>
-                    <span className="bg-primary-100 text-primary-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {invitations.length}
-                    </span>
+                    <h2 className="font-bold text-dark-800">Inviter des compagnons</h2>
+                    {invitations.length > 0 && (
+                      <span className="bg-primary-100 text-primary-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                        {invitations.filter(i => i.status === 'accepted').length}/{booking.nombrePersonnes - 1}
+                      </span>
+                    )}
                   </div>
-                  <div className="space-y-3">
+
+                  {/* Formulaire d'invitation */}
+                  {invitations.filter(i => i.status === 'accepted').length < booking.nombrePersonnes - 1 && (
+                    <InviteGuestsForm
+                      bookingId={bookingId}
+                      maxGuests={booking.nombrePersonnes - 1 - invitations.length}
+                      onInvited={async () => {
+                        try {
+                          const invs = await getBookingInvitations(bookingId);
+                          setInvitations(invs);
+                        } catch {}
+                      }}
+                    />
+                  )}
+
+                  {/* Liste des invitations envoyées */}
+                  <div className="space-y-3 mt-4">
                     {invitations.map(inv => {
                       const isExpired = inv.status === 'expired';
                       const isPending = inv.status === 'pending';

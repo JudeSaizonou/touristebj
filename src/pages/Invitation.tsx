@@ -156,15 +156,24 @@ export const InvitationPage: React.FC<InvitationPageProps> = ({
                         <p className="text-sm text-dark-800/60 mt-1">
                           {isPaid
                             ? 'Votre place est confirmée. Rendez-vous dans "Mes Voyages" pour les détails.'
-                            : 'Rendez-vous dans "Mes Voyages" pour payer votre acompte et confirmer votre place.'}
+                            : 'Il vous reste à payer votre acompte pour confirmer votre place.'}
                         </p>
                       </div>
                     </div>
+
+                    {!isPaid && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
+                        <p className="text-sm font-semibold text-amber-800 mb-1">Acompte requis</p>
+                        <p className="text-2xl font-bold text-amber-900">{fmtPrice(trip?.depositAmount ?? 0)}</p>
+                        <p className="text-xs text-amber-600 mt-1">Payez depuis "Mes Voyages" pour confirmer votre place</p>
+                      </div>
+                    )}
+
                     <button
                       onClick={onMesVoyages}
-                      className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
+                      className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
                     >
-                      Voir mes voyages
+                      {isPaid ? 'Voir mes voyages' : <><CreditCard className="w-4 h-4" /> Payer mon acompte</>}
                     </button>
                   </div>
                 ) : invitation.status === 'expired' ? (
