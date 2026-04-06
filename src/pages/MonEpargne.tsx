@@ -66,34 +66,42 @@ const InviteGuestsForm: React.FC<{
       <p className="text-sm font-semibold text-dark-800 mb-3">
         Inviter vos compagnons de voyage
       </p>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {guests.map((g, i) => (
-          <div key={i} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Nom complet"
-              value={g.name}
-              onChange={e => updateGuest(i, 'name', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={g.email}
-              onChange={e => updateGuest(i, 'email', e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-            />
+          <div key={i} className="relative bg-white rounded-lg border border-gray-200 p-3">
             {guests.length > 1 && (
-              <button onClick={() => removeRow(i)} className="p-2 text-gray-400 hover:text-red-500">
+              <button
+                onClick={() => removeRow(i)}
+                className="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 transition-colors"
+              >
                 <XCircle className="w-4 h-4" />
               </button>
             )}
+            <p className="text-[10px] font-medium text-dark-800/40 uppercase tracking-wide mb-2">
+              Voyageur {i + 2}
+            </p>
+            <div className="space-y-2">
+              <input
+                type="text"
+                placeholder="Nom complet"
+                value={g.name}
+                onChange={e => updateGuest(i, 'name', e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+              />
+              <input
+                type="email"
+                placeholder="Adresse email"
+                value={g.email}
+                onChange={e => updateGuest(i, 'email', e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
+              />
+            </div>
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-2 mt-3">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-3">
         {guests.length < maxGuests && (
-          <button onClick={addRow} className="text-xs text-primary-600 hover:text-primary-700 font-medium">
+          <button onClick={addRow} className="text-xs text-primary-600 hover:text-primary-700 font-medium py-1">
             + Ajouter un invité
           </button>
         )}
@@ -101,10 +109,10 @@ const InviteGuestsForm: React.FC<{
         <button
           onClick={handleSubmit}
           disabled={!isValid || sending}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-500 text-white rounded-lg text-sm font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-primary-500 text-white rounded-lg text-sm font-semibold hover:bg-primary-600 transition-colors disabled:opacity-50 w-full sm:w-auto"
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          {sending ? 'Envoi...' : 'Envoyer'}
+          {sending ? 'Envoi...' : 'Envoyer les invitations'}
         </button>
       </div>
       {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
