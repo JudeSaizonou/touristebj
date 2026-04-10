@@ -64,7 +64,7 @@ function normalizeAuthResponse(body: any): { token: string; user: AuthUser } {
     body?.data?.user ??
     body?.data;
   if (!token || typeof token !== 'string') {
-    if (typeof import.meta !== 'undefined' && (import.meta as any).dev) {
+    if (import.meta.env.DEV) {
       console.warn('[Auth] Réponse login sans token:', body);
     }
     throw { success: false, message: 'Réponse du serveur invalide : token manquant.' };

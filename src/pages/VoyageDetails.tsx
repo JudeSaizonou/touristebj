@@ -202,7 +202,7 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                       : 'border-transparent opacity-50 hover:opacity-80'
                   }`}
                 >
-                  <img src={photo} alt="" className="w-full h-full object-cover" />
+                  <img src={photo} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>

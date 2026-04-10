@@ -76,12 +76,10 @@ export const Parametres: React.FC = () => {
   };
 
   // --- Cache clear ---
+  // Tokens & user state live in sessionStorage now, so wiping localStorage
+  // no longer touches auth — no need to save/restore the token around clear().
   const handleClearCache = () => {
-    const token = localStorage.getItem('touriste_token');
-    const userStored = localStorage.getItem('touriste_user');
     localStorage.clear();
-    if (token) localStorage.setItem('touriste_token', token);
-    if (userStored) localStorage.setItem('touriste_user', userStored);
     addToast('success', 'Cache vidé avec succès');
   };
 

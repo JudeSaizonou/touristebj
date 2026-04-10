@@ -5,5 +5,36 @@
   "rewrites": [
     { "source": "/v2/api/:path*", "destination": "https://staging.zepargn.com/v2/api/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://cdn.kkiapay.me https://*.kkiapay.me; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.kkiapay.me; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://prodapi.zepargn.com https://staging.zepargn.com https://*.kkiapay.me; frame-src https://*.kkiapay.me; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        }
+      ]
+    }
   ]
 }

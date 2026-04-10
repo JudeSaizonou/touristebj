@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Check, Download, Eye, FileCheck2, Loader2, Send, X, XCircle } from 'lucide-react';
 import { Voyageur, VoyageurDocumentType, DocumentRequestBackend } from '../types';
 import * as tripsApi from '../api/trips';
+import { getToken } from '../lib/authStorage';
 
 interface VoyageurDetailsModalProps {
   isOpen: boolean;
@@ -73,7 +74,7 @@ export const VoyageurDetailsModal: React.FC<VoyageurDetailsModalProps> = ({
     if (!doc.fileUrl) return;
     setDownloadingId(doc._id);
     try {
-      const token = localStorage.getItem('touriste_token');
+      const token = getToken();
       const res = await fetch(doc.fileUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -262,6 +263,8 @@ export const VoyageurDetailsModal: React.FC<VoyageurDetailsModalProps> = ({
                                     <img
                                       src={doc.fileUrl}
                                       alt={doc.fileName || 'Document'}
+                                      loading="lazy"
+                                      decoding="async"
                                       className="w-24 h-24 object-cover rounded-lg border border-gray-200 group-hover:border-primary-400 transition-colors"
                                     />
                                     <span className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 rounded-lg transition-colors">

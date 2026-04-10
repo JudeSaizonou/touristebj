@@ -242,7 +242,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
             <div className="space-y-5">
               <div className="flex gap-3">
                 {voyage.photos?.[0] && (
-                  <img src={voyage.photos[0]} alt={voyage.titre} className="w-20 h-16 rounded-xl object-cover flex-shrink-0" />
+                  <img src={voyage.photos[0]} alt={voyage.titre} loading="lazy" decoding="async" className="w-20 h-16 rounded-xl object-cover flex-shrink-0" />
                 )}
                 <div>
                   <p className="font-playfair font-bold text-dark-800 text-base">{voyage.titre}</p>

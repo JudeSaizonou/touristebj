@@ -14,13 +14,13 @@ const RETRYABLE_STATUSES = new Set([502, 503, 504, 408]);
 
 // ─── Token helpers ───────────────────────────────────────────────────────
 
-function getToken(): string | null {
-  return localStorage.getItem('touriste_token');
-}
-
-function getRefreshToken(): string | null {
-  return localStorage.getItem('touriste_refresh');
-}
+import {
+  getToken,
+  getRefreshToken,
+  setToken as storageSetToken,
+  setRefreshToken as storageSetRefreshToken,
+  clearAuthStorage,
+} from '../lib/authStorage';
 
 // ─── Token refresh (singleton promise — prevents race conditions) ────────
 
@@ -42,8 +42,8 @@ async function tryRefreshToken(): Promise<boolean> {
       if (!res.ok) return false;
       const body = await res.json();
       if (body?.token) {
-        localStorage.setItem('touriste_token', body.token);
-        if (body.refreshToken) localStorage.setItem('touriste_refresh', body.refreshToken);
+        storageSetToken(body.token);
+        if (body.refreshToken) storageSetRefreshToken(body.refreshToken);
         return true;
       }
       return false;
@@ -131,9 +131,7 @@ export async function apiRequest<T>(
           }
         }
         // Refresh failed — force logout
-        localStorage.removeItem('touriste_token');
-        localStorage.removeItem('touriste_refresh');
-        localStorage.removeItem('touriste_user');
+        clearAuthStorage();
         window.dispatchEvent(new CustomEvent('auth:force-logout'));
       }
 

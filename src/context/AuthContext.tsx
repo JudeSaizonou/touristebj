@@ -1,9 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { AuthUser } from '../api/auth';
-
-const TOKEN_KEY = 'touriste_token';
-const REFRESH_KEY = 'touriste_refresh';
-const USER_KEY = 'touriste_user';
+import {
+  getToken as storageGetToken,
+  getRefreshToken as storageGetRefreshToken,
+  setToken as storageSetToken,
+  setRefreshToken as storageSetRefreshToken,
+  getStoredUser,
+  setStoredUser,
+  clearAuthStorage,
+  migrateLegacyAuthStorage,
+} from '../lib/authStorage';
 
 interface AuthState {
   token: string | null;
@@ -20,14 +26,9 @@ interface AuthContextValue extends AuthState {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function readStored(): { token: string | null; user: AuthUser | null } {
-  try {
-    const token = localStorage.getItem(TOKEN_KEY);
-    const raw = localStorage.getItem(USER_KEY);
-    const user = raw ? JSON.parse(raw) : null;
-    return { token, user };
-  } catch {
-    return { token: null, user: null };
-  }
+  const token = storageGetToken();
+  const user = getStoredUser<AuthUser>();
+  return { token, user };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -38,6 +39,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    // Move any legacy localStorage values into sessionStorage before reading.
+    migrateLegacyAuthStorage();
     const { token, user } = readStored();
     setState({ token, user, ready: true });
   }, []);
@@ -56,9 +59,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logoutInProgress = useRef(false);
 
   const setAuth = useCallback((token: string, user: AuthUser, refreshToken?: string) => {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken);
+    storageSetToken(token);
+    setStoredUser(user);
+    if (refreshToken) storageSetRefreshToken(refreshToken);
     setState({ token, user, ready: true });
   }, []);
 
@@ -66,8 +69,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (logoutInProgress.current) return;
     logoutInProgress.current = true;
     // Invalidate token server-side
-    const refreshToken = localStorage.getItem(REFRESH_KEY);
-    const token = localStorage.getItem(TOKEN_KEY);
+    const refreshToken = storageGetRefreshToken();
+    const token = storageGetToken();
     if (token) {
       try {
         await fetch('/v2/api/auth/logout', {
@@ -79,9 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Ignore network errors during logout
       }
     }
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-    localStorage.removeItem(USER_KEY);
+    clearAuthStorage();
     setState({ token: null, user: null, ready: true });
     logoutInProgress.current = false;
   }, []);

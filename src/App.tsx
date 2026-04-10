@@ -19,6 +19,7 @@ import { MonEpargne } from './pages/MonEpargne';
 import { InvitationPage } from './pages/Invitation';
 import { VoyagesPage } from './pages/Voyages.public';
 import { useAuth } from './context/AuthContext';
+import { getStoredUser } from './lib/authStorage';
 import { useRouter } from './hooks/useRouter';
 import { SEO, buildOrganizationJsonLd } from './components/SEO';
 import { StorageService } from './utils/storage';
@@ -74,8 +75,7 @@ function App() {
 
   const handleAuthSuccess = (_isAdminUser: boolean) => {
     try {
-      const raw = localStorage.getItem('touriste_user');
-      const savedUser = raw ? JSON.parse(raw) : null;
+      const savedUser = getStoredUser<{ role?: string }>();
       const adminFromStorage = savedUser?.role === 'ADMIN' || savedUser?.role === 'PARTNER';
       navigate(adminFromStorage ? '/admin/dashboard' : '/');
     } catch {

@@ -9,6 +9,15 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // Strip noisy dev-only console calls from production bundles while keeping
+  // console.warn / console.error for ErrorBoundary and surfaced runtime errors.
+  esbuild: {
+    pure: ['console.log', 'console.debug', 'console.info', 'console.trace'],
+    legalComments: 'none',
+  },
+  build: {
+    sourcemap: false,
+  },
   server: {
     port: 5173,
     proxy: {

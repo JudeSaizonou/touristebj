@@ -347,6 +347,8 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
                         <img
                           src={booking.voyage?.images?.[0] || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400'}
                           alt={booking.voyage?.titre}
+                          loading="lazy"
+                          decoding="async"
                           className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent sm:bg-gradient-to-r" />
