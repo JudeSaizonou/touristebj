@@ -84,7 +84,7 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
       reader.readAsDataURL(file);
     });
 
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
   const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,7 +108,7 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
       if (!ALLOWED_TYPES.includes(file.type)) {
         rejected.push(`${file.name} : format non supporté (JPG, PNG, WebP uniquement)`);
       } else if (file.size > MAX_FILE_SIZE) {
-        rejected.push(`${file.name} : trop volumineux (max 5 MB)`);
+        rejected.push(`${file.name} : trop volumineux (max 15 MB)`);
       } else {
         valid.push(file);
       }
@@ -396,7 +396,7 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
           >
             <Upload className="w-8 h-8 text-gray-400 mb-2" />
             <p className="text-sm font-medium text-gray-700">Cliquez pour ajouter des photos</p>
-            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP — max 5 MB/photo — max 10 photos</p>
+            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP — max 15 MB/photo — max 10 photos</p>
           </div>
         )}
         {photoError && (
