@@ -5,10 +5,70 @@
 // lifted by a script that loads later in a different page. This is the
 // pragmatic middle ground while HttpOnly cookies are not yet available
 // on the backend.
+//
+// Cross-tab coordination: sessionStorage is per-tab, but the backend's
+// refresh-token reuse detection is per-user. When a user opens a second
+// tab (especially via "Duplicate tab" which copies sessionStorage), the
+// two tabs start with the same refresh token and a refresh race will
+// trigger a global kill-switch. To avoid that we broadcast rotations and
+// logouts via BroadcastChannel, and (in client.ts) serialize refresh
+// attempts via navigator.locks so only one tab ever hits the backend.
 
 const TOKEN_KEY = 'touriste_token';
 const REFRESH_KEY = 'touriste_refresh';
 const USER_KEY = 'touriste_user';
+
+type AuthMessage =
+  | { type: 'tokens-updated'; token: string; refreshToken?: string }
+  | { type: 'logout' };
+
+let channel: BroadcastChannel | null = null;
+try {
+  if (typeof BroadcastChannel !== 'undefined') {
+    channel = new BroadcastChannel('zepargn-auth');
+    channel.addEventListener('message', (e: MessageEvent<AuthMessage>) => {
+      const msg = e.data;
+      if (!msg || typeof msg !== 'object') return;
+      if (msg.type === 'tokens-updated') {
+        // Sibling tab rotated the token pair — mirror it locally so our
+        // next request uses a valid token and we don't race by replaying
+        // the now-revoked refresh token.
+        try {
+          sessionStorage.setItem(TOKEN_KEY, msg.token);
+          if (msg.refreshToken) sessionStorage.setItem(REFRESH_KEY, msg.refreshToken);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:tokens-synced', { detail: { token: msg.token } }));
+          }
+        } catch {}
+      } else if (msg.type === 'logout') {
+        // Sibling tab was forced out — tear down this tab too so the user
+        // isn't stuck on a dead session in an inactive tab.
+        try {
+          sessionStorage.removeItem(TOKEN_KEY);
+          sessionStorage.removeItem(REFRESH_KEY);
+          sessionStorage.removeItem(USER_KEY);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:force-logout'));
+          }
+        } catch {}
+      }
+    });
+  }
+} catch {
+  channel = null;
+}
+
+export function broadcastTokensUpdate(token: string, refreshToken?: string) {
+  try {
+    channel?.postMessage({ type: 'tokens-updated', token, refreshToken });
+  } catch {}
+}
+
+export function broadcastLogout() {
+  try {
+    channel?.postMessage({ type: 'logout' });
+  } catch {}
+}
 
 export function getToken(): string | null {
   try {

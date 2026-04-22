@@ -22,41 +22,85 @@ import {
   setToken as storageSetToken,
   setRefreshToken as storageSetRefreshToken,
   clearAuthStorage,
+  broadcastTokensUpdate,
+  broadcastLogout,
 } from '../lib/authStorage';
 
-// ─── Token refresh (singleton promise — prevents race conditions) ────────
+// ─── Token refresh ───────────────────────────────────────────────────────
+//
+// Two layers of protection against refresh-token reuse, which the backend
+// punishes with an immediate kill-switch on every session for the user:
+//
+// 1. In-tab singleton promise: parallel 401s in the same tab share one call.
+// 2. Cross-tab exclusive lock via navigator.locks: if another tab is
+//    refreshing (e.g. user opened the dashboard in two tabs, or used
+//    "Duplicate tab" which copies sessionStorage), we wait instead of
+//    replaying the same now-revoked refresh token. When the other tab
+//    broadcasts the new token pair we pick it up from sessionStorage
+//    and can skip our own refresh entirely.
+
+const AUTH_LOCK_NAME = 'zepargn-auth-refresh';
 
 let refreshPromise: Promise<boolean> | null = null;
 
+async function refreshOnce(): Promise<boolean> {
+  const tokenBefore = getToken();
+  const rt = getRefreshToken();
+  if (!rt) return false;
+
+  // If a sibling tab already rotated while we were waiting for the lock,
+  // our sessionStorage has been updated via broadcast. Skip the network
+  // call — the caller will retry with the fresh token.
+  const tokenInside = getToken();
+  if (tokenInside && tokenInside !== tokenBefore) return true;
+
+  try {
+    const res = await fetch('/v2/api/auth/refresh-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: rt }),
+    });
+    if (!res.ok) return false;
+    const body = await res.json();
+    if (body?.token) {
+      storageSetToken(body.token);
+      if (body.refreshToken) storageSetRefreshToken(body.refreshToken);
+      // Let sibling tabs adopt the new tokens so they don't replay the
+      // old refresh token and trigger the backend kill-switch.
+      broadcastTokensUpdate(body.token, body.refreshToken);
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 async function tryRefreshToken(): Promise<boolean> {
-  // If a refresh is already in flight, reuse the same promise
+  // If a refresh is already in flight in this tab, reuse the same promise
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
-    const rt = getRefreshToken();
-    if (!rt) return false;
-    try {
-      const res = await fetch('/v2/api/auth/refresh-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: rt }),
-      });
-      if (!res.ok) return false;
-      const body = await res.json();
-      if (body?.token) {
-        storageSetToken(body.token);
-        if (body.refreshToken) storageSetRefreshToken(body.refreshToken);
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
+    // Prefer a cross-tab exclusive lock when available (Chrome 69+,
+    // Firefox 96+, Safari 15.4+). Falls back to plain in-tab serialisation.
+    const locks = (navigator as any)?.locks;
+    if (locks && typeof locks.request === 'function') {
+      return locks.request(AUTH_LOCK_NAME, async () => refreshOnce());
     }
+    return refreshOnce();
   })().finally(() => {
     refreshPromise = null;
   });
 
   return refreshPromise;
+}
+
+function forceLogout() {
+  broadcastLogout();
+  clearAuthStorage();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('auth:force-logout'));
+  }
 }
 
 // ─── Fetch with timeout ──────────────────────────────────────────────────
@@ -150,8 +194,7 @@ export async function apiRequest<T>(
           }
         }
         // Refresh failed or retry still 401 — force logout
-        clearAuthStorage();
-        window.dispatchEvent(new CustomEvent('auth:force-logout'));
+        forceLogout();
       }
 
       // ── Retryable server errors (502, 503, 504, 408) ────────────
