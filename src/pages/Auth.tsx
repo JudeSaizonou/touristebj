@@ -398,7 +398,7 @@ export const Auth: React.FC<AuthProps> = ({
         username: username.trim(),
         referralCode: codeParrainage.trim() || undefined,
       });
-      setAuth(res.token, res.user);
+      setAuth(res.token, res.user, res.refreshToken);
       addToast('success', 'Bienvenue ! Votre compte a été créé.');
       const isAdmin = res.user.role === 'ADMIN' || res.user.role === 'PARTNER';
       onSuccess?.(isAdmin);
@@ -429,10 +429,10 @@ export const Auth: React.FC<AuthProps> = ({
     try {
       const res = await authApi.verifyCode(connexionCountry, connexionPhone, code);
       if ('token' in res && res.token && res.user) {
-        setAuth(res.token, res.user);
+        setAuth(res.token, res.user, res.refreshToken);
         try {
           const me = await authApi.getMe();
-          setAuth(res.token, { ...res.user, ...me });
+          setAuth(res.token, { ...res.user, ...me }, res.refreshToken);
           addToast('success', 'Connexion réussie !');
           const isAdmin = me.role === 'ADMIN' || me.role === 'PARTNER';
           onSuccess?.(isAdmin);
