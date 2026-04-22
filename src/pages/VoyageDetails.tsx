@@ -363,7 +363,11 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                       </div>
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-dark-800/50">Délai paiement</span>
-                        <span className="font-semibold text-dark-800">{voyage.paymentDeadlineDays || 14} jours</span>
+                        <span className="font-semibold text-dark-800">
+                          {voyage.effectivePaymentDeadline
+                            ? Math.max(1, Math.ceil((new Date(voyage.effectivePaymentDeadline).getTime() - Date.now()) / 86400000)) + ' jours'
+                            : (voyage.paymentDeadlineDays || 14) + ' jours'}
+                        </span>
                       </div>
                     </div>
 

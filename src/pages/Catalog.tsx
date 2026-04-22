@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapPin, Star, Search, Loader2, SlidersHorizontal, X, ArrowRight, Clock, Users, Calendar, ChevronRight, ChevronDown, Quote, MessageSquare } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
-import { getVoyages } from '../api/trips';
+import { getVoyages, isVoyagePublic } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
 import LogoZepargn from '../assets/LogoZepargn.png';
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
@@ -96,8 +96,9 @@ export const Catalog: React.FC<CatalogProps> = ({
     setAuthRequired(false);
     try {
       const { voyages: data } = await getVoyages();
-      setVoyages(data);
-      setFilteredVoyages(data);
+      const publiclyVisible = data.filter(isVoyagePublic);
+      setVoyages(publiclyVisible);
+      setFilteredVoyages(publiclyVisible);
     } catch (err: any) {
       const msg: string = err?.message || '';
       const is401 = msg.toLowerCase().includes('token') || msg.includes('401') || msg.includes('Unauthorized');
