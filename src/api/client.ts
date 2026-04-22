@@ -1,6 +1,8 @@
 export type ApiError = {
   success: false;
   message: string;
+  code?: string;
+  status?: number;
   errors?: Record<string, string[]>;
   requirements?: Record<string, unknown>;
 };
@@ -145,6 +147,8 @@ export async function apiRequest<T>(
       lastError = {
         success: false,
         message: body?.message || body?.msg || body?.error || `Erreur ${res.status}`,
+        code: body?.code,
+        status: res.status,
         errors: body?.errors,
         requirements: body?.requirements,
       } as ApiError;

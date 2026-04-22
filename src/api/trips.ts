@@ -1,7 +1,15 @@
-import { TRIPS_PREFIX } from './config';
+import { API_BASE, TRIPS_PREFIX } from './config';
 import { apiRequest, apiRequestMultipart } from './client';
 
 // Backend response types (simplified)
+export type TripManagerRole = 'OWNER' | 'MANAGER' | 'READONLY';
+
+export interface TripManagerBackend {
+  userId: string | { _id?: string; id?: string; prenom?: string; nom?: string; username?: string; phoneNumber?: string; countryCode?: string };
+  role: TripManagerRole;
+  addedAt?: string;
+}
+
 export interface TripBackend {
   _id: string;
   title: string;
@@ -25,6 +33,8 @@ export interface TripBackend {
   partnerId?: { prenom?: string; nom?: string; email?: string; phoneNumber?: string };
   activeBookings?: number;
   availableSpots?: number;
+  managers?: TripManagerBackend[];
+  yourRole?: TripManagerRole;
 }
 
 export interface TripListResponse {
@@ -177,6 +187,8 @@ export function mapTripToVoyage(t: TripBackend): any {
     tripType: t.tripType || 'voyage',
     allowInstallments: t.allowInstallments ?? true,
     minInstallmentAmount: t.minInstallmentAmount ?? 5000,
+    yourRole: t.yourRole,
+    managers: t.managers,
     // Champs calculés / valeurs par défaut pour la vue publique
     acomptesPourcentage: 30,
     note: 4,
@@ -283,6 +295,165 @@ export async function cancelVoyage(voyageId: string, reason?: string): Promise<a
 
 export async function deleteVoyage(voyageId: string): Promise<void> {
   await apiRequest<{ success: boolean }>(`${TRIPS_PREFIX}/partner/trips/${voyageId}`, { method: 'DELETE' });
+}
+
+// ─── Trip co-managers ────────────────────────────────────────────────────
+
+export interface MappedTripManager {
+  userId: string;
+  role: TripManagerRole;
+  name: string;
+  phoneNumber: string;
+  addedAt?: string;
+}
+
+function mapTripManager(m: TripManagerBackend): MappedTripManager {
+  const u = typeof m.userId === 'object' ? m.userId : null;
+  const userId = u ? (u._id || u.id || '') : (m.userId as string);
+  const phone = u?.phoneNumber
+    ? `${u.countryCode ? '+' + u.countryCode + ' ' : ''}${u.phoneNumber}`
+    : '';
+  const name =
+    [u?.prenom, u?.nom].filter(Boolean).join(' ') ||
+    u?.username ||
+    phone ||
+    'Utilisateur';
+  return {
+    userId,
+    role: m.role,
+    name,
+    phoneNumber: phone,
+    addedAt: m.addedAt,
+  };
+}
+
+export async function getTripManagers(tripId: string): Promise<{
+  managers: MappedTripManager[];
+  yourRole: TripManagerRole | null;
+}> {
+  const res = await apiRequest<{
+    success: boolean;
+    managers: TripManagerBackend[];
+    yourRole?: TripManagerRole;
+  }>(`${TRIPS_PREFIX}/partner/trips/${tripId}/managers`);
+  return {
+    managers: (res.managers || []).map(mapTripManager),
+    yourRole: res.yourRole || null,
+  };
+}
+
+export async function inviteTripManager(
+  tripId: string,
+  body: { countryCode: string; phoneNumber: string; role: 'MANAGER' | 'READONLY' }
+): Promise<void> {
+  const nationalPhone = body.phoneNumber.replace(/\D/g, '');
+  await apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/partner/trips/${tripId}/managers/invite`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        countryCode: body.countryCode,
+        phoneNumber: nationalPhone,
+        role: body.role,
+      }),
+    }
+  );
+}
+
+export async function updateTripManagerRole(
+  tripId: string,
+  userId: string,
+  role: 'MANAGER' | 'READONLY'
+): Promise<void> {
+  await apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/partner/trips/${tripId}/managers/${userId}`,
+    { method: 'PATCH', body: JSON.stringify({ role }) }
+  );
+}
+
+export async function removeTripManager(tripId: string, userId: string): Promise<void> {
+  await apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/partner/trips/${tripId}/managers/${userId}`,
+    { method: 'DELETE' }
+  );
+}
+
+export async function transferTripOwnership(tripId: string, userId: string): Promise<void> {
+  await apiRequest<{ success: boolean }>(
+    `${TRIPS_PREFIX}/partner/trips/${tripId}/managers/transfer-ownership`,
+    { method: 'POST', body: JSON.stringify({ userId }) }
+  );
+}
+
+// ─── Manager invitations (invitee side) ───────────────────────────────────
+
+export interface TripManagerInvitationBackend {
+  _id: string;
+  tripId: string | { _id: string; title?: string; destination?: string; images?: string[]; departureDate?: string };
+  invitedBy?: { username?: string; prenom?: string; nom?: string; phoneNumber?: string };
+  role: TripManagerRole;
+  token: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired';
+  expiresAt?: string;
+  createdAt?: string;
+}
+
+export interface MappedTripManagerInvitation {
+  id: string;
+  token: string;
+  role: TripManagerRole;
+  status: TripManagerInvitationBackend['status'];
+  expiresAt?: string;
+  createdAt?: string;
+  invitedByName: string;
+  trip: { id: string; title: string; destination: string; image?: string; departureDate?: string };
+}
+
+function mapTripManagerInvitation(inv: TripManagerInvitationBackend): MappedTripManagerInvitation {
+  const tripObj = typeof inv.tripId === 'object' ? inv.tripId : null;
+  const tripId = tripObj ? (tripObj._id || '') : (inv.tripId as string);
+  const invitedByName =
+    [inv.invitedBy?.prenom, inv.invitedBy?.nom].filter(Boolean).join(' ') ||
+    inv.invitedBy?.username ||
+    inv.invitedBy?.phoneNumber ||
+    'Quelqu\'un';
+  return {
+    id: inv._id,
+    token: inv.token,
+    role: inv.role,
+    status: inv.status,
+    expiresAt: inv.expiresAt,
+    createdAt: inv.createdAt,
+    invitedByName,
+    trip: {
+      id: tripId,
+      title: tripObj?.title || 'Voyage',
+      destination: tripObj?.destination || '',
+      image: tripObj?.images?.[0],
+      departureDate: tripObj?.departureDate,
+    },
+  };
+}
+
+export async function getTripManagerInvitations(): Promise<MappedTripManagerInvitation[]> {
+  const res = await apiRequest<{ success: boolean; invitations: TripManagerInvitationBackend[] }>(
+    `${API_BASE}/trip-manager-invitations`
+  );
+  return (res.invitations || []).map(mapTripManagerInvitation);
+}
+
+export async function acceptTripManagerInvitation(token: string): Promise<void> {
+  await apiRequest<{ success: boolean }>(
+    `${API_BASE}/trip-manager-invitations/${token}/accept`,
+    { method: 'POST' }
+  );
+}
+
+export async function declineTripManagerInvitation(token: string): Promise<void> {
+  await apiRequest<{ success: boolean }>(
+    `${API_BASE}/trip-manager-invitations/${token}/decline`,
+    { method: 'POST' }
+  );
 }
 
 export async function uploadTripImages(tripId: string, files: File[]): Promise<string[]> {
