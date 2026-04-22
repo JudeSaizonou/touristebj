@@ -4,6 +4,14 @@ import { apiRequest, apiRequestMultipart } from './client';
 // Backend response types (simplified)
 export type TripManagerRole = 'OWNER' | 'MANAGER' | 'READONLY';
 
+export type TripBookingStatus =
+  | 'BOOKABLE'
+  | 'FULL'
+  | 'PAYMENT_DEADLINE_PASSED'
+  | 'DEPARTED'
+  | 'CANCELLED'
+  | 'COMPLETED';
+
 export interface TripManagerBackend {
   userId: string | { _id?: string; id?: string; prenom?: string; nom?: string; username?: string; phoneNumber?: string; countryCode?: string };
   role: TripManagerRole;
@@ -35,6 +43,8 @@ export interface TripBackend {
   availableSpots?: number;
   managers?: TripManagerBackend[];
   yourRole?: TripManagerRole;
+  bookingStatus?: TripBookingStatus;
+  effectivePaymentDeadline?: string;
 }
 
 export interface TripListResponse {
@@ -189,6 +199,8 @@ export function mapTripToVoyage(t: TripBackend): any {
     minInstallmentAmount: t.minInstallmentAmount ?? 5000,
     yourRole: t.yourRole,
     managers: t.managers,
+    bookingStatus: t.bookingStatus,
+    effectivePaymentDeadline: t.effectivePaymentDeadline,
     // Champs calculés / valeurs par défaut pour la vue publique
     acomptesPourcentage: 30,
     note: 4,
@@ -200,6 +212,20 @@ export function mapTripToVoyage(t: TripBackend): any {
     conditionsPaiement: 'Acompte 30% + Solde par épargne',
     politiqueRemboursement: "L'acompte versé (30%) est non remboursable en cas de désistement. Le solde peut être payé par versements jusqu'à la date limite définie par l'organisateur.",
   };
+}
+
+// Decides whether a trip returned by /trips/available should show up in
+// the public discovery lists. The backend now returns every trip so the
+// front has to hide the ones that aren't bookable. Keep BOOKABLE + FULL
+// visible (FULL still makes sense to display with a "Complet" badge).
+export function isVoyagePublic(v: { bookingStatus?: TripBookingStatus; status?: string; rawDepartureDate?: string }): boolean {
+  if (v.bookingStatus) {
+    return v.bookingStatus === 'BOOKABLE' || v.bookingStatus === 'FULL';
+  }
+  // Fallback when the backend hasn't populated bookingStatus yet.
+  if (v.status && ['DRAFT', 'CANCELLED', 'COMPLETED'].includes(v.status)) return false;
+  if (v.rawDepartureDate && new Date(v.rawDepartureDate).getTime() < Date.now()) return false;
+  return true;
 }
 
 export async function getVoyages(params?: {

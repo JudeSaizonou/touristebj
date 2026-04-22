@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Star, Search, Loader2, SlidersHorizontal, X, ArrowRight, Clock, Users, Calendar, ChevronRight, ChevronLeft } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
-import { getVoyages } from '../api/trips';
+import { getVoyages, isVoyagePublic } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { SEO } from '../components/SEO';
@@ -52,8 +52,9 @@ export const VoyagesPage: React.FC<VoyagesPageProps> = ({
     setError('');
     try {
       const { voyages: data } = await getVoyages();
-      setVoyages(data);
-      setFilteredVoyages(data);
+      const publiclyVisible = data.filter(isVoyagePublic);
+      setVoyages(publiclyVisible);
+      setFilteredVoyages(publiclyVisible);
     } catch (err: any) {
       setError(err?.message || 'Impossible de charger les voyages.');
     } finally {
