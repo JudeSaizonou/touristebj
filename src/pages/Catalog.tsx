@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapPin, Star, Search, Loader2, SlidersHorizontal, X, ArrowRight, Clock, Users, Calendar, ChevronRight, ChevronDown, Quote, MessageSquare } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
-import { getVoyages, isVoyagePublic } from '../api/trips';
+import { getVoyages, isVoyagePublic, getBookingStatusBadge } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
 import LogoZepargn from '../assets/LogoZepargn.png';
 import LogoTouristeBj from '../assets/LogoTouristeBj.png';
@@ -559,15 +559,14 @@ export const Catalog: React.FC<CatalogProps> = ({
                         )}
                       </div>
                       <div className="absolute top-3 right-3">
-                        <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg font-sans ${
-                          voyage.statut === 'en-cours'
-                            ? 'bg-green-500 text-white'
-                            : voyage.statut === 'complet'
-                            ? 'bg-red-500 text-white'
-                            : 'bg-gray-500 text-white'
-                        }`}>
-                          {voyage.statut === 'en-cours' ? 'Disponible' : voyage.statut === 'complet' ? 'Complet' : 'Bientôt'}
-                        </span>
+                        {(() => {
+                          const badge = getBookingStatusBadge(voyage.bookingStatus);
+                          return (
+                            <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg font-sans ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       {/* Bottom overlay info */}
                       <div className="absolute bottom-3 left-3 right-3">
