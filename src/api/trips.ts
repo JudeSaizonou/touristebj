@@ -10,7 +10,8 @@ export type TripBookingStatus =
   | 'PAYMENT_DEADLINE_PASSED'
   | 'DEPARTED'
   | 'CANCELLED'
-  | 'COMPLETED';
+  | 'COMPLETED'
+  | 'PENDING';
 
 export interface TripManagerBackend {
   userId: string | { _id?: string; id?: string; prenom?: string; nom?: string; username?: string; phoneNumber?: string; countryCode?: string };
@@ -216,16 +217,51 @@ export function mapTripToVoyage(t: TripBackend): any {
 
 // Decides whether a trip returned by /trips/available should show up in
 // the public discovery lists. The backend now returns every trip so the
-// front has to hide the ones that aren't bookable. Keep BOOKABLE + FULL
-// visible (FULL still makes sense to display with a "Complet" badge).
+// front has to hide the ones that aren't actionable at all: DEPARTED
+// (already left) and COMPLETED (already finished) go to an Archives tab
+// if we add one later. PENDING and DRAFT are back-office-only. BOOKABLE,
+// FULL, PAYMENT_DEADLINE_PASSED and CANCELLED stay visible with a
+// per-status badge; the Réserver CTA is gated to BOOKABLE only.
 export function isVoyagePublic(v: { bookingStatus?: TripBookingStatus; status?: string; rawDepartureDate?: string }): boolean {
   if (v.bookingStatus) {
-    return v.bookingStatus === 'BOOKABLE' || v.bookingStatus === 'FULL';
+    return v.bookingStatus === 'BOOKABLE'
+      || v.bookingStatus === 'FULL'
+      || v.bookingStatus === 'PAYMENT_DEADLINE_PASSED'
+      || v.bookingStatus === 'CANCELLED';
   }
   // Fallback when the backend hasn't populated bookingStatus yet.
-  if (v.status && ['DRAFT', 'CANCELLED', 'COMPLETED'].includes(v.status)) return false;
+  if (v.status && ['DRAFT', 'PENDING', 'COMPLETED'].includes(v.status)) return false;
   if (v.rawDepartureDate && new Date(v.rawDepartureDate).getTime() < Date.now()) return false;
   return true;
+}
+
+// Public-facing labels + visual hints for each bookingStatus. Callers
+// render whichever fields they need (label + palette + CTA enabled/not).
+export interface BookingStatusBadge {
+  label: string;
+  className: string; // background + text color tailwind classes
+  canBook: boolean;
+}
+
+export function getBookingStatusBadge(status?: TripBookingStatus): BookingStatusBadge {
+  switch (status) {
+    case 'BOOKABLE':
+      return { label: 'Disponible', className: 'bg-green-500 text-white', canBook: true };
+    case 'FULL':
+      return { label: 'Complet', className: 'bg-red-500 text-white', canBook: false };
+    case 'PAYMENT_DEADLINE_PASSED':
+      return { label: 'Délai dépassé', className: 'bg-amber-500 text-white', canBook: false };
+    case 'CANCELLED':
+      return { label: 'Annulé', className: 'bg-gray-500 text-white', canBook: false };
+    case 'COMPLETED':
+      return { label: 'Terminé', className: 'bg-gray-400 text-white', canBook: false };
+    case 'DEPARTED':
+      return { label: 'Parti', className: 'bg-gray-400 text-white', canBook: false };
+    case 'PENDING':
+      return { label: 'En attente', className: 'bg-gray-400 text-white', canBook: false };
+    default:
+      return { label: 'Disponible', className: 'bg-green-500 text-white', canBook: true };
+  }
 }
 
 export async function getVoyages(params?: {

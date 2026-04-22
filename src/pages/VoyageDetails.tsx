@@ -3,7 +3,7 @@ import { PublicLayout } from '../components/PublicLayout';
 import { ToastContainer, useToast } from '../components/Toast';
 import { ReservationModal } from '../components/ReservationModal';
 import { SEO, buildVoyageJsonLd } from '../components/SEO';
-import { getVoyageById } from '../api/trips';
+import { getVoyageById, getBookingStatusBadge } from '../api/trips';
 import LogoZepargn from '../assets/LogoZepargn.png';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -378,13 +378,25 @@ export const VoyageDetails: React.FC<VoyageDetailsProps> = ({
                       <span className="font-bold text-lg text-dark-800">{fmtPrice(basePrice)}</span>
                     </div>
 
-                    <button
-                      onClick={handleReservationClick}
-                      className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold text-base hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 flex items-center justify-center gap-2"
-                    >
-                      {user ? 'Réservez Maintenant' : 'Se connecter pour réserver'}
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
+                    {(() => {
+                      const badge = getBookingStatusBadge(voyage.bookingStatus);
+                      if (!badge.canBook) {
+                        return (
+                          <div className="w-full py-3.5 bg-gray-200 text-gray-600 rounded-xl font-semibold text-base text-center">
+                            {badge.label}
+                          </div>
+                        );
+                      }
+                      return (
+                        <button
+                          onClick={handleReservationClick}
+                          className="w-full py-3.5 bg-primary-500 text-white rounded-xl font-semibold text-base hover:bg-primary-600 transition-all hover:shadow-lg hover:shadow-primary-500/25 flex items-center justify-center gap-2"
+                        >
+                          {user ? 'Réservez Maintenant' : 'Se connecter pour réserver'}
+                          <ArrowRight className="w-4 h-4" />
+                        </button>
+                      );
+                    })()}
 
                     {!user && (
                       <p className="text-center text-xs text-dark-800/40">
