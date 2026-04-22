@@ -40,6 +40,7 @@ export interface Voyage {
   acomptesRecus: string;
   placesRestantes: string;
   rawStatus?: string;
+  yourRole?: 'OWNER' | 'MANAGER' | 'READONLY';
 }
 
 export interface DashboardStats {

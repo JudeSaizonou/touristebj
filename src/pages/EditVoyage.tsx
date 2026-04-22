@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Crown, Eye, Loader2, Shield, Users } from 'lucide-react';
 import { VoyageForm, VoyageFormRef } from '../components/VoyageForm';
 import type { VoyageFormData } from '../components/VoyageForm';
 import { VoyageursList } from '../components/VoyageursList';
 import { StatsCard } from '../components/StatsCard';
+import { TripManagersModal } from '../components/TripManagersModal';
 import * as tripsApi from '../api/trips';
 import { uploadTripImages, deleteTripImage, getPartnerVoyageById } from '../api/trips';
 import { ToastContainer, useToast } from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
+import { getTripManagerErrorMessage } from '../lib/tripManagerErrors';
 
 interface EditVoyageProps {
   voyageId: string;
@@ -21,8 +24,14 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
   const [voyage, setVoyage] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [managersOpen, setManagersOpen] = useState(false);
   const formRef = useRef<VoyageFormRef>(null);
   const { toasts, addToast, removeToast } = useToast();
+  const { user } = useAuth();
+
+  const yourRole: 'OWNER' | 'MANAGER' | 'READONLY' | undefined = voyage?.yourRole;
+  const isReadOnly = yourRole === 'READONLY';
+  const isOwner = yourRole === 'OWNER' || !yourRole; // legacy trips without yourRole: treat as owner
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +86,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
       onUpdate(updated);
       addToast('success', 'Voyage modifié avec succès');
     } catch (e) {
-      addToast('error', (e as { message?: string })?.message || 'Erreur lors de la mise à jour');
+      addToast('error', getTripManagerErrorMessage(e, 'Erreur lors de la mise à jour'));
     } finally {
       setSaving(false);
     }
@@ -120,11 +129,51 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
     { id: 'statistiques' as TabType, label: 'Statistiques' },
   ];
 
+  const roleBadge = yourRole && yourRole !== 'OWNER' ? (
+    <span
+      className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full border ${
+        yourRole === 'MANAGER'
+          ? 'bg-primary-50 text-primary-700 border-primary-200'
+          : 'bg-gray-100 text-gray-700 border-gray-200'
+      }`}
+    >
+      {yourRole === 'MANAGER' ? <Shield className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+      {yourRole}
+    </span>
+  ) : yourRole === 'OWNER' ? (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+      <Crown className="w-3 h-3" /> OWNER
+    </span>
+  ) : null;
+
   return (
     <div className="p-4 md:p-8">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">{voyage.titre || voyage.destination}</h1>
+      <TripManagersModal
+        isOpen={managersOpen}
+        tripId={voyageId}
+        tripTitle={voyage.titre || voyage.destination || ''}
+        currentUserId={user?.id || ''}
+        onClose={() => setManagersOpen(false)}
+        onToast={addToast}
+      />
+
+      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-lg sm:text-2xl font-bold text-gray-900">{voyage.titre || voyage.destination}</h1>
+          {roleBadge}
+        </div>
+        {isOwner && (
+          <button
+            onClick={() => setManagersOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-lg transition-colors border border-primary-200"
+          >
+            <Users className="w-4 h-4" />
+            Gérer les co-managers
+          </button>
+        )}
+      </div>
 
       {/* Tabs */}
       <div className="bg-white rounded-t-xl border-b border-gray-200">
@@ -144,6 +193,13 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
           ))}
         </div>
       </div>
+
+      {isReadOnly && (
+        <div className="mt-2 mb-2 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-2 text-sm text-gray-700">
+          <Eye className="w-4 h-4 text-gray-500" />
+          Lecture seule — vous n'avez pas les droits pour modifier ce voyage.
+        </div>
+      )}
 
       {/* Tab Content */}
       <div className="bg-white rounded-b-xl shadow-card p-3 sm:p-6 md:p-8 border-x border-b border-gray-100">
@@ -200,7 +256,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
       </div>
 
       {/* Save Button - only on Détails tab, triggers form validation */}
-      {activeTab === 'details' && (
+      {activeTab === 'details' && !isReadOnly && (
         <div className="flex justify-center mt-6">
           <button
             onClick={() => formRef.current?.triggerSubmit()}

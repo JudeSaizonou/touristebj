@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal, Calendar, Upload, Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ArrowUpDown, ChevronUp, ChevronDown, X, Play } from 'lucide-react';
 import { Voyage, VoyageStatus } from '../types';
 import * as tripsApi from '../api/trips';
+import type { TripManagerRole } from '../api/trips';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ExportModal } from '../components/ExportModal';
 import { ToastContainer, useToast } from '../components/Toast';
@@ -9,6 +10,7 @@ import { handleExport } from '../utils/export';
 import { useDebounce } from '../hooks/useDebounce';
 import { VOYAGE_STATUS, getBookingStatus } from '../utils/statusConfig';
 import { StatusBadge } from '../components/StatusBadge';
+import { getTripManagerErrorMessage } from '../lib/tripManagerErrors';
 
 interface VoyagesProps {
   onCreateVoyage: () => void;
@@ -53,10 +55,11 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
         acomptesRecus: v.acomptesRecus,
         placesRestantes: v.placesRestantes,
         rawStatus: v.status,
+        yourRole: v.yourRole as TripManagerRole | undefined,
       }));
       setVoyages(mappedData);
     } catch (e) {
-      addToast('error', (e as { message?: string })?.message || 'Erreur chargement des voyages');
+      addToast('error', getTripManagerErrorMessage(e, 'Erreur chargement des voyages'));
     }
   };
 
@@ -70,7 +73,7 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
       await loadVoyages();
       addToast('success', 'Voyage activé avec succès');
     } catch (e) {
-      addToast('error', (e as { message?: string })?.message || 'Erreur activation');
+      addToast('error', getTripManagerErrorMessage(e, 'Erreur activation'));
     }
   };
 
@@ -83,8 +86,20 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
       addToast('success', 'Voyage supprimé avec succès');
       setDeleteTarget(null);
     } catch (e) {
-      addToast('error', (e as { message?: string })?.message || 'Erreur suppression');
+      addToast('error', getTripManagerErrorMessage(e, 'Erreur suppression'));
     }
+  };
+
+  // Role-based capability gates:
+  // - READONLY: no write actions
+  // - MANAGER: can edit/activate, but only delete DRAFT trips
+  // - OWNER (or unknown legacy trips without yourRole): full access
+  const canEdit = (v: Voyage) => v.yourRole !== 'READONLY';
+  const canActivate = (v: Voyage) => v.yourRole !== 'READONLY';
+  const canDelete = (v: Voyage) => {
+    if (v.yourRole === 'READONLY') return false;
+    if (v.yourRole === 'MANAGER') return v.rawStatus === 'DRAFT';
+    return true;
   };
 
   const handleExportFormat = (format: 'csv' | 'pdf' | 'xlsx') => {
@@ -465,7 +480,19 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {(voyage.rawStatus === 'DRAFT' || voyage.rawStatus === 'PAUSED') && (
+                      {voyage.yourRole && voyage.yourRole !== 'OWNER' && (
+                        <span
+                          className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border mr-1 ${
+                            voyage.yourRole === 'MANAGER'
+                              ? 'bg-primary-50 text-primary-700 border-primary-200'
+                              : 'bg-gray-100 text-gray-600 border-gray-200'
+                          }`}
+                          title={`Votre rôle : ${voyage.yourRole}`}
+                        >
+                          {voyage.yourRole}
+                        </span>
+                      )}
+                      {(voyage.rawStatus === 'DRAFT' || voyage.rawStatus === 'PAUSED') && canActivate(voyage) && (
                         <button
                           onClick={() => handleActivate(voyage.id)}
                           title="Activer"
@@ -476,16 +503,19 @@ export const Voyages: React.FC<VoyagesProps> = ({ onCreateVoyage, onEditVoyage }
                       )}
                       <button
                         onClick={() => onEditVoyage(voyage.id)}
+                        title={canEdit(voyage) ? 'Modifier' : 'Voir (lecture seule)'}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <Pencil className="w-4 h-4 text-gray-600" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(voyage.id)}
-                        className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
+                      {canDelete(voyage) && (
+                        <button
+                          onClick={() => handleDelete(voyage.id)}
+                          className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

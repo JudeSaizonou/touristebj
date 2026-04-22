@@ -1,6 +1,8 @@
 export type ApiError = {
   success: false;
   message: string;
+  code?: string;
+  status?: number;
   errors?: Record<string, string[]>;
   requirements?: Record<string, unknown>;
 };
@@ -128,9 +130,26 @@ export async function apiRequest<T>(
               ? await retryRes.json().catch(() => ({}))
               : {};
             if (retryRes.ok) return retryBody as T;
+
+            // The retry reached the server. If the server still says 401,
+            // the refreshed token is not valid either — fall through to
+            // force-logout. Otherwise the session is fine and we surface
+            // the retry's actual error (validation, conflict, 5xx…) so the
+            // user keeps working instead of being kicked out.
+            if (retryRes.status !== 401) {
+              lastError = {
+                success: false,
+                message: retryBody?.message || retryBody?.msg || retryBody?.error || `Erreur ${retryRes.status}`,
+                code: retryBody?.code,
+                status: retryRes.status,
+                errors: retryBody?.errors,
+                requirements: retryBody?.requirements,
+              } as ApiError;
+              break;
+            }
           }
         }
-        // Refresh failed — force logout
+        // Refresh failed or retry still 401 — force logout
         clearAuthStorage();
         window.dispatchEvent(new CustomEvent('auth:force-logout'));
       }
@@ -145,6 +164,8 @@ export async function apiRequest<T>(
       lastError = {
         success: false,
         message: body?.message || body?.msg || body?.error || `Erreur ${res.status}`,
+        code: body?.code,
+        status: res.status,
         errors: body?.errors,
         requirements: body?.requirements,
       } as ApiError;

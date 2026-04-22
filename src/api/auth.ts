@@ -25,6 +25,7 @@ export interface VerifyCodeResponseExisting {
   success: true;
   message: string;
   token: string;
+  refreshToken?: string;
   user: AuthUser;
 }
 
@@ -41,6 +42,7 @@ export interface SignupResponse {
   success: true;
   message: string;
   token: string;
+  refreshToken?: string;
   user: AuthUser;
 }
 
@@ -147,7 +149,8 @@ export async function verifyCode(
     };
   }
   const { token, user } = normalizeAuthResponse(body);
-  return { success: true, message: body?.message ?? '', token, user };
+  const refreshToken = body?.refreshToken ?? body?.data?.refreshToken;
+  return { success: true, message: body?.message ?? '', token, refreshToken, user };
 }
 
 export async function signup(params: {
@@ -172,7 +175,8 @@ export async function signup(params: {
     skipAuth: true,
   });
   const { token, user } = normalizeAuthResponse(body);
-  return { success: true, message: body?.message ?? '', token, user };
+  const refreshToken = body?.refreshToken ?? body?.data?.refreshToken;
+  return { success: true, message: body?.message ?? '', token, refreshToken, user };
 }
 
 /** Envoie un token de réinitialisation de mot de passe (code SMS 10 chars, valable 1h). */

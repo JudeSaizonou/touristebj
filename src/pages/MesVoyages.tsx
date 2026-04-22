@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { PublicLayout } from '../components/PublicLayout';
 import { EpargneModal } from '../components/EpargneModal';
+import { ManagerInvitationsSection } from '../components/ManagerInvitationsSection';
+import { ToastContainer, useToast } from '../components/Toast';
 import { getMyBookings, getMyInvitations } from '../api/trips';
 import type { MappedInvitation } from '../api/trips';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +49,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
   const [epargneBooking, setEpargneBooking] = useState<MappedBooking | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('recent');
+  const { toasts, addToast, removeToast } = useToast();
 
   // Redirect to auth if not logged in
   useEffect(() => {
@@ -124,6 +127,7 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
 
   return (
     <PublicLayout onAdminLogin={onAdminLogin} onOpenAuth={onOpenAuth} onMesVoyages={onMesVoyages} onLogout={onLogout}>
+      <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Compact header */}
       <div className="bg-gradient-to-r from-dark-800 to-dark-700 text-white">
@@ -194,6 +198,9 @@ export const MesVoyages: React.FC<MesVoyagesProps> = ({
             </div>
           </div>
         )}
+
+        {/* Trip manager invitations (co-gestion) */}
+        {!loading && <ManagerInvitationsSection onToast={addToast} />}
 
         {/* Pending invitations */}
         {!loading && invitations.length > 0 && (
