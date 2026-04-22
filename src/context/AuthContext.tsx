@@ -9,6 +9,7 @@ import {
   setStoredUser,
   clearAuthStorage,
   migrateLegacyAuthStorage,
+  broadcastLogout,
 } from '../lib/authStorage';
 
 interface AuthState {
@@ -45,7 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ token, user, ready: true });
   }, []);
 
-  // Listen for forced logout (e.g. expired token, failed refresh)
+  // Listen for forced logout (e.g. expired token, failed refresh, or a
+  // sibling tab broadcasting a logout).
   useEffect(() => {
     const handleForceLogout = () => {
       setState({ token: null, user: null, ready: true });
@@ -54,6 +56,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('auth:force-logout', handleForceLogout);
     return () => window.removeEventListener('auth:force-logout', handleForceLogout);
+  }, []);
+
+  // Listen for a sibling tab rotating the token pair — keep our in-memory
+  // token in sync with the value already written to sessionStorage by the
+  // broadcast listener in authStorage.ts. Without this, our React state
+  // would keep serving the stale token until a full reload.
+  useEffect(() => {
+    const handleTokensSynced = (e: Event) => {
+      const detail = (e as CustomEvent<{ token?: string }>).detail;
+      if (!detail?.token) return;
+      setState(prev => (prev.token === detail.token ? prev : { ...prev, token: detail.token! }));
+    };
+    window.addEventListener('auth:tokens-synced', handleTokensSynced as EventListener);
+    return () => window.removeEventListener('auth:tokens-synced', handleTokensSynced as EventListener);
   }, []);
 
   const logoutInProgress = useRef(false);
@@ -83,6 +99,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     clearAuthStorage();
+    // Sibling tabs (e.g. "Duplicate tab" case) should also tear down so
+    // they don't keep replaying the now-invalid refresh token.
+    broadcastLogout();
     setState({ token: null, user: null, ready: true });
     logoutInProgress.current = false;
   }, []);
