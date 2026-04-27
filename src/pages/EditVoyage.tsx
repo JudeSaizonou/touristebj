@@ -7,8 +7,8 @@ import { StatsCard } from '../components/StatsCard';
 import { TripManagersModal } from '../components/TripManagersModal';
 import * as tripsApi from '../api/trips';
 import { uploadTripImages, deleteTripImage, getPartnerVoyageById } from '../api/trips';
-import { ToastContainer, useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
+import { ToastContainer, useToast } from '../components/Toast';
 import { getTripManagerErrorMessage } from '../lib/tripManagerErrors';
 
 interface EditVoyageProps {
@@ -210,6 +210,7 @@ export const EditVoyage: React.FC<EditVoyageProps> = ({ voyageId, onBack, onUpda
             initialData={formData}
             onSubmit={handleSubmit}
             onCancel={onBack}
+            loading={saving}
           />
         )}
 

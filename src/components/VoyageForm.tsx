@@ -1,4 +1,4 @@
-import { useState, useRef, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Upload, X, AlertCircle, Plus, Trash2 } from 'lucide-react';
 
 export interface VoyageFormData {
@@ -27,6 +27,7 @@ interface VoyageFormProps {
   initialData?: Partial<VoyageFormData>;
   onSubmit: (data: VoyageFormData) => void;
   onCancel?: () => void;
+  loading?: boolean;
 }
 
 export interface VoyageFormRef {
@@ -44,6 +45,7 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
   mode,
   initialData,
   onSubmit,
+  loading = false,
 }, ref) => {
   const [title, setTitle] = useState(initialData?.title || '');
   const [destination, setDestination] = useState(initialData?.destination || '');
@@ -179,8 +181,16 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
     return Object.keys(e).length === 0;
   };
 
+  const submittingRef = useRef(false);
+
+  useEffect(() => {
+    if (!loading) submittingRef.current = false;
+  }, [loading]);
+
   const doSubmit = () => {
+    if (loading || submittingRef.current) return;
     if (!validate()) return;
+    submittingRef.current = true;
     onSubmit({
       title: title.trim(),
       destination: destination.trim(),
@@ -440,8 +450,13 @@ export const VoyageForm = forwardRef<VoyageFormRef, VoyageFormProps>(({
 
       {mode === 'create' && (
         <div className="flex justify-end pt-4 border-t border-gray-100">
-          <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md">
-            Enregistrer
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full sm:w-auto px-8 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors font-semibold shadow-md disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {loading && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+            {loading ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </div>
       )}

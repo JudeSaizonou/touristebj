@@ -109,7 +109,9 @@ export interface Invitation {
   createdAt: string;
 }
 
-export type PageView = 'dashboard' | 'voyages' | 'create-voyage' | 'edit-voyage' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
+export type PageView = 'dashboard' | 'voyages' | 'create-voyage' | 'edit-voyage' | 'trip-managers' | 'reservations' | 'all-voyageurs' | 'reversements' | 'parametres';
+
+export type TripManagerRole = 'OWNER' | 'MANAGER' | 'READONLY';
 
 export interface MappedBooking {
   id: string;

@@ -39,8 +39,10 @@ export const CreateVoyage: React.FC<CreateVoyageProps> = ({ onBack, onCreate }) 
       addToast('success', 'Voyage créé avec succès');
       onCreate({});
       onBack();
-    } catch (e) {
-      addToast('error', (e as { message?: string })?.message || 'Erreur lors de la création');
+    } catch (e: any) {
+      const msg = e?.message || 'Erreur lors de la création du voyage';
+      const details = e?.errors ? Object.values(e.errors).flat().join(' · ') : '';
+      addToast('error', details ? `${msg} : ${details}` : msg);
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export const CreateVoyage: React.FC<CreateVoyageProps> = ({ onBack, onCreate }) 
         </div>
       )}
       <div className="bg-white rounded-xl shadow-card p-3 sm:p-6 md:p-8 border border-gray-100">
-        <VoyageForm mode="create" onSubmit={handleSubmit} onCancel={onBack} />
+        <VoyageForm mode="create" onSubmit={handleSubmit} onCancel={onBack} loading={loading} />
       </div>
     </div>
   );
