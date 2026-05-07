@@ -21,9 +21,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // En dev : éviter CORS en faisant passer les appels API par le serveur Vite
+      // En dev : éviter CORS en faisant passer les appels API par le serveur Vite.
+      // Pointe sur le LB Zepargn (le cert sur prodapi.zepargn.com est cassé,
+      // ERR_CERT_COMMON_NAME_INVALID — cf. fallback géré dans src/api/client.ts).
       '/v2/api': {
-        target: 'https://prodapi.zepargn.com',
+        target: 'https://api-lb.livezepargn.net',
         changeOrigin: true,
       },
     },
