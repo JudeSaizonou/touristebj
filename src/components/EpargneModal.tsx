@@ -86,7 +86,7 @@ export const EpargneModal: React.FC<EpargneModalProps> = ({ isOpen, booking, onC
         type: payType,
       });
       setStep('processing');
-      startPolling(res.referenceId);
+      startPolling(res.contributionId);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Impossible d\'initier le paiement.');
       setStep('form');

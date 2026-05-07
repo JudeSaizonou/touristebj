@@ -43,7 +43,7 @@ export function usePaymentPolling({
   }, []);
 
   const startPolling = useCallback(
-    (referenceId: string) => {
+    (contributionId: string) => {
       clearTimers();
       stoppedRef.current = false;
       setCountdown(timeoutSeconds);
@@ -73,7 +73,7 @@ export function usePaymentPolling({
         }
 
         try {
-          const status = await getTransactionStatus(referenceId);
+          const status = await getTransactionStatus(contributionId);
           if (stoppedRef.current) return;
           if (status.status === 'successful' || status.status === 'success') {
             clearTimers();

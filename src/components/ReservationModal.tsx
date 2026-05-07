@@ -146,7 +146,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
         type: 'DEPOSIT',
       });
       setStep('processing');
-      startPolling(res.referenceId);
+      startPolling(res.contributionId);
     } catch (err: any) {
       setErrorMsg(err?.message || 'Impossible d\'initier le paiement MTN.');
       setStep('payment-form');

@@ -9,91 +9,31 @@ export type ApiError = {
 
 // ─── Constants ───────────────────────────────────────────────────────────
 
-const REQUEST_TIMEOUT = 30_000; // 30s default timeout
+const REQUEST_TIMEOUT = 30_000;
 const MAX_RETRIES = 2;
-const RETRY_DELAY_BASE = 1_000; // 1s base for exponential backoff
+const RETRY_DELAY_BASE = 1_000;
 const RETRYABLE_STATUSES = new Set([502, 503, 504, 408]);
+
+// ─── Zepargn hosts (primary + fallback) ─────────────────────────────────
+// Le backend Zepargn expose deux endpoints. On tente le primary d'abord ;
+// si la connexion échoue (réseau, timeout, reset), on bascule sur le LB.
+// Pour le dev local (proxy Vite), on court-circuite sur '/v2/api'.
+
+const ZEPARGN_HOSTS = [
+  'https://prodapi.zepargn.com',
+  'https://api-lb.livezepargn.net',
+];
 
 // ─── Token helpers ───────────────────────────────────────────────────────
 
 import {
   getToken,
-  getRefreshToken,
-  setToken as storageSetToken,
-  setRefreshToken as storageSetRefreshToken,
   clearAuthStorage,
-  broadcastTokensUpdate,
   broadcastLogout,
 } from '../lib/authStorage';
 
-// ─── Token refresh ───────────────────────────────────────────────────────
-//
-// Two layers of protection against refresh-token reuse, which the backend
-// punishes with an immediate kill-switch on every session for the user:
-//
-// 1. In-tab singleton promise: parallel 401s in the same tab share one call.
-// 2. Cross-tab exclusive lock via navigator.locks: if another tab is
-//    refreshing (e.g. user opened the dashboard in two tabs, or used
-//    "Duplicate tab" which copies sessionStorage), we wait instead of
-//    replaying the same now-revoked refresh token. When the other tab
-//    broadcasts the new token pair we pick it up from sessionStorage
-//    and can skip our own refresh entirely.
-
-const AUTH_LOCK_NAME = 'zepargn-auth-refresh';
-
-let refreshPromise: Promise<boolean> | null = null;
-
-async function refreshOnce(): Promise<boolean> {
-  const tokenBefore = getToken();
-  const rt = getRefreshToken();
-  if (!rt) return false;
-
-  // If a sibling tab already rotated while we were waiting for the lock,
-  // our sessionStorage has been updated via broadcast. Skip the network
-  // call — the caller will retry with the fresh token.
-  const tokenInside = getToken();
-  if (tokenInside && tokenInside !== tokenBefore) return true;
-
-  try {
-    const res = await fetch('/v2/api/auth/refresh-token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: rt }),
-    });
-    if (!res.ok) return false;
-    const body = await res.json();
-    if (body?.token) {
-      storageSetToken(body.token);
-      if (body.refreshToken) storageSetRefreshToken(body.refreshToken);
-      // Let sibling tabs adopt the new tokens so they don't replay the
-      // old refresh token and trigger the backend kill-switch.
-      broadcastTokensUpdate(body.token, body.refreshToken);
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-async function tryRefreshToken(): Promise<boolean> {
-  // If a refresh is already in flight in this tab, reuse the same promise
-  if (refreshPromise) return refreshPromise;
-
-  refreshPromise = (async () => {
-    // Prefer a cross-tab exclusive lock when available (Chrome 69+,
-    // Firefox 96+, Safari 15.4+). Falls back to plain in-tab serialisation.
-    const locks = (navigator as any)?.locks;
-    if (locks && typeof locks.request === 'function') {
-      return locks.request(AUTH_LOCK_NAME, async () => refreshOnce());
-    }
-    return refreshOnce();
-  })().finally(() => {
-    refreshPromise = null;
-  });
-
-  return refreshPromise;
-}
+// ─── Auth helpers ────────────────────────────────────────────────────────
+// Pas d'endpoint /auth/refresh-token côté Zepargn — on re-login sur 401.
 
 function forceLogout() {
   broadcastLogout();
@@ -131,14 +71,51 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// ─── Main API request (with timeout + retry + token refresh) ─────────────
+// ─── Host resolution with fallback ──────────────────────────────────────
+// Construit l'URL finale. Si le path commence par 'http', il est utilisé tel quel.
+// Sinon, on tente les hosts Zepargn en séquence (primary → LB fallback).
+// En dev avec proxy Vite, path reste relatif ('/v2/api/...').
+
+const NETWORK_ERRORS = new Set(['ENOTFOUND', 'ETIMEDOUT', 'ECONNRESET']);
+
+async function fetchWithFallback(
+  path: string,
+  options: RequestInit,
+  timeout: number
+): Promise<Response> {
+  if (path.startsWith('http')) {
+    return fetchWithTimeout(path, options, timeout);
+  }
+
+  // Relative path → try each Zepargn host in order
+  let lastNetworkError: any;
+  for (const host of ZEPARGN_HOSTS) {
+    const url = host + path;
+    try {
+      return await fetchWithTimeout(url, options, 5000);
+    } catch (err: any) {
+      // Only fall through on network-level failures
+      if (
+        NETWORK_ERRORS.has(err?.code) ||
+        err?.name === 'AbortError' ||
+        err?.message?.includes('fetch')
+      ) {
+        lastNetworkError = err;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastNetworkError ?? { success: false, message: 'Tous les serveurs sont inaccessibles.' };
+}
+
+// ─── Main API request (timeout + host fallback + retry + 429 + 401) ─────
 
 export async function apiRequest<T>(
   path: string,
   options: RequestInit & { skipAuth?: boolean; timeout?: number; retries?: number } = {}
 ): Promise<T> {
   const { skipAuth, timeout = REQUEST_TIMEOUT, retries = MAX_RETRIES, ...fetchOptions } = options;
-  const url = path.startsWith('http') ? path : `${path}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((fetchOptions.headers as Record<string, string>) || {}),
@@ -152,7 +129,7 @@ export async function apiRequest<T>(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetchWithTimeout(url, { ...fetchOptions, headers }, timeout);
+      const res = await fetchWithFallback(path, { ...fetchOptions, headers }, timeout);
 
       const ct = res.headers.get('content-type');
       const body: any = ct && ct.includes('application/json')
@@ -161,49 +138,33 @@ export async function apiRequest<T>(
 
       if (res.ok) return body as T;
 
-      // ── 401: try token refresh once ──────────────────────────────
+      // ── 401: JWT expiré → re-login (pas de refresh endpoint) ────
       if (res.status === 401 && !skipAuth) {
-        const refreshed = await tryRefreshToken();
-        if (refreshed) {
-          const newToken = getToken();
-          if (newToken) {
-            headers['Authorization'] = `Bearer ${newToken}`;
-            const retryRes = await fetchWithTimeout(url, { ...fetchOptions, headers }, timeout);
-            const retryCt = retryRes.headers.get('content-type');
-            const retryBody = retryCt && retryCt.includes('application/json')
-              ? await retryRes.json().catch(() => ({}))
-              : {};
-            if (retryRes.ok) return retryBody as T;
-
-            // The retry reached the server. If the server still says 401,
-            // the refreshed token is not valid either — fall through to
-            // force-logout. Otherwise the session is fine and we surface
-            // the retry's actual error (validation, conflict, 5xx…) so the
-            // user keeps working instead of being kicked out.
-            if (retryRes.status !== 401) {
-              lastError = {
-                success: false,
-                message: retryBody?.message || retryBody?.msg || retryBody?.error || `Erreur ${retryRes.status}`,
-                code: retryBody?.code,
-                status: retryRes.status,
-                errors: retryBody?.errors,
-                requirements: retryBody?.requirements,
-              } as ApiError;
-              break;
-            }
-          }
-        }
-        // Refresh failed or retry still 401 — force logout
         forceLogout();
+        lastError = {
+          success: false,
+          message: body?.message || body?.msg || 'Session expirée. Veuillez vous reconnecter.',
+          code: body?.code,
+          status: 401,
+        } as ApiError;
+        break;
       }
 
-      // ── Retryable server errors (502, 503, 504, 408) ────────────
+      // ── 429: respecte le Retry-After avant de réessayer ─────────
+      if (res.status === 429 && attempt < retries) {
+        const retryAfter = res.headers.get('Retry-After');
+        const waitMs = retryAfter ? parseFloat(retryAfter) * 1000 : RETRY_DELAY_BASE * Math.pow(2, attempt);
+        await sleep(waitMs);
+        continue;
+      }
+
+      // ── 5xx retryable (502, 503, 504, 408) ──────────────────────
       if (RETRYABLE_STATUSES.has(res.status) && attempt < retries) {
         await sleep(RETRY_DELAY_BASE * Math.pow(2, attempt));
         continue;
       }
 
-      // ── Non-retryable error ─────────────────────────────────────
+      // ── Erreur non-retryable ─────────────────────────────────────
       lastError = {
         success: false,
         message: body?.message || body?.msg || body?.error || `Erreur ${res.status}`,
@@ -215,7 +176,6 @@ export async function apiRequest<T>(
       break;
 
     } catch (err: any) {
-      // Network error — retry with backoff
       if (attempt < retries && !err?.success) {
         await sleep(RETRY_DELAY_BASE * Math.pow(2, attempt));
         lastError = err;
@@ -241,7 +201,7 @@ export async function apiRequestMultipart<T>(
   const headers: Record<string, string> = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetchWithTimeout(path, { method: 'POST', headers, body: formData });
+  const res = await fetchWithFallback(path, { method: 'POST', headers, body: formData }, REQUEST_TIMEOUT);
 
   const ct = res.headers.get('content-type');
   const body: any = ct && ct.includes('application/json')
@@ -261,7 +221,6 @@ export async function apiRequestRaw(
   options: RequestInit & { skipAuth?: boolean } = {}
 ): Promise<{ res: Response; body: any }> {
   const { skipAuth, ...fetchOptions } = options;
-  const url = path.startsWith('http') ? path : `${path}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((fetchOptions.headers as Record<string, string>) || {}),
@@ -270,7 +229,7 @@ export async function apiRequestRaw(
   if (!skipAuth && token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  const res = await fetchWithTimeout(url, { ...fetchOptions, headers });
+  const res = await fetchWithFallback(path, { ...fetchOptions, headers }, REQUEST_TIMEOUT);
   const ct = res.headers.get('content-type');
   const body: any = ct && ct.includes('application/json')
     ? await res.json().catch(() => ({}))

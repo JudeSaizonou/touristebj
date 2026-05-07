@@ -3,12 +3,14 @@ import { apiRequest } from './client';
 
 export interface MtnInitResponse {
   success: boolean;
-  referenceId: string;
   status: string;
+  contributionId: string;
+  referenceId: string;
+  message?: string;
   data?: any;
 }
 
-export type MtnStatus = 'processing' | 'successful' | 'success' | 'failed' | 'expired' | 'timeout';
+export type MtnStatus = 'pending' | 'processing' | 'successful' | 'success' | 'failed' | 'expired' | 'timeout';
 
 export interface TransactionStatus {
   status: MtnStatus;
@@ -91,10 +93,10 @@ export async function verifyKkiapayTransaction(
   );
 }
 
-/** Récupère le statut d'une transaction MTN. */
-export async function getTransactionStatus(referenceId: string): Promise<TransactionStatus> {
+/** Récupère le statut d'une transaction par contributionId (polling async Zepargn). */
+export async function getTransactionStatus(contributionId: string): Promise<TransactionStatus> {
   const res = await apiRequest<TransactionStatus & { success: boolean; data?: TransactionStatus }>(
-    `${API_BASE}/payment/transaction/status?paymentMethod=mtn&referenceId=${encodeURIComponent(referenceId)}`
+    `${API_BASE}/transactions/${encodeURIComponent(contributionId)}/status`
   );
   return res.data || res;
 }
